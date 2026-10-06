@@ -1,33 +1,17 @@
 import axios from 'axios';
 
-const CORRECT_RENDER_BACKEND = 'https://sistema-dni-plantillas.onrender.com';
-
 export const getApiBaseUrl = () => {
-  // 1. URL personalizada en localStorage si el usuario la configuró
+  // 1. URL personalizada en localStorage si el usuario la configuró explícitamente
   if (typeof window !== 'undefined' && window.localStorage) {
     const customUrl = window.localStorage.getItem('API_BASE_URL');
-    if (customUrl) return customUrl.replace(/\/$/, '');
-  }
-
-  // 2. Variable de entorno explícita (corrigiendo automáticamente si apunta a backend viejo 503)
-  if (import.meta.env.VITE_API_URL) {
-    let envUrl = import.meta.env.VITE_API_URL.replace(/\/$/, '');
-    if (envUrl.includes('sistema-dni-backend.onrender.com')) {
-      return CORRECT_RENDER_BACKEND;
-    }
-    return envUrl;
-  }
-
-  // 3. En entorno de producción web (Render)
-  if (typeof window !== 'undefined' && window.location) {
-    const hostname = window.location.hostname;
-    if (hostname.includes('onrender.com') || (hostname !== 'localhost' && hostname !== '127.0.0.1')) {
-      return CORRECT_RENDER_BACKEND;
+    if (customUrl) {
+      return customUrl.replace(/\/$/, '');
     }
   }
 
-  // 4. Desarrollo local por defecto
-  return 'http://127.0.0.1:8000';
+  // 2. Por defecto, usar rutas relativas '' para aprovechar el proxy de Vite (/api y /uploads)
+  // Esto permite acceder indistintamente desde la Laptop (localhost:5173) o desde el Celular (IP_LOCAL:5173)
+  return '';
 };
 
 export const setApiBaseUrl = (newUrl) => {
@@ -45,51 +29,14 @@ const API_BASE_URL = getApiBaseUrl();
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 120000, // 120 seconds to allow for initial AI model loading and high-res OCR
+  timeout: 120000, // 120 segundos para OCR y procesamiento de imágenes de alta resolución
 });
-
-// Auto-failover interceptor: si falla o da 503, redirige automáticamente a sistema-dni-plantillas.onrender.com
-apiClient.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    if (
-      (error.message === 'Network Error' || error.response?.status === 503 || error.response?.status === 404) &&
-      apiClient.defaults.baseURL !== CORRECT_RENDER_BACKEND &&
-      typeof window !== 'undefined' &&
-      window.location.hostname.includes('onrender.com')
-    ) {
-      console.warn('Conexión fallida. Cambiando automáticamente al backend saludable:', CORRECT_RENDER_BACKEND);
-      apiClient.defaults.baseURL = CORRECT_RENDER_BACKEND;
-      if (typeof window !== 'undefined' && window.localStorage) {
-        window.localStorage.setItem('API_BASE_URL', CORRECT_RENDER_BACKEND);
-      }
-      const newConfig = { ...error.config, baseURL: CORRECT_RENDER_BACKEND };
-      return axios(newConfig);
-    }
-    return Promise.reject(error);
-  }
-);
 
 export const api = {
   // Check backend health & OCR status
   checkHealth: async () => {
-    try {
-      const res = await apiClient.get('/api/health');
-      return res.data;
-    } catch (err) {
-      // Fallback directo a sistema-dni-plantillas si estamos en Render
-      if (typeof window !== 'undefined' && window.location.hostname.includes('onrender.com')) {
-        try {
-          const directRes = await axios.get(`${CORRECT_RENDER_BACKEND}/api/health`, { timeout: 15000 });
-          apiClient.defaults.baseURL = CORRECT_RENDER_BACKEND;
-          window.localStorage.setItem('API_BASE_URL', CORRECT_RENDER_BACKEND);
-          return directRes.data;
-        } catch (e2) {
-          throw err;
-        }
-      }
-      throw err;
-    }
+    const res = await apiClient.get('/api/health');
+    return res.data;
   },
 
   // Scan front and back of document
@@ -175,7 +122,7 @@ export const api = {
   // Export filtered records to Excel (triggers browser download)
   getExportUrl: (params = {}) => {
     const query = new URLSearchParams(params).toString();
-    const base = apiClient.defaults.baseURL || API_BASE_URL;
+    const base = apiClient.defaults.baseURL || '';
     return `${base}/api/export-excel${query ? `?${query}` : ''}`;
   },
 
@@ -183,7 +130,7 @@ export const api = {
   getImageUrl: (path) => {
     if (!path) return '';
     if (path.startsWith('http')) return path;
-    const base = apiClient.defaults.baseURL || API_BASE_URL;
+    const base = apiClient.defaults.baseURL || '';
     return `${base}${path.startsWith('/') ? '' : '/'}${path}`;
   },
 
@@ -255,7 +202,7 @@ export const api = {
   // Download contract or ZIP file URL
   getContractDownloadUrl: (filename) => {
     if (!filename) return '';
-    const base = apiClient.defaults.baseURL || API_BASE_URL;
+    const base = apiClient.defaults.baseURL || '';
     return `${base}/api/contracts/download/${filename}`;
   },
 
@@ -340,13 +287,13 @@ export const api = {
 
   getTemplateDownloadUrl: (filename) => {
     if (!filename) return '';
-    const base = apiClient.defaults.baseURL || API_BASE_URL;
+    const base = apiClient.defaults.baseURL || '';
     return `${base}/api/excel-templates/download/${encodeURIComponent(filename)}`;
   },
 
   getExportDownloadUrl: (filename) => {
     if (!filename) return '';
-    const base = apiClient.defaults.baseURL || API_BASE_URL;
+    const base = apiClient.defaults.baseURL || '';
     return `${base}/api/exports/download/${encodeURIComponent(filename)}`;
   },
 
@@ -433,7 +380,63 @@ export const api = {
 
   getSupabaseTemplateDownloadUrl: (templateId) => {
     if (!templateId) return '';
-    const base = apiClient.defaults.baseURL || API_BASE_URL;
+    const base = apiClient.defaults.baseURL || '';
     return `${base}/api/supabase-templates/${templateId}/download`;
+  },
+
+  // Aliases for compatibility across all views
+  getRecordsByDateTime: async (params = {}) => {
+    return api.getScannedRecordsByDateTime(params);
+  },
+
+  getExcelTemplates: async () => {
+    return api.listExcelTemplates();
+  },
+
+  getContractTemplates: async () => {
+    return api.listContractTemplates();
+  },
+
+  getExportExcelUrl: (params = {}) => {
+    return api.getExportUrl(params);
+  },
+
+  saveExcelTemplateMapping: async (filename, sheetName, mappings) => {
+    return api.saveTemplateMapping(filename, sheetName, mappings);
+  },
+
+  getDownloadFullBackupZipUrl: () => {
+    const base = apiClient.defaults.baseURL || '';
+    return `${base}/api/backups/download-zip`;
+  },
+
+  // Supabase Cloud sub-object for component compatibility
+  supabase: {
+    getConfig: async () => api.getSupabaseConfig(),
+    saveConfig: async (payload = {}) => {
+      const { supabase_url, supabase_key, bucket_name = 'templates' } = payload;
+      return api.saveSupabaseConfig(supabase_url, supabase_key, bucket_name);
+    },
+    testConnection: async () => api.testSupabaseConnection(),
+    getTemplates: async () => api.listSupabaseTemplates(),
+    uploadTemplate: async (file, name, templateType = 'EXCEL_CARGA_MASIVA', version = '1.0', userName = 'Flavio Monzón') => {
+      return api.uploadSupabaseTemplate(file, name, templateType, version, userName);
+    },
+    replaceTemplate: async (templateId, file, userName = 'Flavio Monzón') => {
+      return api.replaceSupabaseTemplateFile(templateId, file, userName);
+    },
+    updateMetadata: async (templateId, payload) => {
+      return api.updateSupabaseTemplateMetadata(templateId, payload);
+    },
+    deleteTemplate: async (templateId) => {
+      return api.deleteSupabaseTemplate(templateId);
+    },
+    saveMapping: async (templateId, sheetName, mappings) => {
+      return api.saveSupabaseTemplateMapping(templateId, sheetName, mappings);
+    },
+    generateBatchExcel: async (templateId, recordIds = [], records = null, sheetName = null) => {
+      return api.generateBatchExcelSupabase(templateId, recordIds, records, sheetName);
+    },
+    getDownloadUrl: (templateId) => api.getSupabaseTemplateDownloadUrl(templateId),
   },
 };

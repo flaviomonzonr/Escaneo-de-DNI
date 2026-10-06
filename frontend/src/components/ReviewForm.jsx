@@ -524,39 +524,39 @@ export default function ReviewForm({
         </div>
 
         {/* Actions Footer */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-[#E2E8F0]">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-4 border-t border-[#E2E8F0]">
           
           <button
             type="button"
             onClick={onReset}
-            className="flex items-center space-x-1.5 px-3.5 py-2 rounded-lg border border-[#CBD5E1] bg-slate-50 hover:bg-slate-100 text-[#080F72] text-xs font-bold transition shadow-2xs hover:border-[#101BCB]"
+            className="flex items-center justify-center space-x-2 px-4 py-3 rounded-xl border border-slate-300 bg-slate-100 hover:bg-slate-200 text-[#0A1E5C] text-xs font-bold transition shadow-xs hover:border-blue-500 min-h-[48px] active:scale-98"
           >
-            <ArrowLeft className="w-3.5 h-3.5 text-[#101BCB]" />
-            <span>← Retroceder / Volver a Escanear</span>
+            <ArrowLeft className="w-4 h-4 text-[#1D4ED8]" />
+            <span>← Volver a Escanear</span>
           </button>
 
           <button
             type="submit"
             disabled={isSaving || saveSuccess}
-            className={`flex items-center space-x-1.5 px-4 py-2 rounded-lg font-bold text-xs shadow-sm transition ${
+            className={`flex items-center justify-center space-x-2 px-6 py-3 rounded-xl font-bold text-xs sm:text-sm shadow-md transition min-h-[48px] active:scale-98 ${
               saveSuccess
-                ? 'bg-[#16A34A] text-white'
-                : 'bg-[#16A34A] hover:bg-[#15803d] text-white'
+                ? 'bg-[#10B981] text-white'
+                : 'bg-gradient-to-r from-[#0D9488] to-[#10B981] hover:from-[#0F766E] hover:to-[#0D9488] text-white shadow-teal-900/20'
             }`}
           >
             {saveSuccess ? (
               <>
-                <CheckCircle2 className="w-3.5 h-3.5 text-white" />
+                <CheckCircle2 className="w-4 h-4 text-white" />
                 <span>¡Guardado en Base de Datos!</span>
               </>
             ) : isSaving ? (
               <>
-                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                <RefreshCw className="w-4 h-4 animate-spin" />
                 <span>Guardando...</span>
               </>
             ) : (
               <>
-                <Save className="w-3.5 h-3.5 text-white" />
+                <Save className="w-4 h-4 text-white" />
                 <span>Guardar en Base de Datos</span>
               </>
             )}

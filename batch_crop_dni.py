@@ -174,6 +174,12 @@ def process_single_image(image_path: Path) -> Tuple[bool, str]:
         cards_pts = find_card_contours(img)
 
         if not cards_pts:
+            from backend.image_processing.perspective import find_document_contour
+            single_pts = find_document_contour(img)
+            if single_pts is not None:
+                cards_pts = [single_pts]
+
+        if not cards_pts:
             # Detección fallida -> Mover/Copiar a ERRORES
             dest = DIR_ERRORES / image_path.name
             shutil.copy2(str(image_path), str(dest))

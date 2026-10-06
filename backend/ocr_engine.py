@@ -37,28 +37,25 @@ def preprocess_image(image_bytes: bytes) -> Dict[str, np.ndarray]:
     """
     Aplica preprocesamiento avanzado con OpenCV para fotos tomadas con celular o escaneadas:
     1. Decodificación de bytes a matriz BGR.
-    2. Redimensionamiento adaptativo manteniendo relación de aspecto.
+    2. Detección automática del contorno del DNI, recorte de fondo/dedos y corrección de perspectiva ID-1.
     3. Conversión a escala de grises.
     4. Corrección de contraste adaptativo CLAHE.
     5. Normalización de iluminación y remoción de sombras/reflejos mediante división morfológica.
     6. Binarización adaptativa (Adaptive Thresholding).
     """
+    from backend.image_processing.perspective import detect_and_warp_card
+
     np_arr = np.frombuffer(image_bytes, np.uint8)
     img_bgr = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
 
     if img_bgr is None:
         raise ValueError("No se pudo decodificar la imagen. Verifique que sea un archivo de imagen válido.")
 
-    # 1. Redimensionamiento adaptativo para OCR óptimo
-    h, w = img_bgr.shape[:2]
-    target_width = 1400
-    if w < 900 or w > 2200:
-        scale = target_width / float(w)
-        target_height = int(h * scale)
-        img_bgr = cv2.resize(img_bgr, (target_width, target_height), interpolation=cv2.INTER_CUBIC)
+    # 1. Detección de contorno, recorte de bordes exteriores y corrección de perspectiva a 1200x760 px
+    warped_bgr, _ = detect_and_warp_card(img_bgr, target_width=1200, target_height=760)
 
-    # 2. Escala de grises
-    gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
+    # 2. Escala de grises sobre la tarjeta recortada
+    gray = cv2.cvtColor(warped_bgr, cv2.COLOR_BGR2GRAY)
 
     # 3. Corrección de contraste CLAHE (Contrast Limited Adaptive Histogram Equalization)
     clahe = cv2.createCLAHE(clipLimit=2.8, tileGridSize=(8, 8))
@@ -86,7 +83,7 @@ def preprocess_image(image_bytes: bytes) -> Dict[str, np.ndarray]:
     clahe_bgr = cv2.cvtColor(clahe_enhanced, cv2.COLOR_GRAY2BGR)
 
     return {
-        "original_bgr": img_bgr,
+        "original_bgr": warped_bgr,
         "gray": gray,
         "clahe": clahe_enhanced,
         "clahe_bgr": clahe_bgr,

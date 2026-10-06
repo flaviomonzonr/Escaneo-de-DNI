@@ -66,8 +66,8 @@ const TEMPLATE_TYPES = [
 ];
 
 export default function TemplatesView({ reconnectTrigger }) {
-  // Mode: 'supabase' (Cloud) | 'local' (Disk)
-  const [activeMode, setActiveMode] = useState('supabase');
+  // Mode: 'local' (Disk / Offline) | 'supabase' (Cloud)
+  const [activeMode, setActiveMode] = useState('local');
 
   // Supabase State
   const [supabaseTemplates, setSupabaseTemplates] = useState([]);

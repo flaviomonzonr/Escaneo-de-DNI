@@ -82,8 +82,10 @@ def extract_dni_data(
     maternal_conf = 0.0
     paternal_anchor = None
     maternal_anchor = None
+    paternal_line_idx = -1
+    prenombres_line_idx = -1
 
-    # 2A. Priority: MRZ Line 3
+    # 2A. Priority: MRZ Line 3 (ICAO TD1 format: PATERNO<MATERNO<<NOMBRES)
     if mrz_data and mrz_data.get("paternal_surname"):
         paternal_surname = mrz_data["paternal_surname"]
         paternal_conf = 99.0
@@ -96,33 +98,59 @@ def extract_dni_data(
     # 2B. Visual Anchors: "1ER APELLIDO", "2DO APELLIDO", "APELLIDO PATERNO", "APELLIDOS"
     name_stop_keywords = [
         "PRENOMBRES", "PRENOMBRE", "PRE NOMBRES", "NOMBRES", "NOMBRE",
-        "SEXO", "FECHA", "NACIMIENTO", "DNI", "EMISION", "EMISIÓN",
-        "CADUCIDAD", "VENCIMIENTO", "INSCRIPCION", "INSCRIPCIÓN",
-        "ESTADO", "CIVIL", "DIGITO", "VERIFICACION", "REPUBLICA", "PERU"
+        "SEXO", "FECHA", "NACIMIENTO", "DNI", "EMISION", "EMISION", "EMISION",
+        "CADUCIDAD", "VENCIMIENTO", "INSCRIPCION", "INSCRIPCION", "INSCRIPCION",
+        "ESTADO", "CIVIL", "DIGITO", "VERIFICACION", "REPUBLICA", "PERU", "REGISTRO"
     ]
+
+    # Peruvian compound surname particles
+    compound_particles = {"DE", "DEL", "LA", "LAS", "LOS", "SAN", "SANTA", "SANTO", "VON", "VAN", "MC", "MAC"}
+
+    def split_two_surnames(tokens_list: List[str]) -> Tuple[str, str]:
+        """Separates a list of words into Paternal and Maternal surnames respecting compound particles."""
+        if not tokens_list:
+            return "", ""
+        if len(tokens_list) == 1:
+            return tokens_list[0], ""
+        if len(tokens_list) == 2:
+            return tokens_list[0], tokens_list[1]
+        
+        # Check compound in first surname (e.g. DE LA CRUZ PEREZ -> DE LA CRUZ / PEREZ)
+        if tokens_list[0] in compound_particles and len(tokens_list) >= 3:
+            if tokens_list[1] in compound_particles and len(tokens_list) >= 4:
+                return " ".join(tokens_list[:3]), " ".join(tokens_list[3:])
+            return " ".join(tokens_list[:2]), " ".join(tokens_list[2:])
+        
+        # Check compound in second surname (e.g. PEREZ DE LA CRUZ -> PEREZ / DE LA CRUZ)
+        for i in range(1, len(tokens_list) - 1):
+            if tokens_list[i] in compound_particles:
+                return " ".join(tokens_list[:i]), " ".join(tokens_list[i:])
+                
+        # Default split: first word is paternal, rest is maternal
+        return tokens_list[0], " ".join(tokens_list[1:])
 
     for i, line in enumerate(front_lines_list):
         t = line.text.upper().replace(".", " ").strip()
         t_nospaces = re.sub(r"\s+", "", t)
         
-        # Primer Apellido
+        # Primer Apellido / 1er Apellido
         is_paternal_anchor = (
-            any(k in t for k in ["1ER APELLIDO", "PRIMER APELLIDO", "APELLIDO PATERNO"])
-            or any(k in t_nospaces for k in ["1ERAPELLIDO", "PRIMERAPELLIDO", "APELLIDOPATERNO"])
+            any(k in t for k in ["1ER APELLIDO", "1ER. APELLIDO", "PRIMER APELLIDO", "APELLIDO PATERNO", "PATERNO"])
+            or any(k in t_nospaces for k in ["1ERAPELLIDO", "PRIMERAPELLIDO", "APELLIDOPATERNO", "1ER.APELLIDO"])
         )
         if is_paternal_anchor and not paternal_surname:
-            clean_val = re.sub(r"^.*?(1ER\s*APELLIDO|PRIMER\s*APELLIDO|APELLIDO\s*PATERNO|1ERAPELLIDO|PRIMERAPELLIDO|APELLIDOPATERNO)[:\s\-]*", "", t, flags=re.IGNORECASE).strip()
+            paternal_line_idx = i
+            clean_val = re.sub(r"^.*?(1ER\s*APELLIDO|1ER\.?\s*APELLIDO|PRIMER\s*APELLIDO|APELLIDO\s*PATERNO|1ERAPELLIDO|PRIMERAPELLIDO|APELLIDOPATERNO|PATERNO)[:\s\-]*", "", t, flags=re.IGNORECASE).strip()
             tokens = [w for w in clean_val.split() if is_valid_name_token(w) and not any(sk in w for sk in name_stop_keywords)]
             if tokens:
                 paternal_surname = " ".join(tokens)
-                paternal_conf = max(82.0, line.confidence)
+                paternal_conf = max(85.0, line.confidence)
                 paternal_anchor = line.text
             else:
                 for off in range(1, 4):
                     if i + off < len(front_lines_list):
                         cand_l = front_lines_list[i + off]
                         cand_text = cand_l.text.upper()
-                        # Skip dates, other field headers
                         if normalize_and_validate_date(cand_text)[0] or any(sk in cand_text for sk in ["2DO", "SEGUNDO", "MATERNO", "INSCRIPCION", "EMISION", "CADUCIDAD"] + name_stop_keywords):
                             continue
                         next_tokens = [w for w in cand_text.split() if is_valid_name_token(w) and not any(sk in w for sk in name_stop_keywords)]
@@ -130,27 +158,27 @@ def extract_dni_data(
                             paternal_surname = " ".join(next_tokens)
                             paternal_conf = max(82.0, cand_l.confidence)
                             paternal_anchor = line.text
+                            paternal_line_idx = i + off
                             break
 
-        # Segundo Apellido
+        # Segundo Apellido / 2do Apellido
         is_maternal_anchor = (
-            any(k in t for k in ["2DO APELLIDO", "SEGUNDO APELLIDO", "APELLIDO MATERNO"])
-            or any(k in t_nospaces for k in ["2DOAPELLIDO", "SEGUNDOAPELLIDO", "APELLIDOMATERNO"])
+            any(k in t for k in ["2DO APELLIDO", "2DO. APELLIDO", "2D0 APELLIDO", "SEGUNDO APELLIDO", "APELLIDO MATERNO", "MATERNO"])
+            or any(k in t_nospaces for k in ["2DOAPELLIDO", "2DO.APELLIDO", "2D0APELLIDO", "SEGUNDOAPELLIDO", "APELLIDOMATERNO"])
         )
         if is_maternal_anchor and not maternal_surname:
-            clean_val = re.sub(r"^.*?(2DO\s*APELLIDO|SEGUNDO\s*APELLIDO|APELLIDO\s*MATERNO|2DOAPELLIDO|SEGUNDOAPELLIDO|APELLIDOMATERNO)[:\s\-]*", "", t, flags=re.IGNORECASE).strip()
+            clean_val = re.sub(r"^.*?(2DO\s*APELLIDO|2DO\.?\s*APELLIDO|2D0\s*APELLIDO|SEGUNDO\s*APELLIDO|APELLIDO\s*MATERNO|2DOAPELLIDO|SEGUNDOAPELLIDO|APELLIDOMATERNO|MATERNO)[:\s\-]*", "", t, flags=re.IGNORECASE).strip()
             tokens = [w for w in clean_val.split() if is_valid_name_token(w) and not any(sk in w for sk in name_stop_keywords)]
             if tokens:
                 maternal_surname = " ".join(tokens)
-                maternal_conf = max(82.0, line.confidence)
+                maternal_conf = max(85.0, line.confidence)
                 maternal_anchor = line.text
             else:
                 for off in range(1, 4):
                     if i + off < len(front_lines_list):
                         cand_l = front_lines_list[i + off]
                         cand_text = cand_l.text.upper()
-                        # Skip dates, other field headers
-                        if normalize_and_validate_date(cand_text)[0] or any(sk in cand_text for sk in ["INSCRIPCION", "EMISION", "CADUCIDAD"] + name_stop_keywords):
+                        if normalize_and_validate_date(cand_text)[0] or any(sk in cand_text for sk in ["PRENOMBRES", "NOMBRES", "INSCRIPCION", "EMISION", "CADUCIDAD"] + name_stop_keywords):
                             continue
                         next_tokens = [w for w in cand_text.split() if is_valid_name_token(w) and not any(sk in w for sk in name_stop_keywords)]
                         if next_tokens:
@@ -160,38 +188,58 @@ def extract_dni_data(
                             break
 
         # Generic "APELLIDOS" Anchor (DNI Azul Clásico)
-        if "APELLIDOS" in t_nospaces and not any(k in t_nospaces for k in ["1ER", "2DO", "PRIMER", "SEGUNDO"]) and not paternal_surname:
+        if "APELLIDOS" in t_nospaces and not any(k in t_nospaces for k in ["1ER", "2DO", "2D0", "PRIMER", "SEGUNDO"]) and not paternal_surname:
+            paternal_line_idx = i
             clean_val = re.sub(r"^.*?APELLIDOS[:\s\-]*", "", t, flags=re.IGNORECASE).strip()
             tokens = [w for w in clean_val.split() if is_valid_name_token(w) and not any(sk in w for sk in name_stop_keywords)]
             if len(tokens) >= 2:
-                paternal_surname = tokens[0]
-                maternal_surname = " ".join(tokens[1:])
-                paternal_conf = max(80.0, line.confidence)
-                maternal_conf = max(80.0, line.confidence)
+                paternal_surname, maternal_surname = split_two_surnames(tokens)
+                paternal_conf = max(85.0, line.confidence)
+                maternal_conf = max(85.0, line.confidence)
                 paternal_anchor = line.text
+                maternal_anchor = line.text
+            elif len(tokens) == 1:
+                paternal_surname = tokens[0]
+                paternal_conf = max(82.0, line.confidence)
+                paternal_anchor = line.text
+                # Look at next lines for maternal surname
+                for off in range(1, 3):
+                    if i + off < len(front_lines_list):
+                        cand_l = front_lines_list[i + off]
+                        cand_t = cand_l.text.upper()
+                        if any(sk in cand_t for sk in name_stop_keywords) or normalize_and_validate_date(cand_t)[0]:
+                            break
+                        next_tokens = [w for w in cand_t.split() if is_valid_name_token(w) and not any(sk in w for sk in name_stop_keywords)]
+                        if next_tokens:
+                            maternal_surname = " ".join(next_tokens)
+                            maternal_conf = max(82.0, cand_l.confidence)
+                            maternal_anchor = line.text
+                            break
             elif i + 1 < len(front_lines_list):
                 cand_l1 = front_lines_list[i+1]
                 cand_t1 = cand_l1.text.upper()
                 if not any(sk in cand_t1 for sk in name_stop_keywords) and not normalize_and_validate_date(cand_t1)[0]:
-                    next_tokens = [w for w in cand_t1.split() if is_valid_name_token(w) and not any(sk in w for sk in name_stop_keywords)]
-                    if len(next_tokens) >= 2:
-                        paternal_surname = next_tokens[0]
-                        maternal_surname = " ".join(next_tokens[1:])
+                    next_tokens1 = [w for w in cand_t1.split() if is_valid_name_token(w) and not any(sk in w for sk in name_stop_keywords)]
+                    if len(next_tokens1) >= 2:
+                        paternal_surname, maternal_surname = split_two_surnames(next_tokens1)
+                        paternal_conf = max(82.0, cand_l1.confidence)
+                        maternal_conf = max(82.0, cand_l1.confidence)
+                        paternal_anchor = line.text
+                        maternal_anchor = line.text
+                    elif len(next_tokens1) == 1:
+                        paternal_surname = next_tokens1[0]
                         paternal_conf = max(80.0, cand_l1.confidence)
-                        maternal_conf = max(80.0, cand_l1.confidence)
                         paternal_anchor = line.text
-                    elif len(next_tokens) == 1:
-                        paternal_surname = next_tokens[0]
-                        paternal_conf = max(78.0, cand_l1.confidence)
-                        paternal_anchor = line.text
+                        paternal_line_idx = i + 1
                         if i + 2 < len(front_lines_list):
                             cand_l2 = front_lines_list[i+2]
                             cand_t2 = cand_l2.text.upper()
                             if not any(sk in cand_t2 for sk in name_stop_keywords) and not normalize_and_validate_date(cand_t2)[0]:
-                                next2_tokens = [w for w in cand_t2.split() if is_valid_name_token(w) and not any(sk in w for sk in name_stop_keywords)]
-                                if next2_tokens:
-                                    maternal_surname = " ".join(next2_tokens)
-                                    maternal_conf = max(78.0, cand_l2.confidence)
+                                next_tokens2 = [w for w in cand_t2.split() if is_valid_name_token(w) and not any(sk in w for sk in name_stop_keywords)]
+                                if next_tokens2:
+                                    maternal_surname = " ".join(next_tokens2)
+                                    maternal_conf = max(80.0, cand_l2.confidence)
+                                    maternal_anchor = line.text
 
     # 3. FIRST NAMES / PRENOMBRES
     first_names = ""
@@ -214,9 +262,10 @@ def extract_dni_data(
         is_prenombres_anchor = (
             any(k in t for k in ["PRENOMBRES", "PRE NOMBRE", "PRE NOMBRES", "NOMBRES"])
             or any(k in t_nospaces for k in ["PRENOMBRES", "PRENOMBRE", "PRENOMBRES", "NOMBRES"])
-        ) and not any(k in t_nospaces for k in ["PRIMER", "SEGUNDO", "APELLIDO", "APELLIDOS"])
+        ) and not any(k in t_nospaces for k in ["PRIMER", "SEGUNDO", "APELLIDO", "APELLIDOS", "PATERNO", "MATERNO"])
         
         if is_prenombres_anchor:
+            prenombres_line_idx = i
             clean_val = re.sub(r"^.*?(PRE\s*NOMBRES?|PRENOMBRES?|NOMBRES?)[:\s\-]*", "", t, flags=re.IGNORECASE).strip()
             tokens = [w for w in clean_val.split() if is_valid_name_token(w) and not any(sk in w for sk in ["SEXO", "FECHA", "NACIMIENTO", "DNI", "EMISION", "CADUCIDAD"])]
             if tokens:
@@ -229,7 +278,6 @@ def extract_dni_data(
                     if i + off < len(front_lines_list):
                         cand_l = front_lines_list[i + off]
                         cand_text = cand_l.text.upper()
-                        # If the line is a date or document metadata, skip it and continue checking subsequent lines
                         if normalize_and_validate_date(cand_text)[0] or any(sk in cand_text for sk in ["SEXO", "FECHA", "NACIMIENTO", "DNI", "EMISION", "CADUCIDAD"]):
                             continue
                         next_tokens = [w for w in cand_text.split() if is_valid_name_token(w)]
@@ -237,6 +285,7 @@ def extract_dni_data(
                             visual_first_names = separate_concatenated_names(" ".join(next_tokens))
                             visual_names_conf = max(85.0, cand_l.confidence)
                             visual_names_anchor = line.text
+                            prenombres_line_idx = i + off
                             break
                 if visual_first_names:
                     break
@@ -253,11 +302,26 @@ def extract_dni_data(
     if first_names:
         first_names = separate_concatenated_names(first_names)
 
-    # Post-validation: Avoid maternal surname accidentally duplicating prenombres/nombres
-    if maternal_surname and first_names:
-        if maternal_surname.strip() == first_names.strip() or maternal_surname in first_names:
-            maternal_surname = ""
-            maternal_conf = 0.0
+    # 2C. Positional In-Between Fallback for Maternal Surname:
+    # If paternal is known and prenombres is known, any valid line strictly in between is Maternal Surname
+    if paternal_surname and not maternal_surname and paternal_line_idx >= 0 and prenombres_line_idx > (paternal_line_idx + 1):
+        for mid_i in range(paternal_line_idx + 1, prenombres_line_idx):
+            mid_line = front_lines_list[mid_i]
+            mid_t = mid_line.text.upper().strip()
+            if not any(sk in mid_t for sk in name_stop_keywords) and not normalize_and_validate_date(mid_t)[0]:
+                mid_tokens = [w for w in mid_t.split() if is_valid_name_token(w) and not any(sk in w for sk in name_stop_keywords)]
+                if mid_tokens:
+                    maternal_surname = " ".join(mid_tokens)
+                    maternal_conf = max(80.0, mid_line.confidence)
+                    maternal_anchor = "Posición relativa DNI"
+                    break
+
+    # If maternal_surname is still empty and paternal_surname has 2 words (e.g. MONZON LOPEZ), split them
+    if paternal_surname and not maternal_surname and " " in paternal_surname:
+        pat_tokens = paternal_surname.split()
+        if len(pat_tokens) >= 2:
+            paternal_surname, maternal_surname = split_two_surnames(pat_tokens)
+            maternal_conf = paternal_conf
 
     # Populate Surnames & Names fields
     pat_status = SemanticExtractor.determine_field_status(paternal_conf, bool(paternal_surname))
@@ -289,7 +353,6 @@ def extract_dni_data(
         origin_type="LEIDO_OCR",
         anchor_matched=names_anchor,
     )
-
     # 4. FECHA DE NACIMIENTO (Highest priority: MRZ -> Visual Anchors -> Candidate Pool)
     birth_date = ""
     birth_conf = 0.0
@@ -560,25 +623,66 @@ def extract_dni_data(
                 break
 
     # 7B. Parse Departamento, Provincia, Distrito from back OCR lines
-    # Check for known department in back lines first
-    for i, line in enumerate(back_lines_list):
+    ubigeo_exclude_keywords = [
+        "DOMICILIO", "DIRECCION", "DIR.", "AV.", "JR.", "CALLE", "PSJE", "MZ", "LT",
+        "CASERIO", "CAS.", "C.P.", "SECTOR", "FUNDO", "ANEXO", "S/N", "SN", "NRO",
+        "CUARTO", "NIVEL", "CUARTONIVEL", "CUARTONVEL", "CONSTANCIA", "SUFRAGIO",
+        "VOTACION", "DONACION", "ORGANOS", "OBSERVACIONES", "RENIEC"
+    ]
+
+    def is_valid_geo_token(token_str: str) -> bool:
+        if not token_str or len(token_str.strip()) < 3:
+            return False
+        tok = token_str.strip().upper()
+        if any(c.isdigit() for c in tok):
+            return False
+        if any(k in tok for k in ubigeo_exclude_keywords):
+            return False
+        return is_valid_name_token(tok)
+
+    # Check for slash-separated Ubigeo format (e.g. "ANCASH / HUARI / CHAVIN DE HUANTAR" or "LIMA / LIMA / MIRAFLORES")
+    for line in back_lines_list:
         t = line.text.upper().strip()
-        if any(k in t for k in ["DOMICILIO", "DIRECCION", "DIR.", "AV.", "JR.", "CALLE", "PSJE", "MZ", "LT"]):
-            continue
-        for dep in PERU_DEPARTMENTS:
-            if re.search(rf"\b{dep}\b", t) or t == dep:
-                dept_val = dep
-                # Check if this line is part of a 3-tier vertical column layout: [Distrito_val, Provincia_val, Departamento_val]
-                if i >= 2 and not prov_val and not dist_val:
-                    cand_p = back_lines_list[i-1].text.upper().strip()
-                    cand_d = back_lines_list[i-2].text.upper().strip()
-                    if cand_p and is_valid_name_token(cand_p) and not any(k in cand_p for k in ["DEPARTAMENTO", "PROVINCIA", "DISTRITO", "CONSTANCIA", "SUFRAGIO"]):
-                        prov_val = cand_p
-                    if cand_d and is_valid_name_token(cand_d) and not any(k in cand_d for k in ["DEPARTAMENTO", "PROVINCIA", "DISTRITO", "CONSTANCIA", "SUFRAGIO"]):
-                        dist_val = cand_d
+        if "/" in t or " - " in t:
+            parts = [p.strip() for p in re.split(r"[/\-]", t) if p.strip()]
+            if len(parts) >= 2:
+                # Check if first part or last part is a department
+                for p in parts:
+                    for dep in PERU_DEPARTMENTS:
+                        if dep == p or re.search(rf"\b{dep}\b", p):
+                            dept_val = dep
+                            break
+                if dept_val:
+                    valid_geo_parts = [p for p in parts if is_valid_geo_token(p)]
+                    if len(valid_geo_parts) >= 2:
+                        if not dept_val in valid_geo_parts:
+                            valid_geo_parts.insert(0, dept_val)
+                        if len(valid_geo_parts) == 3:
+                            dept_val, prov_val, dist_val = valid_geo_parts[0], valid_geo_parts[1], valid_geo_parts[2]
+                        elif len(valid_geo_parts) >= 2:
+                            dept_val, prov_val = valid_geo_parts[0], valid_geo_parts[1]
+                        break
+
+    # Check for known department in back lines if not yet found
+    if not dept_val:
+        for i, line in enumerate(back_lines_list):
+            t = line.text.upper().strip()
+            if any(k in t for k in ubigeo_exclude_keywords):
+                continue
+            for dep in PERU_DEPARTMENTS:
+                if re.search(rf"\b{dep}\b", t) or t == dep:
+                    dept_val = dep
+                    # Check if this line is part of a 3-tier vertical column layout: [Distrito_val, Provincia_val, Departamento_val]
+                    if i >= 2 and not prov_val and not dist_val:
+                        cand_p = back_lines_list[i-1].text.upper().strip()
+                        cand_d = back_lines_list[i-2].text.upper().strip()
+                        if is_valid_geo_token(cand_p):
+                            prov_val = cand_p
+                        if is_valid_geo_token(cand_d):
+                            dist_val = cand_d
+                    break
+            if dept_val:
                 break
-        if dept_val:
-            break
 
     # If department was found but prov/dist are missing, check anchor labels
     if not dept_val or not prov_val or not dist_val:
@@ -588,7 +692,7 @@ def extract_dni_data(
             # Departamento
             if any(k in t for k in ["DEPARTAMENTO", "DPTO."]) and not dept_val:
                 clean_d = re.sub(r"^.*?(DEPARTAMENTO|DPTO\.)[:\s\-]*", "", t).strip()
-                if clean_d and is_valid_name_token(clean_d):
+                if clean_d and is_valid_geo_token(clean_d):
                     for dep in PERU_DEPARTMENTS:
                         if dep in clean_d or clean_d in dep:
                             dept_val = dep
@@ -597,7 +701,7 @@ def extract_dni_data(
                     for off in range(1, 5):
                         if i + off < len(back_lines_list):
                             nxt = back_lines_list[i+off].text.upper().strip()
-                            if nxt and is_valid_name_token(nxt) and not any(k in nxt for k in ["PROVINCIA", "DISTRITO", "SUFRAGIO", "CONSTANCIA"]):
+                            if is_valid_geo_token(nxt):
                                 for dep in PERU_DEPARTMENTS:
                                     if dep in nxt or nxt in dep:
                                         dept_val = dep
@@ -608,32 +712,29 @@ def extract_dni_data(
             # Provincia
             if any(k in t for k in ["PROVINCIA", "PROVINCLA"]) and not prov_val:
                 clean_p = re.sub(r"^.*?(PROVINCIA|PROVINCLA)[:\s\-]*", "", t).strip()
-                if clean_p and is_valid_name_token(clean_p) and not any(k in clean_p for k in ["DEPARTAMENTO", "DISTRITO"]):
+                if clean_p and is_valid_geo_token(clean_p):
                     prov_val = clean_p
                 else:
                     for off in range(1, 5):
                         if i + off < len(back_lines_list):
                             nxt = back_lines_list[i+off].text.upper().strip()
-                            if nxt and is_valid_name_token(nxt) and not any(k in nxt for k in ["DEPARTAMENTO", "DISTRITO", "SUFRAGIO", "CONSTANCIA", "PROVINCIA"]):
-                                if nxt != dept_val and nxt != dist_val:
-                                    prov_val = nxt
-                                    break
+                            if is_valid_geo_token(nxt) and nxt != dept_val and nxt != dist_val:
+                                prov_val = nxt
+                                break
 
             # Distrito
             if "DISTRITO" in t and not dist_val:
                 clean_di = re.sub(r"^.*?DISTRITO[:\s\-]*", "", t).strip()
-                if clean_di and is_valid_name_token(clean_di) and not any(k in clean_di for k in ["DEPARTAMENTO", "PROVINCIA"]):
+                if clean_di and is_valid_geo_token(clean_di):
                     dist_val = clean_di
                 else:
                     for off in range(1, 5):
                         if i + off < len(back_lines_list):
                             nxt = back_lines_list[i+off].text.upper().strip()
-                            if nxt and is_valid_name_token(nxt) and not any(k in nxt for k in ["DEPARTAMENTO", "PROVINCIA", "SUFRAGIO", "CONSTANCIA", "DISTRITO"]):
-                                if nxt != dept_val and nxt != prov_val:
-                                    dist_val = nxt
-                                    break
+                            if is_valid_geo_token(nxt) and nxt != dept_val and nxt != prov_val:
+                                dist_val = nxt
+                                break
 
-    # Build synthesized Ubigeo string
     # Clean OCR quirks on district / province names (e.g. OUILLO -> QUILLO)
     if dist_val:
         dist_val = re.sub(r"^OUI", "QUI", dist_val)
@@ -677,18 +778,17 @@ def extract_dni_data(
         status=SemanticExtractor.determine_field_status(ubigeo_conf, bool(ubigeo_str)),
         origin_type="LEIDO_OCR",
     )
-
-    # 7C. DIRECCIÓN / DOMICILIO (Clean address without background leakage or barcode numbers)
+    # 7C. DIRECCIÓN / DOMICILIO (Extracción robusta de domicilio urbano y rural peruano)
     stop_address_keywords = [
         "CUARTO NIVEL", "CUARTONIVEL", "CUARTONVEL", "CUARTO", "NIVEL",
         "DEPARTAMENTO", "PROVINCIA", "DISTRITO", "OBSERVACIONES", "BSERVACIONES",
-        "DONACION", "DONACIÓN", "ORGANOS", "ÓRGANOS", "VOTACION", "VOTACIÓN",
-        "GRUPO", "FIRMA", "HUELLA", "I<PER", "REPUBLICA", "RENIEC", "SUFRAGIO", "CONSTANCIA"
+        "DONACION", "ORGANOS", "VOTACION", "GRUPO", "FIRMA", "HUELLA", "I<PER",
+        "REPUBLICA", "RENIEC", "TITULO DE ELECTOR", "IMPRESION DACTILAR"
     ]
 
     # Peruvian address indicators
     peru_address_prefixes = [
-        "CASERIO", "CASERÍO", "CAS.", "C.P.", "CENTRO POBLADO", "SECTOR", "FUNDO", "ANEXO",
+        "CASERIO", "CAS.", "C.P.", "CENTRO POBLADO", "SECTOR", "FUNDO", "ANEXO",
         "COMUNIDAD", "PARCELA", "ASENTAMIENTO", "A.H.", "AA.HH.", "AA HH",
         "AV.", "AVENIDA", "AV ", "JR.", "JIRON", "JIRÓN", "JR ", "CALLE", "PSJE", "PASAJE", "PSJ.",
         "MZ.", "MANZANA", "MZ ", "LT.", "LOTE", "LT ", "BLOCK", "BLQ.",
@@ -698,69 +798,70 @@ def extract_dni_data(
 
     address_header_pattern = r"(?:DOMICILI[OA0-9]|DIRE[A-Z0-9]{2,5}ON|DIREC[A-Z0-9]*|DIR\.?)"
 
-    # Method 1: Header-based scan ("DOMICILIO", "DIRECCION", "DIREACLON", etc.)
+    # Helper function to clean raw address line from administrative noise
+    def clean_address_line(raw_line: str) -> str:
+        s = re.sub(rf"^.*?{address_header_pattern}[:\s\-\/]*", "", raw_line, flags=re.IGNORECASE).strip()
+        s = re.sub(r"\b(DOMICILIO\s+Y\s+CONSTANCIAS(\s+DE\s+SUFRAGIO)?|CONSTANCIAS(\s+DE\s+SUFRAGIO)?|CONSTANCIA(\s+DE\s+SUFRAGIO)?|DE\s+SUFRAGIO|SUFRAGIO|CUARTO\s*NIVEL|CUARTONIVEL|CUARTONVEL)\b", "", s, flags=re.IGNORECASE).strip(" :-/.,")
+        return s
+
+    # Method 1: Header-based scan ("DOMICILIO", "DIRECCION", "DOMICILIO Y CONSTANCIAS DE SUFRAGIO")
     for i, line in enumerate(back_lines_list):
         t = line.text.upper().strip()
         if re.search(rf"\b{address_header_pattern}\b", t) or any(k in t for k in ["DOMICILIO", "DIRECCION", "DIRECCIÓN", "DIR."]):
             addr_parts = []
-            val_in_line = re.sub(rf"^.*?{address_header_pattern}[:\s\-\/]*", "", t, flags=re.IGNORECASE).strip()
-            
-            # Clean header artifacts like "Y CONSTANCIAS DE SUFRAGIO"
-            val_in_line = re.sub(r"^(Y\s+CONSTANCIAS(\s+DE\s+SUFRAGIO)?|CONSTANCIAS(\s+DE\s+SUFRAGIO)?|SUFRAGIO)[\s:]*", "", val_in_line).strip()
+            val_in_line = clean_address_line(t)
 
-            if not is_invalid_address_candidate(val_in_line):
+            if val_in_line and not is_invalid_address_candidate(val_in_line):
                 addr_parts.append(val_in_line)
 
-            # Check next lines
+            # Check next lines for continuation of address
             for j in range(1, 4):
                 if i + j < len(back_lines_list):
                     next_l = back_lines_list[i+j]
                     next_raw = next_l.text.upper().strip()
                     if any(sk in next_raw for sk in stop_address_keywords) or any(sk in next_raw for sk in ["DEPARTAMENTO", "PROVINCIA", "DISTRITO", "UBIGEO"]):
                         break
-                    if not is_invalid_address_candidate(next_raw):
-                        addr_parts.append(next_raw)
-                        # If line had an address prefix or house number, address is complete
-                        if any(ap in next_raw for ap in peru_address_prefixes) or re.search(r"\b(S/N|SN|\d+)\b", next_raw):
+                    next_cleaned = clean_address_line(next_raw)
+                    if next_cleaned and not is_invalid_address_candidate(next_cleaned):
+                        addr_parts.append(next_cleaned)
+                        # If line had an address prefix or house number or S/N, address is complete
+                        if any(ap in next_cleaned for ap in peru_address_prefixes) or re.search(r"\b(S/N|SN|\d+)\b", next_cleaned):
                             break
 
             if addr_parts:
                 raw_addr = " ".join(addr_parts)
-                raw_addr = re.sub(r"(CUARTO\s*NIVEL|CUARTONVEL|CUARTONIVEL)\s*\d*", "", raw_addr, flags=re.IGNORECASE).strip()
+                raw_addr = clean_address_line(raw_addr)
                 raw_addr = re.sub(r",\s*,", ",", raw_addr).strip(" ,-")
-                if not is_invalid_address_candidate(raw_addr):
+                if raw_addr and not is_invalid_address_candidate(raw_addr):
                     address = raw_addr
-                    address_conf = max(85.0, line.confidence)
-                    break
-
-    # Method 2: Autonomous Pattern Scanner across all back lines prioritizing genuine address prefixes
-    if not address or is_invalid_address_candidate(address):
-        # Pass 2A: Explicit address prefix search (e.g. CASERIO CORACOLLO SN, AV LOS HEROES 450)
-        for line in back_lines_list:
-            t = line.text.upper().strip()
-            if is_invalid_address_candidate(t):
-                continue
-            has_addr_prefix = any(ap in t for ap in peru_address_prefixes)
-            if has_addr_prefix:
-                clean_cand = re.sub(rf"^.*?{address_header_pattern}[:\s\-\/]*", "", t, flags=re.IGNORECASE).strip()
-                if not is_invalid_address_candidate(clean_cand):
-                    address = clean_cand
                     address_conf = max(88.0, line.confidence)
                     break
 
+    # Method 2: Autonomous Pattern Scanner across all back lines prioritizing genuine Peruvian address prefixes
     if not address or is_invalid_address_candidate(address):
-        # Pass 2B: Fallback pattern search (street number or S/N)
         for line in back_lines_list:
             t = line.text.upper().strip()
-            if is_invalid_address_candidate(t):
+            clean_cand = clean_address_line(t)
+            if not clean_cand or is_invalid_address_candidate(clean_cand):
                 continue
-            has_street_num = bool(re.search(r"\b(S/N|SN|NRO|N°|#)\b", t))
-            if has_street_num and len(t) >= 6:
-                clean_cand = re.sub(rf"^.*?{address_header_pattern}[:\s\-\/]*", "", t, flags=re.IGNORECASE).strip()
-                if not is_invalid_address_candidate(clean_cand):
-                    address = clean_cand
-                    address_conf = max(80.0, line.confidence)
-                    break
+            has_addr_prefix = any(ap in clean_cand for ap in peru_address_prefixes)
+            if has_addr_prefix:
+                address = clean_cand
+                address_conf = max(88.0, line.confidence)
+                break
+
+    # Method 3: Fallback pattern search (street number or S/N)
+    if not address or is_invalid_address_candidate(address):
+        for line in back_lines_list:
+            t = line.text.upper().strip()
+            clean_cand = clean_address_line(t)
+            if not clean_cand or is_invalid_address_candidate(clean_cand):
+                continue
+            has_street_num = bool(re.search(r"\b(S/N|SN|NRO|N°|#)\b", clean_cand))
+            if has_street_num and len(clean_cand) >= 6:
+                address = clean_cand
+                address_conf = max(80.0, line.confidence)
+                break
 
     # Final cleanup of address string
     if address:
@@ -777,7 +878,6 @@ def extract_dni_data(
         status=SemanticExtractor.determine_field_status(address_conf, bool(address)),
         origin_type="LEIDO_OCR",
     )
-
     # 8. NACIONALIDAD (Predeterminada PERUANA para DNI)
     fields["nationality"] = FieldConfidence(
         value="PERUANA",

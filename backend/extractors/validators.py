@@ -116,7 +116,8 @@ def separate_concatenated_names(text: str) -> str:
 def is_invalid_address_candidate(text: str) -> bool:
     """
     Validates whether a line text can possibly be a Peruvian street address.
-    Rejects barcode numbers, voting group codes, pure digit sequences, and administrative headers.
+    Rejects barcode numbers, voting group codes, pure digit sequences, and standalone administrative headers.
+    Allows genuine addresses containing caseríos, anexos, asentamientos, calles, avenidas, jirones, etc.
     """
     if not text or len(text.strip()) < 3:
         return True
@@ -127,32 +128,45 @@ def is_invalid_address_candidate(text: str) -> bool:
     if re.match(r"^[\d\s\-\.\,\/]+$", t):
         return True
 
-    # 2. Reject lines where digits heavily outnumber letters (barcodes with minimal text)
-    digits_count = sum(c.isdigit() for c in t)
-    alpha_count = sum(c.isalpha() for c in t)
+    # 2. Clean out administrative headers if combined in the line
+    cleaned_t = re.sub(
+        r"\b(DOMICILIO\s+Y\s+CONSTANCIAS(\s+DE\s+SUFRAGIO)?|CONSTANCIAS(\s+DE\s+SUFRAGIO)?|CONSTANCIA(\s+DE\s+SUFRAGIO)?|DE\s+SUFRAGIO|SUFRAGIO|CUARTO\s*NIVEL|CUARTONIVEL|CUARTONVEL|REPUBLICA\s+DEL\s+PERU|RENIEC|DONACION(\s+DE\s+ORGANOS)?|ORGANOS|FIRMA|HUELLA)\b",
+        "",
+        t,
+        flags=re.IGNORECASE
+    ).strip(" :-/.,")
+
+    if not cleaned_t:
+        return True
+
+    # 3. Reject lines where digits heavily outnumber letters (barcodes with minimal text)
+    digits_count = sum(c.isdigit() for c in cleaned_t)
+    alpha_count = sum(c.isalpha() for c in cleaned_t)
     if alpha_count < 3:
         return True
-    if digits_count > alpha_count:
+    if digits_count > (alpha_count * 1.5):
         return True
 
-    # 3. Reject barcode sequences (repeated 4+ digit blocks)
-    if re.search(r"^\d{4,}(\s+\d{4,})+$", t):
+    # 4. Reject barcode sequences (repeated 4+ digit blocks)
+    if re.search(r"^\d{4,}(\s+\d{4,})+$", cleaned_t):
         return True
 
-    # 4. Reject administrative headers and document labels
-    stop_words = [
-        "CONSTANCIA", "SUFRAGIO", "DE SUFRAGIO", "REPUBLICA DEL PERU", "REPUBLICA",
-        "RENIEC", "ELECCIONES", "TRIBUNAL", "ORGANOS", "DONACION", "FIRMA", "HUELLA",
+    # 5. Standalone administrative headers and document labels to reject if the ENTIRE line is just the header
+    standalone_headers = [
+        "CONSTANCIA", "CONSTANCIAS", "SUFRAGIO", "DE SUFRAGIO", "CONSTANCIAS DE SUFRAGIO",
+        "REPUBLICA DEL PERU", "REPUBLICA", "RENIEC", "ELECCIONES", "TRIBUNAL",
+        "ORGANOS", "DONACION", "DONACION DE ORGANOS", "FIRMA", "HUELLA",
         "CUARTO NIVEL", "CUARTONIVEL", "CUARTONVEL", "OBSERVACIONES", "OBSERVACION",
         "BSERVACIONES", "BSERVACION", "ESTADO CIVIL", "DEPARTAMENTO", "PROVINCIA", "DISTRITO",
-        "FECHA DE NACIMIENTO", "FECHA DE EMISION", "FECHA DE CADUCIDAD", "CADUCIDAD"
+        "FECHA DE NACIMIENTO", "FECHA DE EMISION", "FECHA DE CADUCIDAD", "CADUCIDAD",
+        "VOTACION", "GRUPO DE VOTACION", "TITULO DE ELECTOR", "IMPRESION DACTILAR"
     ]
-    if any(sk in t for sk in stop_words):
+    if cleaned_t in standalone_headers or any(cleaned_t == h for h in standalone_headers):
         return True
 
-    # 5. Reject standalone department names
+    # 6. Reject standalone department names
     for dep in PERU_DEPARTMENTS:
-        if t == dep:
+        if cleaned_t == dep:
             return True
 
     return False

@@ -115,16 +115,32 @@ worker_consolidator = WorkerConsolidator(MASTER_EXCEL_PATH)
 contract_generator = ContractGenerator(TEMPLATES_DIR, CONTRACTS_DIR)
 excel_template_service = ExcelTemplateService()
 
+_FRONTEND_DIST = _PROJECT_ROOT / "frontend" / "dist"
+if _FRONTEND_DIST.exists():
+    _ASSETS_DIR = _FRONTEND_DIST / "assets"
+    if _ASSETS_DIR.exists():
+        app.mount("/assets", StaticFiles(directory=str(_ASSETS_DIR)), name="frontend_assets")
 
-@app.get("/")
-def root():
-    return {
-        "system": "EscanDNI Perú - Backend API",
-        "status": "online",
-        "frontend_url": "http://localhost:5173",
-        "docs_url": "/docs",
-        "message": "El servidor Backend está funcionando correctamente. Para usar la interfaz gráfica abre http://localhost:5173 en tu navegador.",
-    }
+    @app.get("/")
+    def serve_frontend_index():
+        index_file = _FRONTEND_DIST / "index.html"
+        if index_file.exists():
+            return FileResponse(str(index_file))
+        return {
+            "system": "EscanDNI Perú - Backend API",
+            "status": "online",
+            "docs_url": "/docs",
+        }
+else:
+    @app.get("/")
+    def root():
+        return {
+            "system": "EscanDNI Perú - Backend API",
+            "status": "online",
+            "frontend_url": "http://localhost:5173",
+            "docs_url": "/docs",
+            "message": "El servidor Backend está funcionando correctamente. Para usar la interfaz gráfica abre http://localhost:5173 en tu navegador.",
+        }
 
 
 @app.get("/api/health")
@@ -217,8 +233,8 @@ def scan_document(
             detail=f"Error durante el preprocesamiento de la imagen con OpenCV: {str(e)}",
         )
 
-    # Save images
-    front_orig_fn = save_image_matrix(front_variants_res.original_bgr, "front_orig")
+    # Save images - Always store and serve the clean cropped DNI card (no background/hands)
+    front_orig_fn = save_image_matrix(front_variants_res.warped_bgr, "front_orig")
     front_enh_fn = save_image_matrix(
         front_variants_res.variants.get("clahe_enhanced", list(front_variants_res.variants.values())[0]).image,
         "front_enhanced"
@@ -229,7 +245,7 @@ def scan_document(
     back_orig_url = ""
     back_enh_url = ""
     if back_variants_res:
-        back_orig_fn = save_image_matrix(back_variants_res.original_bgr, "back_orig")
+        back_orig_fn = save_image_matrix(back_variants_res.warped_bgr, "back_orig")
         back_enh_fn = save_image_matrix(
             back_variants_res.variants.get("clahe_enhanced", list(back_variants_res.variants.values())[0]).image,
             "back_enhanced"
@@ -255,14 +271,14 @@ def scan_document(
         (front_consensus.combined_mrz or "") + "\n" + ((back_consensus.combined_mrz if back_consensus else "") or "")
     ).strip()
 
-    # 3. Document Classification & Side Detection (100% Automático)
+    # 3. Document Classification & Side Detection (100% Automático sobre imagen recortada)
     front_classif = classify_document(
-        image_bgr=front_variants_res.original_bgr,
+        image_bgr=front_variants_res.warped_bgr,
         ocr_text=front_consensus.primary_ocr.full_text,
         declared_type=doc_type if doc_type != "AUTO" else "DNI",
     )
     back_classif = classify_document(
-        image_bgr=back_variants_res.original_bgr,
+        image_bgr=back_variants_res.warped_bgr,
         ocr_text=back_consensus.primary_ocr.full_text if back_consensus else "",
         declared_type=doc_type if doc_type != "AUTO" else "DNI",
     ) if back_variants_res else None

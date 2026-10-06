@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Layers, Eye, Zap, AlertTriangle, CheckCircle, ShieldAlert } from 'lucide-react';
+import { Layers, Eye, Zap, CheckCircle, ShieldAlert, Crop, Sparkles } from 'lucide-react';
 import { api } from '../services/api';
 
 export default function ImageCompare({ scanResult }) {
@@ -52,41 +52,43 @@ export default function ImageCompare({ scanResult }) {
         </div>
       </div>
 
-      {/* Quality Badge (Compact) */}
-      {isBlurry ? (
-        <div className="px-2.5 py-1.5 rounded-lg bg-[#FEE2E2] border border-[#FCA5A5] flex items-center space-x-2 text-[#991B1B] text-[11px]">
-          <ShieldAlert className="w-3.5 h-3.5 text-[#DC2626] flex-shrink-0" />
-          <span className="truncate">Imagen con posible baja nitidez (Var: {laplacianScore})</span>
-        </div>
-      ) : (
-        <div className="px-2.5 py-1.5 rounded-lg bg-[#DCFCE7] border border-[#86EFAC] flex items-center justify-between text-[#166534] text-[11px] font-medium">
-          <div className="flex items-center space-x-1.5">
-            <CheckCircle className="w-3.5 h-3.5 text-[#16A34A]" />
-            <span>Nitidez OCR Óptima (Varianza: <strong>{laplacianScore}</strong>)</span>
+      {/* Quality & Crop Status Banner */}
+      <div className="space-y-1.5">
+        {isBlurry ? (
+          <div className="px-2.5 py-1.5 rounded-lg bg-[#FEE2E2] border border-[#FCA5A5] flex items-center space-x-2 text-[#991B1B] text-[11px]">
+            <ShieldAlert className="w-3.5 h-3.5 text-[#DC2626] flex-shrink-0" />
+            <span className="truncate">Imagen con posible baja nitidez (Var: {laplacianScore})</span>
           </div>
-          {quality?.perspective_corrected && (
-            <span className="px-1.5 py-0.2 rounded bg-emerald-200 text-[#166534] text-[9px] font-bold">
-              ID-1 OK
+        ) : (
+          <div className="px-2.5 py-1.5 rounded-lg bg-[#DCFCE7] border border-[#86EFAC] flex items-center justify-between text-[#166534] text-[11px] font-medium">
+            <div className="flex items-center space-x-1.5">
+              <CheckCircle className="w-3.5 h-3.5 text-[#16A34A]" />
+              <span>Nitidez Óptima (Varianza: <strong>{laplacianScore}</strong>)</span>
+            </div>
+            <span className="inline-flex items-center space-x-1 px-1.5 py-0.2 rounded bg-emerald-200 text-[#166534] text-[9px] font-extrabold tracking-tight">
+              <Crop className="w-2.5 h-2.5" />
+              <span>DNI RECORTADO</span>
             </span>
-          )}
-        </div>
-      )}
+          </div>
+        )}
+      </div>
 
-      {/* Image Display Canvas */}
+      {/* Image Display Canvas (Only the Clean Cropped DNI) */}
       <div className="relative rounded-xl overflow-hidden border border-[#CBD5E1] bg-slate-950 aspect-[1.586] flex items-center justify-center group shadow-inner">
         <img
           src={viewMode === 'enhanced' ? enhImgUrl : origImgUrl}
-          alt={`Vista ${viewMode} ${activeSide}`}
-          className="w-full h-full object-contain"
+          alt={`DNI Recortado ${viewMode} ${activeSide}`}
+          className="w-full h-full object-contain transition-all duration-200"
         />
 
         {/* View Mode Toggle Pill inside bottom */}
         <div className="absolute bottom-2 inset-x-2 flex items-center justify-between">
-          <div className="px-2 py-0.5 rounded-md bg-black/80 backdrop-blur-sm text-[10px] font-mono text-slate-200 border border-white/10">
-            {viewMode === 'enhanced' ? '✨ OpenCV Enhanced' : '📷 Original'}
+          <div className="px-2 py-0.5 rounded-md bg-black/80 backdrop-blur-md text-[10px] font-mono text-slate-200 border border-white/10 flex items-center space-x-1">
+            <Sparkles className="w-2.5 h-2.5 text-[#A8E63D]" />
+            <span>{viewMode === 'enhanced' ? 'Filtro CLAHE + Nitidez' : 'DNI Color Original'}</span>
           </div>
 
-          <div className="flex items-center space-x-1 bg-black/80 backdrop-blur-sm p-0.5 rounded-lg border border-white/10">
+          <div className="flex items-center space-x-1 bg-black/85 backdrop-blur-md p-0.5 rounded-lg border border-white/15 shadow-sm">
             <button
               type="button"
               onClick={() => setViewMode('enhanced')}
