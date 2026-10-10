@@ -13,11 +13,30 @@ export default defineConfig({
         target: 'http://127.0.0.1:8000',
         changeOrigin: true,
         secure: false,
+        configure: (proxy) => {
+          proxy.on('error', (err, req, res) => {
+            if (err.code === 'ECONNREFUSED') {
+              // Manejo silencioso mientras el backend de Python termina de iniciar
+              if (res && !res.headersSent && typeof res.writeHead === 'function') {
+                res.writeHead(503, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ status: 'offline', detail: 'Servidor Backend inicializándose...' }));
+              }
+            }
+          });
+        },
       },
       '/uploads': {
         target: 'http://127.0.0.1:8000',
         changeOrigin: true,
         secure: false,
+        configure: (proxy) => {
+          proxy.on('error', (err, req, res) => {
+            if (err.code === 'ECONNREFUSED' && res && !res.headersSent && typeof res.writeHead === 'function') {
+              res.writeHead(503);
+              res.end();
+            }
+          });
+        },
       },
     },
   },

@@ -9,7 +9,7 @@ import TemplatesView from './components/TemplatesView';
 import HistoryView from './components/HistoryView';
 import ExcelGeneratorView from './components/ExcelGeneratorView';
 import { api } from './services/api';
-import { Sparkles, FileSpreadsheet, ArrowRight, ArrowLeft, CreditCard, Files } from 'lucide-react';
+import { Sparkles, FileSpreadsheet, ArrowRight, ArrowLeft, CreditCard, Files, AlertTriangle, RefreshCw, Terminal } from 'lucide-react';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('scan'); // 'scan' | 'batch_excel' | 'templates' | 'scan_history'
@@ -32,7 +32,7 @@ export default function App() {
 
   useEffect(() => {
     checkHealth();
-    // Heartbeat cada 4 segundos para detectar conexión en tiempo real
+    // Heartbeat cada 3-5 segundos para detectar conexión en tiempo real
     const interval = setInterval(() => {
       checkHealth();
     }, 4000);
@@ -130,6 +130,38 @@ export default function App() {
         {/* Main Workspace Body */}
         <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-3 pb-6">
           
+          {/* Backend Offline Guidance Banner */}
+          {healthInfo && healthInfo.status === 'offline' && (
+            <div className="mb-4 bg-gradient-to-r from-rose-50 to-amber-50 border border-rose-200/90 rounded-2xl p-4 shadow-2xs text-slate-800 animate-fade-in">
+              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
+                <div className="flex items-start space-x-3">
+                  <div className="p-2 rounded-xl bg-rose-500 text-white shrink-0 mt-0.5 md:mt-0 shadow-xs">
+                    <AlertTriangle className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-xs font-bold text-rose-900 flex items-center gap-1.5">
+                      <span>Servidor Backend no detectado en el puerto 8000</span>
+                      <span className="bg-rose-200 text-rose-800 text-[10px] px-2 py-0.5 rounded-full font-extrabold uppercase">Desconectado</span>
+                    </h3>
+                    <p className="text-xs text-slate-600 mt-0.5">
+                      Para que el escaneo OCR y las plantillas funcionen, el backend FastAPI debe estar iniciado. Puedes ejecutar <span className="font-mono bg-white/90 px-1.5 py-0.5 rounded border border-rose-200 font-bold text-rose-700">npm run dev</span> o abrir <span className="font-mono bg-white/90 px-1.5 py-0.5 rounded border border-rose-200 font-bold text-slate-700">INICIAR_TODO.bat</span>.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 w-full md:w-auto shrink-0">
+                  <button
+                    type="button"
+                    onClick={handleManualRetry}
+                    className="w-full md:w-auto px-3.5 py-2 bg-white hover:bg-rose-50 border border-rose-300 text-rose-800 text-xs font-bold rounded-xl transition shadow-2xs flex items-center justify-center space-x-1.5 active:scale-95"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5 text-rose-600" />
+                    <span>Reintentar Conexión</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* TAB 1: ESCANEO DNI */}
           {activeTab === 'scan' && (
             !scanResult ? (
