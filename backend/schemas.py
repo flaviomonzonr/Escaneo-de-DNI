@@ -40,6 +40,11 @@ class ScanResponse(BaseModel):
     sex: str = ""
     address: str = ""
     ubigeo: str = ""
+    department: Optional[str] = ""
+    province: Optional[str] = ""
+    district: Optional[str] = ""
+    ubigeo_reniec: Optional[str] = ""
+    ubigeo_inei: Optional[str] = ""
     issue_date: str = ""
     expiry_date: str = ""
     blood_type: str = ""
@@ -86,6 +91,11 @@ class RecordCreate(BaseModel):
     sex: str = ""
     address: str = ""
     ubigeo: str = ""
+    department: Optional[str] = ""
+    province: Optional[str] = ""
+    district: Optional[str] = ""
+    ubigeo_reniec: Optional[str] = ""
+    ubigeo_inei: Optional[str] = ""
     issue_date: str = ""
     expiry_date: str = ""
     blood_type: str = ""
@@ -123,7 +133,12 @@ class RecordResponse(BaseModel):
     birth_date: str
     sex: str
     address: str
-    ubigeo: str
+    ubigeo: str = ""
+    department: Optional[str] = ""
+    province: Optional[str] = ""
+    district: Optional[str] = ""
+    ubigeo_reniec: Optional[str] = ""
+    ubigeo_inei: Optional[str] = ""
     issue_date: str
     expiry_date: str
     blood_type: str

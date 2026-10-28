@@ -748,6 +748,30 @@ def extract_dni_data(
         prov_val = re.sub(r"^OUE", "QUE", prov_val)
         prov_val = re.sub(r"^OUA", "QUA", prov_val)
 
+    # 7B.2. Resolve with Ubigeo Database
+    ub_match = None
+    ub_inei = ""
+    ub_reniec = ""
+
+    try:
+        from backend.services.ubigeo_service import ubigeo_service
+        # If 6-digit code found, lookup by code first
+        if ubigeo_code:
+            ub_match = ubigeo_service.lookup_by_code(ubigeo_code)
+        # If not matched or no code, lookup by hierarchy
+        if not ub_match and (dist_val or dept_val or prov_val):
+            ub_match = ubigeo_service.lookup_by_hierarchy(dept_val, prov_val, dist_val)
+
+        if ub_match:
+            dept_val = dept_val or ub_match.get("departamento", "")
+            prov_val = prov_val or ub_match.get("provincia", "")
+            dist_val = dist_val or ub_match.get("distrito", "")
+            ub_inei = ub_match.get("ubigeo_inei", "")
+            ub_reniec = ub_match.get("ubigeo_reniec", "")
+            ubigeo_code = ubigeo_code or ub_inei
+    except Exception:
+        pass
+
     # Avoid duplicate parts in synthesized Ubigeo
     synthesized_parts = []
     seen_parts = set()
@@ -760,7 +784,10 @@ def extract_dni_data(
                 seen_parts.add(p_clean)
                 synthesized_parts.append(p_clean)
 
-    if synthesized_parts:
+    if ub_match and ub_match.get("full_text"):
+        ubigeo_str = ub_match["full_text"]
+        ubigeo_conf = max(92.0, ubigeo_conf)
+    elif synthesized_parts:
         ubigeo_str = " / ".join(synthesized_parts)
         if ubigeo_code and ubigeo_code not in ubigeo_str:
             ubigeo_str = f"{ubigeo_str} ({ubigeo_code})"
@@ -776,7 +803,42 @@ def extract_dni_data(
         confidence=ubigeo_conf if ubigeo_str else 0.0,
         is_valid=bool(ubigeo_str),
         status=SemanticExtractor.determine_field_status(ubigeo_conf, bool(ubigeo_str)),
-        origin_type="LEIDO_OCR",
+        origin_type="BASE_EXCEL" if ub_match else "LEIDO_OCR",
+    )
+    fields["department"] = FieldConfidence(
+        value=dept_val,
+        confidence=ubigeo_conf if dept_val else 0.0,
+        is_valid=bool(dept_val),
+        status=SemanticExtractor.determine_field_status(ubigeo_conf, bool(dept_val)),
+        origin_type="BASE_EXCEL" if ub_match else "LEIDO_OCR",
+    )
+    fields["province"] = FieldConfidence(
+        value=prov_val,
+        confidence=ubigeo_conf if prov_val else 0.0,
+        is_valid=bool(prov_val),
+        status=SemanticExtractor.determine_field_status(ubigeo_conf, bool(prov_val)),
+        origin_type="BASE_EXCEL" if ub_match else "LEIDO_OCR",
+    )
+    fields["district"] = FieldConfidence(
+        value=dist_val,
+        confidence=ubigeo_conf if dist_val else 0.0,
+        is_valid=bool(dist_val),
+        status=SemanticExtractor.determine_field_status(ubigeo_conf, bool(dist_val)),
+        origin_type="BASE_EXCEL" if ub_match else "LEIDO_OCR",
+    )
+    fields["ubigeo_inei"] = FieldConfidence(
+        value=ub_inei or ubigeo_code,
+        confidence=ubigeo_conf if (ub_inei or ubigeo_code) else 0.0,
+        is_valid=bool(ub_inei or ubigeo_code),
+        status=SemanticExtractor.determine_field_status(ubigeo_conf, bool(ub_inei or ubigeo_code)),
+        origin_type="BASE_EXCEL" if ub_match else "LEIDO_OCR",
+    )
+    fields["ubigeo_reniec"] = FieldConfidence(
+        value=ub_reniec,
+        confidence=ubigeo_conf if ub_reniec else 0.0,
+        is_valid=bool(ub_reniec),
+        status=SemanticExtractor.determine_field_status(ubigeo_conf, bool(ub_reniec)),
+        origin_type="BASE_EXCEL" if ub_match else "LEIDO_OCR",
     )
     # 7C. DIRECCIÓN / DOMICILIO (Extracción robusta de domicilio urbano y rural peruano)
     stop_address_keywords = [

@@ -42,6 +42,11 @@ class ScannedRecord(Base):
     # Address and location
     address = Column(Text, default="", nullable=True)
     ubigeo = Column(String(100), default="", nullable=True)
+    department = Column(String(100), default="", nullable=True)
+    province = Column(String(100), default="", nullable=True)
+    district = Column(String(100), default="", nullable=True)
+    ubigeo_reniec = Column(String(20), default="", nullable=True)
+    ubigeo_inei = Column(String(20), default="", nullable=True)
     
     # Document validity
     issue_date = Column(String(20), default="", nullable=True)
@@ -98,6 +103,11 @@ class ScannedRecord(Base):
             "sex": self.sex or "",
             "address": self.address or "",
             "ubigeo": self.ubigeo or "",
+            "department": self.department or "",
+            "province": self.province or "",
+            "district": self.district or "",
+            "ubigeo_reniec": self.ubigeo_reniec or "",
+            "ubigeo_inei": self.ubigeo_inei or "",
             "issue_date": self.issue_date or "",
             "expiry_date": self.expiry_date or "",
             "blood_type": self.blood_type or "",
@@ -194,6 +204,11 @@ def init_db():
             ("pension_system", "VARCHAR(50)", "''"),
             ("pension_commission", "VARCHAR(50)", "''"),
             ("cuspp", "VARCHAR(50)", "''"),
+            ("department", "VARCHAR(100)", "''"),
+            ("province", "VARCHAR(100)", "''"),
+            ("district", "VARCHAR(100)", "''"),
+            ("ubigeo_reniec", "VARCHAR(20)", "''"),
+            ("ubigeo_inei", "VARCHAR(20)", "''"),
         ]:
             try:
                 conn.execute(text(f"ALTER TABLE scanned_records ADD COLUMN {col_name} {col_type} DEFAULT {default_val}"))

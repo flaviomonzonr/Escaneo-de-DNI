@@ -410,6 +410,27 @@ export const api = {
     return `${base}/api/backups/download-zip`;
   },
 
+  // Ubigeos del Perú Database & Autocomplete
+  searchUbigeos: async (query, limit = 15) => {
+    const res = await apiClient.get('/api/ubigeo/search', { params: { q: query, limit } });
+    return res.data;
+  },
+
+  lookupUbigeo: async (code) => {
+    const res = await apiClient.get('/api/ubigeo/lookup', { params: { code } });
+    return res.data;
+  },
+
+  resolveUbigeo: async (text) => {
+    const res = await apiClient.get('/api/ubigeo/resolve', { params: { text } });
+    return res.data;
+  },
+
+  getUbigeoExcelUrl: () => {
+    const base = apiClient.defaults.baseURL || '';
+    return `${base}/api/ubigeo/download-excel`;
+  },
+
   // Supabase Cloud sub-object for component compatibility
   supabase: {
     getConfig: async () => api.getSupabaseConfig(),

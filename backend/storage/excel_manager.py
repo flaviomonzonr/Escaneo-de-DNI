@@ -21,6 +21,11 @@ EXCEL_COLUMNS = [
     ("Celular", 16),
     ("Correo Electrónico", 28),
     ("Dirección", 36),
+    ("Departamento", 18),
+    ("Provincia", 18),
+    ("Distrito", 20),
+    ("IDUBIGEO (INEI)", 16),
+    ("UBIGEO (RENIEC)", 16),
     ("Sistema Pensionario", 22),
     ("Comisión", 16),
     ("CUSPP", 18),
@@ -28,6 +33,31 @@ EXCEL_COLUMNS = [
     ("Fecha de Vencimiento", 20),
     ("Observaciones", 30),
 ]
+
+
+def _resolve_record_ubigeo(rec: Dict[str, Any]) -> Tuple[str, str, str, str, str]:
+    """Resolves (dept, prov, dist, inei, reniec) for a record dict."""
+    dept = (rec.get("department") or "").strip()
+    prov = (rec.get("province") or "").strip()
+    dist = (rec.get("district") or "").strip()
+    ub_inei = (rec.get("ubigeo_inei") or rec.get("idubigeo") or "").strip()
+    ub_reniec = (rec.get("ubigeo_reniec") or "").strip()
+    ub_raw = (rec.get("ubigeo") or "").strip()
+
+    if (not dept or not dist or not ub_inei) and ub_raw:
+        try:
+            from backend.services.ubigeo_service import ubigeo_service
+            res = ubigeo_service.resolve_from_text(ub_raw)
+            if res:
+                dept = dept or res.get("departamento", "")
+                prov = prov or res.get("provincia", "")
+                dist = dist or res.get("distrito", "")
+                ub_inei = ub_inei or res.get("ubigeo_inei", "")
+                ub_reniec = ub_reniec or res.get("ubigeo_reniec", "")
+        except Exception:
+            pass
+
+    return dept, prov, dist, ub_inei, ub_reniec
 
 
 def create_styled_workbook() -> openpyxl.Workbook:
@@ -93,6 +123,8 @@ def append_record_to_excel(record: Dict[str, Any], excel_path: Path = MASTER_EXC
     elif not scan_date_str:
         scan_date_str = get_peru_now().strftime("%d/%m/%Y %H:%M:%S")
 
+    dept, prov, dist, ub_inei, ub_reniec = _resolve_record_ubigeo(record)
+
     row_data = [
         scan_date_str,
         record.get("doc_type", ""),
@@ -106,6 +138,11 @@ def append_record_to_excel(record: Dict[str, Any], excel_path: Path = MASTER_EXC
         record.get("phone", "999999999") or "999999999",
         record.get("email", "sincorreo@gmail.com") or "sincorreo@gmail.com",
         record.get("address", ""),
+        dept,
+        prov,
+        dist,
+        ub_inei,
+        ub_reniec,
         record.get("pension_system", ""),
         record.get("pension_commission", ""),
         record.get("cuspp", ""),
@@ -135,7 +172,7 @@ def append_record_to_excel(record: Dict[str, Any], excel_path: Path = MASTER_EXC
             cell.fill = row_fill
 
         # Alignments
-        if col_idx in [1, 2, 6, 7, 8, 9, 11, 12]:
+        if col_idx in [1, 2, 6, 7, 8, 9, 10, 16, 17, 21, 22]:
             cell.alignment = Alignment(horizontal="center", vertical="center")
         else:
             cell.alignment = Alignment(horizontal="left", vertical="center")
@@ -163,6 +200,8 @@ def generate_filtered_excel(records: List[Dict[str, Any]], target_path: Path):
         if isinstance(scan_date_str, datetime):
             scan_date_str = scan_date_str.strftime("%d/%m/%Y %H:%M:%S")
 
+        dept, prov, dist, ub_inei, ub_reniec = _resolve_record_ubigeo(rec)
+
         row_data = [
             scan_date_str,
             rec.get("doc_type", ""),
@@ -173,7 +212,17 @@ def generate_filtered_excel(records: List[Dict[str, Any]], target_path: Path):
             rec.get("nationality", "PERUANA"),
             rec.get("birth_date", ""),
             rec.get("sex", ""),
+            rec.get("phone", "999999999") or "999999999",
+            rec.get("email", "sincorreo@gmail.com") or "sincorreo@gmail.com",
             rec.get("address", ""),
+            dept,
+            prov,
+            dist,
+            ub_inei,
+            ub_reniec,
+            rec.get("pension_system", ""),
+            rec.get("pension_commission", ""),
+            rec.get("cuspp", ""),
             rec.get("issue_date", ""),
             rec.get("expiry_date", ""),
             rec.get("observations", ""),
@@ -189,9 +238,10 @@ def generate_filtered_excel(records: List[Dict[str, Any]], target_path: Path):
             if row_fill.fill_type:
                 cell.fill = row_fill
 
-            if col_idx in [1, 2, 6, 7, 8, 9, 11, 12]:
+            if col_idx in [1, 2, 6, 7, 8, 9, 10, 16, 17, 21, 22]:
                 cell.alignment = Alignment(horizontal="center", vertical="center")
             else:
                 cell.alignment = Alignment(horizontal="left", vertical="center")
 
     wb.save(target_path)
+

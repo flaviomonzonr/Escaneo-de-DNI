@@ -58,14 +58,20 @@ COLUMN_MAPPINGS = {
         "UBIGEO", "COD_UBIGEO", "CODIGO_UBIGEO", "UBIGEO_RENIEC", "UBIGEO_DOMICILIO",
         "COD.UBIGEO", "COD. UBIGEO", "IDUBIGEO"
     ],
+    "ubigeo_inei": [
+        "IDUBIGEO", "UBIGEO_INEI", "COD_INEI", "CODIGO_INEI", "UBIGEO INEI", "ID_UBIGEO", "COD_UBIGEO_INEI"
+    ],
+    "ubigeo_reniec": [
+        "UBIGEO_RENIEC", "RENIEC", "COD_RENIEC", "CODIGO_RENIEC", "UBIGEO RENIEC", "COD_UBIGEO_RENIEC"
+    ],
     "department": [
-        "DEPARTAMENTO", "DPTO", "REGION", "REGIÓN", "DEPARTAMENTO_DOMICILIO"
+        "DEPARTAMENTO", "DPTO", "REGION", "REGIÓN", "DEPARTAMENTO_DOMICILIO", "IDDEPARTAMENTO"
     ],
     "province": [
-        "PROVINCIA", "PROV", "PROVINCIA_DOMICILIO"
+        "PROVINCIA", "PROV", "PROVINCIA_DOMICILIO", "IDPROVINCIA"
     ],
     "district": [
-        "DISTRITO", "DIST", "DISTRITO_DOMICILIO"
+        "DISTRITO", "DIST", "DISTRITO_DOMICILIO", "DESCRIPCION"
     ],
     "issue_date": [
         "FECHA_EMISION", "FECHA DE EMISION", "FECHA_EMISIÓN", "FECHA DE EMISIÓN", "FEC_EMISION",
@@ -624,6 +630,22 @@ class ExcelTemplateService:
             dept = (raw_rec.get("department") or "").strip()
             prov = (raw_rec.get("province") or "").strip()
             dist = (raw_rec.get("district") or "").strip()
+            ub_inei = (raw_rec.get("ubigeo_inei") or raw_rec.get("idubigeo") or "").strip()
+            ub_reniec = (raw_rec.get("ubigeo_reniec") or "").strip()
+
+            if (not dept or not dist or not ub_inei) and ubigeo_raw:
+                try:
+                    from backend.services.ubigeo_service import ubigeo_service
+                    res = ubigeo_service.resolve_from_text(ubigeo_raw)
+                    if res:
+                        dept = dept or res.get("departamento", "")
+                        prov = prov or res.get("provincia", "")
+                        dist = dist or res.get("distrito", "")
+                        ub_inei = ub_inei or res.get("ubigeo_inei", "")
+                        ub_reniec = ub_reniec or res.get("ubigeo_reniec", "")
+                except Exception:
+                    pass
+
             if "/" in ubigeo_raw and (not dept or not prov or not dist):
                 parts = [p.strip() for p in ubigeo_raw.split("/")]
                 if len(parts) >= 3:
@@ -653,6 +675,9 @@ class ExcelTemplateService:
                 "province": prov,
                 "district": dist,
                 "ubigeo": ubigeo_raw,
+                "ubigeo_inei": ub_inei or ubigeo_raw,
+                "idubigeo": ub_inei or ubigeo_raw,
+                "ubigeo_reniec": ub_reniec,
                 "issue_date": (raw_rec.get("issue_date") or "").strip(),
                 "expiry_date": (raw_rec.get("expiry_date") or "").strip(),
                 "nationality": (raw_rec.get("nationality") or "PERUANA").strip(),
@@ -803,6 +828,22 @@ class ExcelTemplateService:
             dept = (raw_rec.get("department") or "").strip()
             prov = (raw_rec.get("province") or "").strip()
             dist = (raw_rec.get("district") or "").strip()
+            ub_inei = (raw_rec.get("ubigeo_inei") or raw_rec.get("idubigeo") or "").strip()
+            ub_reniec = (raw_rec.get("ubigeo_reniec") or "").strip()
+
+            if (not dept or not dist or not ub_inei) and ubigeo_raw:
+                try:
+                    from backend.services.ubigeo_service import ubigeo_service
+                    res = ubigeo_service.resolve_from_text(ubigeo_raw)
+                    if res:
+                        dept = dept or res.get("departamento", "")
+                        prov = prov or res.get("provincia", "")
+                        dist = dist or res.get("distrito", "")
+                        ub_inei = ub_inei or res.get("ubigeo_inei", "")
+                        ub_reniec = ub_reniec or res.get("ubigeo_reniec", "")
+                except Exception:
+                    pass
+
             if "/" in ubigeo_raw and (not dept or not prov or not dist):
                 parts = [p.strip() for p in ubigeo_raw.split("/")]
                 if len(parts) >= 3:
@@ -828,6 +869,9 @@ class ExcelTemplateService:
                 "province": prov,
                 "district": dist,
                 "ubigeo": ubigeo_raw,
+                "ubigeo_inei": ub_inei or ubigeo_raw,
+                "idubigeo": ub_inei or ubigeo_raw,
+                "ubigeo_reniec": ub_reniec,
                 "issue_date": (raw_rec.get("issue_date") or "").strip(),
                 "expiry_date": (raw_rec.get("expiry_date") or "").strip(),
                 "nationality": (raw_rec.get("nationality") or "PERUANA").strip(),

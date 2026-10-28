@@ -381,6 +381,11 @@ def scan_document(
         sex=extracted_dict.get("sex", ""),
         address=extracted_dict.get("address", ""),
         ubigeo=extracted_dict.get("ubigeo", ""),
+        department=extracted_dict.get("department", ""),
+        province=extracted_dict.get("province", ""),
+        district=extracted_dict.get("district", ""),
+        ubigeo_reniec=extracted_dict.get("ubigeo_reniec", ""),
+        ubigeo_inei=extracted_dict.get("ubigeo_inei", ""),
         issue_date=extracted_dict.get("issue_date", ""),
         expiry_date=extracted_dict.get("expiry_date", ""),
         blood_type=extracted_dict.get("blood_type", ""),
@@ -428,6 +433,11 @@ def create_record(record_in: RecordCreate, db: Session = Depends(get_db)):
         sex=record_in.sex.strip().upper(),
         address=record_in.address.strip(),
         ubigeo=record_in.ubigeo.strip(),
+        department=(record_in.department or "").strip().upper(),
+        province=(record_in.province or "").strip().upper(),
+        district=(record_in.district or "").strip().upper(),
+        ubigeo_reniec=(record_in.ubigeo_reniec or "").strip(),
+        ubigeo_inei=(record_in.ubigeo_inei or "").strip(),
         issue_date=record_in.issue_date.strip(),
         expiry_date=record_in.expiry_date.strip(),
         blood_type=record_in.blood_type.strip(),
@@ -538,6 +548,11 @@ def scan_and_save_document(
         sex=scan_res.sex,
         address=scan_res.address,
         ubigeo=scan_res.ubigeo,
+        department=scan_res.department or "",
+        province=scan_res.province or "",
+        district=scan_res.district or "",
+        ubigeo_reniec=scan_res.ubigeo_reniec or "",
+        ubigeo_inei=scan_res.ubigeo_inei or "",
         issue_date=scan_res.issue_date,
         expiry_date=scan_res.expiry_date,
         blood_type=scan_res.blood_type,
@@ -1634,6 +1649,60 @@ def generate_batch_excel_supabase(payload: dict, db: Session = Depends(get_db)):
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al generar archivo Excel: {str(e)}")
+
+
+# ==========================================
+# Ubigeo Perú Database & Autocomplete Endpoints
+# ==========================================
+
+@app.get("/api/ubigeo/search")
+def search_ubigeos(q: str = Query("", description="Nombre de distrito, provincia, dpto o código de 6 dígitos"), limit: int = 15):
+    """
+    Busca coincidencias en la base de datos de Ubigeos del Perú para autocompletado en tiempo real.
+    """
+    from backend.services.ubigeo_service import ubigeo_service
+    results = ubigeo_service.search_ubigeos(q, limit=limit)
+    return {"success": True, "query": q, "total": len(results), "items": results}
+
+
+@app.get("/api/ubigeo/lookup")
+def lookup_ubigeo_by_code(code: str = Query(..., description="Código de 6 dígitos INEI o RENIEC")):
+    """
+    Busca los datos de ubicación a partir de un código de 6 dígitos (INEI o RENIEC).
+    """
+    from backend.services.ubigeo_service import ubigeo_service
+    record = ubigeo_service.lookup_by_code(code)
+    if not record:
+        raise HTTPException(status_code=404, detail=f"No se encontró Ubigeo para el código '{code}'.")
+    return {"success": True, "item": record}
+
+
+@app.get("/api/ubigeo/resolve")
+def resolve_ubigeo_text(text: str = Query(..., description="Texto OCR o nombres Departamento / Provincia / Distrito")):
+    """
+    Resuelve inteligentemente los códigos INEI y RENIEC y nombres normalizados a partir de texto libre.
+    """
+    from backend.services.ubigeo_service import ubigeo_service
+    record = ubigeo_service.resolve_from_text(text)
+    if not record:
+        return {"success": False, "item": None, "message": "No se pudo resolver el Ubigeo con el texto provisto."}
+    return {"success": True, "item": record}
+
+
+@app.get("/api/ubigeo/download-excel")
+def download_ubigeo_excel():
+    """
+    Permite descargar la base de datos completa de Ubigeos del Perú en formato Excel.
+    """
+    from backend.services.ubigeo_service import EXCEL_PATH, FALLBACK_EXCEL_PATH
+    target = EXCEL_PATH if EXCEL_PATH.exists() else FALLBACK_EXCEL_PATH
+    if not target.exists():
+        raise HTTPException(status_code=404, detail="El archivo Excel de Ubigeos no se encuentra disponible.")
+    return FileResponse(
+        path=str(target),
+        filename="ubigeos_peru.xlsx",
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
 
 
 # Servir la app React frontend compilada si existe la carpeta dist

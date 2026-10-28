@@ -4,6 +4,7 @@ from backend.services.contract_generator import ContractGenerator
 from backend.services.excel_template_service import ExcelTemplateService
 from backend.services.backup_service import backup_service, BackupService
 from backend.services.supabase_template_service import supabase_template_service, SupabaseTemplateService
+from backend.services.ubigeo_service import ubigeo_service, UbigeoService
 
 __all__ = [
     "ExcelAnalyzer",
@@ -14,6 +15,8 @@ __all__ = [
     "BackupService",
     "supabase_template_service",
     "SupabaseTemplateService",
+    "ubigeo_service",
+    "UbigeoService",
 ]
 
 
