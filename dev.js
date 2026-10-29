@@ -7,12 +7,6 @@ import os from 'os';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const isShareMode = process.argv.includes('--share') || process.argv.includes('--tunnel');
-
-console.log('\x1b[34m%s\x1b[0m', '=======================================================================');
-console.log('\x1b[32m%s\x1b[0m', '   AGROINDUSTRIAS CHAVIN • SISTEMA ESCANDNI PERU - DEV SERVER          ');
-console.log('\x1b[34m%s\x1b[0m', '=======================================================================');
-
 // Detect Python command
 function getPythonCommand() {
   const candidates = ['python', 'py', 'python3'];
@@ -38,10 +32,14 @@ function getNetworkIps() {
   return results;
 }
 
-const pythonCmd = getPythonCommand();
-console.log('\x1b[36m%s\x1b[0m', `  [1/2] Iniciando Backend FastAPI (${pythonCmd}) en http://127.0.0.1:8000 ...`);
+console.log('\x1b[34m%s\x1b[0m', '=======================================================================');
+console.log('\x1b[32m%s\x1b[0m', '   AGROINDUSTRIAS CHAVIN • SISTEMA ESCANDNI PERU                       ');
+console.log('\x1b[34m%s\x1b[0m', '=======================================================================');
+console.log('\x1b[36m%s\x1b[0m', '  Iniciando servidores locales y enlace celular...');
 
-// Restringir el reload exclusivamente a la carpeta backend para evitar reinicios por uploads o base de datos
+const pythonCmd = getPythonCommand();
+
+// 1. Start Backend FastAPI (Silencioso para no saturar la pantalla)
 const backendFullCmd = `${pythonCmd} -m uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload --reload-dir backend`;
 const backendProcess = spawn(backendFullCmd, {
   cwd: __dirname,
@@ -50,32 +48,19 @@ const backendProcess = spawn(backendFullCmd, {
   env: { ...process.env, PYTHONUNBUFFERED: '1' }
 });
 
-backendProcess.stdout.on('data', (data) => {
-  const text = data.toString();
-  text.split('\n').forEach(line => {
-    const trimmed = line.trim();
-    if (trimmed) {
-      console.log(`\x1b[36m[Backend]\x1b[0m ${trimmed}`);
-    }
-  });
-});
-
 backendProcess.stderr.on('data', (data) => {
   const text = data.toString();
-  text.split('\n').forEach(line => {
-    const trimmed = line.trim();
-    if (trimmed) {
-      console.log(`\x1b[33m[Backend]\x1b[0m ${trimmed}`);
-    }
-  });
+  // Solo mostrar errores reales, no advertencias o mensajes normales
+  if (text.includes('Traceback') || text.includes('Error:') || text.includes('CRITICAL')) {
+    console.error(`\x1b[31m[Backend Error]\x1b[0m ${text.trim()}`);
+  }
 });
 
 backendProcess.on('error', (err) => {
-  console.error('\x1b[31m%s\x1b[0m', `[Backend Error] Error al iniciar FastAPI: ${err.message}`);
+  console.error('\x1b[31m%s\x1b[0m', `[Backend Error] No se pudo iniciar FastAPI: ${err.message}`);
 });
 
-// 2. Start Frontend Vite
-console.log('\x1b[35m%s\x1b[0m', '  [2/2] Iniciando Frontend Vite (React) en http://localhost:5173 ...');
+// 2. Start Frontend Vite (Silencioso)
 const npmCmd = process.platform === 'win32' ? 'npm.cmd' : 'npm';
 const frontendFullCmd = `${npmCmd} run dev -- --host 0.0.0.0`;
 
@@ -85,60 +70,28 @@ const frontendProcess = spawn(frontendFullCmd, {
   stdio: 'pipe'
 });
 
-frontendProcess.stdout.on('data', (data) => {
-  const text = data.toString();
-  text.split('\n').forEach(line => {
-    const trimmed = line.trim();
-    if (trimmed) {
-      console.log(`\x1b[35m[Frontend]\x1b[0m ${trimmed}`);
-    }
-  });
-});
-
 frontendProcess.stderr.on('data', (data) => {
   const text = data.toString();
-  text.split('\n').forEach(line => {
-    const trimmed = line.trim();
-    if (trimmed) {
-      console.log(`\x1b[90m[Frontend]\x1b[0m ${trimmed}`);
-    }
-  });
+  if (text.includes('error') || text.includes('Error')) {
+    console.error(`\x1b[31m[Frontend Error]\x1b[0m ${text.trim()}`);
+  }
 });
 
-// 3. Optional Tunnel
+// 3. Start Enlace Celular Permanente (Ngrok para diferente Wi-Fi)
 let tunnelProcess = null;
-if (isShareMode) {
-  console.log('\x1b[33m%s\x1b[0m', '  [3/3] Iniciando Enlace Celular Permanente (Ngrok)...');
+try {
   const nodeCmd = process.platform === 'win32' ? 'node.exe' : 'node';
   tunnelProcess = spawn(`${nodeCmd} start_tunnel.cjs`, {
     cwd: path.join(__dirname, 'frontend'),
     shell: true,
     stdio: 'pipe'
   });
-  tunnelProcess.stdout.on('data', (data) => {
-    const text = data.toString();
-    text.split('\n').forEach(line => {
-      const trimmed = line.trim();
-      if (trimmed) {
-        console.log(`\x1b[32m[Tunel]\x1b[0m ${trimmed}`);
-      }
-    });
-  });
-  tunnelProcess.stderr.on('data', (data) => {
-    const text = data.toString();
-    text.split('\n').forEach(line => {
-      const trimmed = line.trim();
-      if (trimmed) {
-        console.log(`\x1b[31m[Tunel Error]\x1b[0m ${trimmed}`);
-      }
-    });
-  });
-}
+} catch (e) {}
 
 // Mantener activo el proceso Node de forma indefinida
 const keepAlive = setInterval(() => {}, 1000 * 60 * 60);
 
-// Check for backend health in background
+// Comprobar disponibilidad y mostrar el panel limpio principal
 let backendReady = false;
 const healthInterval = setInterval(() => {
   if (backendReady) {
@@ -150,31 +103,45 @@ const healthInterval = setInterval(() => {
       backendReady = true;
       clearInterval(healthInterval);
       const networkIps = getNetworkIps();
-      console.log('\n\x1b[32m%s\x1b[0m', '=======================================================================');
-      console.log('\x1b[32m%s\x1b[0m', '  ✓ SISTEMA 100% LISTO Y OPERATIVO (LOCAL & RED WI-FI):');
+
+      // Limpiar consola para mostrar únicamente los links principales
+      try {
+        console.clear();
+      } catch (e) {}
+
       console.log('\x1b[32m%s\x1b[0m', '=======================================================================');
-      console.log('\x1b[36m%s\x1b[0m', '  💻 En tu Laptop          : http://localhost:5173');
+      console.log('\x1b[32m%s\x1b[0m', '   AGROINDUSTRIAS CHAVIN • SISTEMA ESCANDNI PERU                       ');
+      console.log('\x1b[32m%s\x1b[0m', '=======================================================================');
+      console.log('\x1b[32m%s\x1b[0m', '  ✓ SISTEMA 100% LISTO Y OPERATIVO:');
+      console.log('\x1b[32m%s\x1b[0m', '=======================================================================');
+      console.log('\x1b[36m%s\x1b[0m', '  💻 En tu Laptop                  : http://localhost:5173');
+      
       if (networkIps.length > 0) {
         networkIps.forEach(net => {
-          console.log('\x1b[32m%s\x1b[0m', `  📶 Celular / Misma Wi-Fi : http://${net.ip}:5173 (${net.name})`);
+          console.log('\x1b[32m%s\x1b[0m', `  📶 Celular (Misma red Wi-Fi)     : http://${net.ip}:5173 (${net.name})`);
         });
       }
-      console.log('\x1b[34m%s\x1b[0m', '  ⚙️ Backend API Docs      : http://127.0.0.1:8000/docs');
+
+      console.log('\x1b[35m%s\x1b[0m', '  🌐 Celular (Diferente red Wi-Fi) : https://obsessive-antiquity-synthesis.ngrok-free.dev');
+      console.log('\x1b[34m%s\x1b[0m', '  ⚙️ Backend API Docs              : http://127.0.0.1:8000/docs');
+      console.log('\x1b[32m%s\x1b[0m', '=======================================================================');
+      console.log('\x1b[33m%s\x1b[0m', '  📌 IMPORTANTE: Mantén esta ventana abierta mientras uses el sistema.');
+      console.log('\x1b[33m%s\x1b[0m', '     (NO presiones Ctrl+C para evitar que se apaguen los servidores).');
       console.log('\x1b[32m%s\x1b[0m', '=======================================================================\n');
     }
   });
   req.on('error', () => {});
   req.setTimeout(1500, () => req.destroy());
-}, 2000);
+}, 1500);
 
-// Clean shutdown controlado
+// Cierre controlado si se interrumpe
 let isShuttingDown = false;
 function cleanup() {
   if (isShuttingDown) return;
   isShuttingDown = true;
   clearInterval(keepAlive);
   clearInterval(healthInterval);
-  console.log('\n\x1b[33m%s\x1b[0m', 'Cerrando servidores Backend, Frontend y Túnel...');
+  console.log('\n\x1b[33m%s\x1b[0m', 'Cerrando servidores...');
   try {
     if (process.platform === 'win32') {
       if (backendProcess && backendProcess.pid) spawn(`taskkill /pid ${backendProcess.pid} /T /F`, { shell: true, stdio: 'ignore' });
@@ -191,4 +158,3 @@ function cleanup() {
 
 process.on('SIGINT', cleanup);
 process.on('SIGTERM', cleanup);
-

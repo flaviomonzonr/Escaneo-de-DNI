@@ -7,6 +7,7 @@ import {
   User,
   ShieldCheck,
   Wifi,
+  Globe,
   Copy,
   Check,
   Smartphone,
@@ -169,10 +170,12 @@ export default function Header({
                 </div>
               </div>
 
+              {/* Opción 1: Misma red Wi-Fi */}
               <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-800 block">
-                  Enlace para tu Celular / Dispositivos:
-                </label>
+                <div className="flex items-center space-x-1.5 text-xs font-bold text-slate-800">
+                  <Wifi className="w-4 h-4 text-[#101BCB]" />
+                  <span>1. Celular conectado al mismo Wi-Fi:</span>
+                </div>
 
                 {wifiUrls.length > 0 ? (
                   wifiUrls.map((url, idx) => (
@@ -219,6 +222,39 @@ export default function Header({
                     </button>
                   </div>
                 )}
+              </div>
+
+              {/* Opción 2: Diferente red Wi-Fi o Datos Móviles */}
+              <div className="space-y-2 pt-2 border-t border-slate-200">
+                <div className="flex items-center space-x-1.5 text-xs font-bold text-slate-800">
+                  <Globe className="w-4 h-4 text-[#0D9488]" />
+                  <span>2. Celular con diferente Wi-Fi o Datos 4G/5G:</span>
+                </div>
+                <div className="flex items-center justify-between p-2.5 bg-slate-50 border border-slate-300 rounded-xl">
+                  <span className="font-mono text-xs font-bold text-[#0D9488] select-all truncate pr-2">
+                    https://obsessive-antiquity-synthesis.ngrok-free.dev
+                  </span>
+                  <button
+                    onClick={() => handleCopy('https://obsessive-antiquity-synthesis.ngrok-free.dev')}
+                    className={`inline-flex items-center space-x-1 px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-xs ${
+                      copiedUrl === 'https://obsessive-antiquity-synthesis.ngrok-free.dev'
+                        ? 'bg-emerald-600 text-white'
+                        : 'bg-[#0D9488] hover:bg-[#0F766E] text-white'
+                    }`}
+                  >
+                    {copiedUrl === 'https://obsessive-antiquity-synthesis.ngrok-free.dev' ? (
+                      <>
+                        <Check className="w-3.5 h-3.5" />
+                        <span>¡Copiado!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3.5 h-3.5" />
+                        <span>Copiar</span>
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
 
               <div className="text-[11px] text-slate-500 bg-slate-50 rounded-xl p-3 border border-slate-200 space-y-1">
