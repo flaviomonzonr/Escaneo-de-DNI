@@ -39,6 +39,12 @@ export const api = {
     return res.data;
   },
 
+  // Get local Wi-Fi sharing URLs
+  getNetworkInfo: async () => {
+    const res = await apiClient.get('/api/system/network-info');
+    return res.data;
+  },
+
   // Scan front and back of document
   scanDocument: async (frontFile, backFile, docType) => {
     const formData = new FormData();

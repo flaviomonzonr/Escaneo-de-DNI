@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Save,
   RefreshCw,
@@ -7,6 +7,10 @@ import {
   AlertCircle,
   Cpu,
   ArrowLeft,
+  MapPin,
+  Search,
+  Check,
+  FileSpreadsheet,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { api } from '../services/api';
@@ -28,6 +32,11 @@ export default function ReviewForm({
     sex: scanResult?.sex || '',
     address: scanResult?.address || '',
     ubigeo: scanResult?.ubigeo || '',
+    department: scanResult?.department || '',
+    province: scanResult?.province || '',
+    district: scanResult?.district || '',
+    ubigeo_inei: scanResult?.ubigeo_inei || '',
+    ubigeo_reniec: scanResult?.ubigeo_reniec || '',
     issue_date: scanResult?.issue_date || '',
     expiry_date: scanResult?.expiry_date || '',
     blood_type: scanResult?.blood_type || '',
@@ -45,6 +54,78 @@ export default function ReviewForm({
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
   const [showDiagnostic, setShowDiagnostic] = useState(false);
+
+  // Ubigeo autocomplete state
+  const [ubigeoQuery, setUbigeoQuery] = useState('');
+  const [ubigeoSuggestions, setUbigeoSuggestions] = useState([]);
+  const [showUbigeoDropdown, setShowUbigeoDropdown] = useState(false);
+  const [isSearchingUbigeo, setIsSearchingUbigeo] = useState(false);
+  const ubigeoDropdownRef = useRef(null);
+
+  // Auto resolve Ubigeo details if initial scan has raw Ubigeo but missing department/district/codes
+  useEffect(() => {
+    if (formData.ubigeo && (!formData.department || !formData.ubigeo_inei)) {
+      api.resolveUbigeo(formData.ubigeo).then((res) => {
+        if (res && res.success && res.item) {
+          const it = res.item;
+          setFormData((prev) => ({
+            ...prev,
+            department: prev.department || it.departamento,
+            province: prev.province || it.provincia,
+            district: prev.district || it.distrito,
+            ubigeo_inei: prev.ubigeo_inei || it.ubigeo_inei,
+            ubigeo_reniec: prev.ubigeo_reniec || it.ubigeo_reniec,
+          }));
+        }
+      }).catch(() => {});
+    }
+  }, []);
+
+  // Close Ubigeo dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (ubigeoDropdownRef.current && !ubigeoDropdownRef.current.contains(e.target)) {
+        setShowUbigeoDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleUbigeoSearch = async (val) => {
+    handleChange('ubigeo', val);
+    setUbigeoQuery(val);
+    if (!val || val.trim().length < 2) {
+      setUbigeoSuggestions([]);
+      setShowUbigeoDropdown(false);
+      return;
+    }
+    setIsSearchingUbigeo(true);
+    try {
+      const data = await api.searchUbigeos(val.trim(), 10);
+      if (data && data.items) {
+        setUbigeoSuggestions(data.items);
+        setShowUbigeoDropdown(data.items.length > 0);
+      }
+    } catch (e) {
+      console.error('Ubigeo search error:', e);
+    } finally {
+      setIsSearchingUbigeo(false);
+    }
+  };
+
+  const handleSelectUbigeo = (item) => {
+    setFormData((prev) => ({
+      ...prev,
+      ubigeo: item.full_text,
+      department: item.departamento,
+      province: item.provincia,
+      district: item.distrito,
+      ubigeo_inei: item.ubigeo_inei,
+      ubigeo_reniec: item.ubigeo_reniec,
+    }));
+    setShowUbigeoDropdown(false);
+  };
 
   const fieldsMeta = scanResult?.fields || {};
   const isDni = formData.doc_type === 'DNI' || formData.doc_type === 'DNI Electrónico';
@@ -354,10 +435,10 @@ export default function ReviewForm({
 
         </div>
 
-        {/* Row 4: Address & Ubigeo */}
+        {/* Row 4: Address & Ubigeo Inteligente */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           
-          <div className="sm:col-span-2 space-y-1">
+          <div className="sm:col-span-1 space-y-1">
             <div className="flex items-center justify-between">
               <label className="text-[11px] font-bold text-[#1E293B]">Dirección / Domicilio</label>
               {renderConfidenceBadge('address')}
@@ -371,18 +452,108 @@ export default function ReviewForm({
             />
           </div>
 
-          <div className="space-y-1">
+          <div className="sm:col-span-2 space-y-1 relative" ref={ubigeoDropdownRef}>
             <div className="flex items-center justify-between">
-              <label className="text-[11px] font-bold text-[#1E293B]">Ubigeo (Dpto / Prov / Dist)</label>
+              <div className="flex items-center space-x-1.5">
+                <label className="text-[11px] font-bold text-[#1E293B]">
+                  Ubigeo Inteligente (Distrito / Prov / Dpto o Código 6 dígitos)
+                </label>
+                <a
+                  href={api.getUbigeoExcelUrl()}
+                  target="_blank"
+                  rel="noreferrer"
+                  title="Descargar Catálogo Oficial Excel de Ubigeos Perú"
+                  className="inline-flex items-center space-x-0.5 text-[10px] text-[#101BCB] hover:text-[#080F72] font-semibold underline decoration-dotted"
+                >
+                  <FileSpreadsheet className="w-3 h-3 inline" />
+                  <span>Excel Ubigeos</span>
+                </a>
+              </div>
               {renderConfidenceBadge('ubigeo')}
             </div>
-            <input
-              type="text"
-              value={formData.ubigeo}
-              onChange={(e) => handleChange('ubigeo', e.target.value)}
-              className="w-full px-3 py-1.5 rounded-lg bg-white border border-[#CBD5E1] text-[#1E293B] text-xs font-semibold focus:outline-none focus:border-[#101BCB] focus:ring-1 focus:ring-[#101BCB] uppercase"
-              placeholder="Ej. ANCASH / YUNGAY / QUILLO (021505)"
-            />
+
+            <div className="relative">
+              <input
+                type="text"
+                value={formData.ubigeo}
+                onChange={(e) => handleUbigeoSearch(e.target.value)}
+                onFocus={() => {
+                  if (formData.ubigeo && formData.ubigeo.length >= 2) {
+                    handleUbigeoSearch(formData.ubigeo);
+                  }
+                }}
+                className="w-full px-3 py-1.5 pr-8 rounded-lg bg-white border border-[#CBD5E1] text-[#1E293B] text-xs font-semibold focus:outline-none focus:border-[#101BCB] focus:ring-1 focus:ring-[#101BCB] uppercase"
+                placeholder="Escribe distrito, provincia o código INEI/RENIEC (ej. QUILLO o 020502)..."
+              />
+              {isSearchingUbigeo && (
+                <RefreshCw className="w-3.5 h-3.5 text-[#101BCB] animate-spin absolute right-2.5 top-2" />
+              )}
+            </div>
+
+            {/* Ubigeo Autocomplete Dropdown */}
+            {showUbigeoDropdown && ubigeoSuggestions.length > 0 && (
+              <div className="absolute z-50 left-0 right-0 mt-1 bg-white border border-[#CBD5E1] rounded-lg shadow-xl max-h-56 overflow-y-auto divide-y divide-slate-100">
+                {ubigeoSuggestions.map((item, idx) => (
+                  <button
+                    key={`${item.ubigeo_inei}-${idx}`}
+                    type="button"
+                    onClick={() => handleSelectUbigeo(item)}
+                    className="w-full text-left px-3 py-2 hover:bg-blue-50 transition flex items-center justify-between group"
+                  >
+                    <div>
+                      <div className="text-xs font-bold text-[#080F72] group-hover:text-[#101BCB]">
+                        📍 {item.distrito}
+                      </div>
+                      <div className="text-[10px] text-[#64748B]">
+                        {item.departamento} • {item.provincia}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <span className="inline-block text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-blue-100 text-[#101BCB]">
+                        INEI: {item.ubigeo_inei}
+                      </span>
+                      {item.ubigeo_reniec && (
+                        <div className="text-[9px] font-mono text-slate-500">
+                          RENIEC: {item.ubigeo_reniec}
+                        </div>
+                      )}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Ubigeo Breakdown Pill Badges */}
+            {(formData.department || formData.district || formData.ubigeo_inei) && (
+              <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                {formData.department && (
+                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200">
+                    🏛️ Dpto: <strong className="text-[#080F72]">{formData.department}</strong>
+                  </span>
+                )}
+                {formData.province && (
+                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200">
+                    🏙️ Prov: <strong className="text-[#080F72]">{formData.province}</strong>
+                  </span>
+                )}
+                {formData.district && (
+                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200">
+                    📍 Dist: <strong className="text-[#080F72]">{formData.district}</strong>
+                  </span>
+                )}
+                {formData.ubigeo_inei && (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-blue-50 text-[#101BCB] border border-blue-200">
+                    🆔 IDUBIGEO: {formData.ubigeo_inei}
+                  </span>
+                )}
+                {formData.ubigeo_reniec && (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-teal-50 text-teal-800 border border-teal-200">
+                    🔢 RENIEC: {formData.ubigeo_reniec}
+                  </span>
+                )}
+              </div>
+            )}
+
           </div>
 
         </div>

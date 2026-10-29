@@ -10,6 +10,7 @@ import {
   X,
   Sparkles,
 } from 'lucide-react';
+import { api } from '../services/api';
 
 export default function Sidebar({
   activeTab,
@@ -195,8 +196,24 @@ export default function Sidebar({
           </nav>
         </div>
 
-        {/* Bottom Section: Compact Status Pill */}
+        {/* Bottom Section: Compact Status Pill & Ubigeo Excel link */}
         <div className="p-3 border-t border-slate-800/80 space-y-2 bg-black/20">
+          {!collapsed && (
+            <a
+              href={api.getUbigeoExcelUrl()}
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center space-x-2 px-3 py-2 rounded-xl bg-slate-900/50 hover:bg-slate-800 border border-slate-700/60 text-xs text-slate-300 hover:text-white transition group"
+              title="Descargar base de datos oficial de Ubigeos Perú en Excel"
+            >
+              <FileSpreadsheet className="w-4 h-4 text-[#10B981] group-hover:scale-110 transition flex-shrink-0" />
+              <div className="min-w-0 flex-1">
+                <span className="block font-bold text-[11px] text-slate-200">Base Ubigeos (Excel)</span>
+                <span className="block text-[9px] text-[#00BFA5]">1,839 Distritos • INEI / RENIEC</span>
+              </div>
+            </a>
+          )}
+
           <div
             className={`flex items-center rounded-xl transition border border-slate-800 bg-slate-900/60 ${
               collapsed

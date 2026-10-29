@@ -151,21 +151,15 @@ const healthInterval = setInterval(() => {
       clearInterval(healthInterval);
       const networkIps = getNetworkIps();
       console.log('\n\x1b[32m%s\x1b[0m', '=======================================================================');
-      console.log('\x1b[32m%s\x1b[0m', '  ✓ SISTEMA 100% LISTO Y OPERATIVO:');
+      console.log('\x1b[32m%s\x1b[0m', '  ✓ SISTEMA 100% LISTO Y OPERATIVO (LOCAL & RED WI-FI):');
       console.log('\x1b[32m%s\x1b[0m', '=======================================================================');
       console.log('\x1b[36m%s\x1b[0m', '  💻 En tu Laptop          : http://localhost:5173');
       if (networkIps.length > 0) {
         networkIps.forEach(net => {
-          console.log('\x1b[36m%s\x1b[0m', `  📶 Misma red Wi-Fi       : http://${net.ip}:5173 (${net.name})`);
+          console.log('\x1b[32m%s\x1b[0m', `  📶 Celular / Misma Wi-Fi : http://${net.ip}:5173 (${net.name})`);
         });
       }
-      console.log('\x1b[35m%s\x1b[0m', '  🌍 Enlace para Celular   : https://obsessive-antiquity-synthesis.ngrok-free.dev');
       console.log('\x1b[34m%s\x1b[0m', '  ⚙️ Backend API Docs      : http://127.0.0.1:8000/docs');
-      console.log('\x1b[32m%s\x1b[0m', '-----------------------------------------------------------------------');
-      if (!isShareMode) {
-        console.log('\x1b[33m%s\x1b[0m', '  💡 Tip: Para activar el túnel en la misma consola ejecuta: npm run dev:share');
-        console.log('\x1b[33m%s\x1b[0m', '          O en otra ventana de terminal: npm run share');
-      }
       console.log('\x1b[32m%s\x1b[0m', '=======================================================================\n');
     }
   });

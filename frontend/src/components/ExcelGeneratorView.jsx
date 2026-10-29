@@ -522,7 +522,18 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
           </div>
 
           <div className="flex items-center space-x-2 text-[11px] text-slate-200">
-            <span>Se insertarán en el orden de la lista</span>
+            <a
+              href={api.getUbigeoExcelUrl()}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center space-x-1 px-2.5 py-1 rounded-md bg-white/10 hover:bg-white/20 text-[#A8E63D] font-bold text-xs transition border border-white/20"
+              title="Descargar base de datos completa de Ubigeos de Perú en Excel"
+            >
+              <FileDown className="w-3.5 h-3.5" />
+              <span>Base Ubigeos (Excel)</span>
+            </a>
+            <span className="hidden sm:inline text-white/40">•</span>
+            <span className="hidden sm:inline">Orden de escaneo</span>
           </div>
 
         </div>
@@ -601,15 +612,21 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
                         )}
                       </div>
 
-                      <div className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-[11px] text-[#64748B] mt-0.5">
+                      <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[11px] text-[#64748B] mt-1">
                         {rec.address && (
                           <span className="truncate max-w-sm" title={rec.address}>
                             📍 {rec.address}
                           </span>
                         )}
-                        {rec.ubigeo && (
-                          <span>Ubigeo: {rec.ubigeo}</span>
-                        )}
+                        {rec.ubigeo ? (
+                          <span className="font-semibold text-[#101BCB] bg-blue-50 px-2 py-0.5 rounded border border-blue-200" title="Ubigeo">
+                            🗺️ {rec.ubigeo}
+                          </span>
+                        ) : rec.district || rec.department ? (
+                          <span className="font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded border border-slate-200" title="Ubicación">
+                            🗺️ {[rec.department, rec.province, rec.district].filter(Boolean).join(' / ')}
+                          </span>
+                        ) : null}
                         {rec.birth_date && (
                           <span>F.Nac: {rec.birth_date}</span>
                         )}

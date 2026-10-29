@@ -13,6 +13,19 @@ from datetime import datetime, date, timezone
 from typing import Optional, List, Dict, Any, Tuple, Union
 import json
 import zipfile
+import socket
+
+def _get_local_ips() -> List[str]:
+    ips = []
+    try:
+        hostname = socket.gethostname()
+        for ip in socket.gethostbyname_ex(hostname)[2]:
+            if not ip.startswith("127.") and not ip.startswith("169.254"):
+                if ip not in ips:
+                    ips.append(ip)
+    except Exception:
+        pass
+    return ips
 
 from fastapi import FastAPI, UploadFile, File, Form, Depends, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -152,6 +165,7 @@ def health_check():
 
     backup_info = backup_service.get_backup_status()
 
+    ips = _get_local_ips()
     return {
         "status": "healthy" if ocr_ok else "degraded",
         "ocr_engine": engine_label,
@@ -161,6 +175,19 @@ def health_check():
         "blur_threshold": BLUR_THRESHOLD,
         "master_excel_exists": MASTER_EXCEL_PATH.exists(),
         "backup": backup_info,
+        "network_ips": ips,
+        "wifi_urls": [f"http://{ip}:5173" for ip in ips],
+    }
+
+
+@app.get("/api/system/network-info")
+def get_network_info():
+    """Retorna las direcciones IP locales para compartir la app en la misma red Wi-Fi."""
+    ips = _get_local_ips()
+    return {
+        "laptop_url": "http://localhost:5173",
+        "wifi_ips": ips,
+        "wifi_urls": [f"http://{ip}:5173" for ip in ips],
     }
 
 

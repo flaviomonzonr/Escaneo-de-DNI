@@ -22,10 +22,27 @@ export default function CameraModal({
 }) {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
+  const nativeInputRef = useRef(null);
   const [stream, setStream] = useState(null);
   const [facingMode, setFacingMode] = useState('environment'); // Prioritizes rear camera
   const [errorMsg, setErrorMsg] = useState(null);
   const [flash, setFlash] = useState(false);
+
+  const handleNativeCapture = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setErrorMsg(null);
+    const isCapturingFront = currentStep === 'front_live' || currentStep === 'front_preview';
+    const previewUrl = URL.createObjectURL(file);
+    if (isCapturingFront) {
+      setFrontData({ file, previewUrl });
+      setCurrentStep('front_preview');
+    } else {
+      setBackData({ file, previewUrl });
+      setCurrentStep('back_preview');
+    }
+    e.target.value = '';
+  };
 
   // Flow State
   // 'front_live' | 'front_preview' | 'back_live' | 'back_preview'
@@ -92,6 +109,11 @@ export default function CameraModal({
     stopCamera();
     setErrorMsg(null);
     try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error(
+          'La vista previa de cámara web requiere HTTPS en navegadores móviles. Puedes tomar la foto directamente con la cámara de tu celular con el botón verde:'
+        );
+      }
       const constraints = {
         video: {
           facingMode: { ideal: facingMode },
@@ -108,7 +130,7 @@ export default function CameraModal({
     } catch (err) {
       console.error('Error accessing camera:', err);
       setErrorMsg(
-        'No se pudo acceder a la cámara. Verifique que concedió permisos de cámara en su navegador o intente subir una foto directamente.'
+        err.message || 'No se pudo acceder a la cámara web. Puedes tomar la foto directamente con la cámara de tu celular.'
       );
     }
   };
@@ -288,16 +310,36 @@ export default function CameraModal({
 
         {/* Viewport Area */}
         <div className="relative flex-1 bg-slate-950 min-h-[340px] sm:min-h-[420px] max-h-[580px] flex items-center justify-center overflow-hidden">
+          <input
+            ref={nativeInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            onChange={handleNativeCapture}
+            className="hidden"
+          />
+
           {errorMsg ? (
             <div className="p-6 text-center text-slate-300 max-w-md">
-              <AlertCircle className="w-14 h-14 text-rose-500 mx-auto mb-3" />
-              <p className="text-sm leading-relaxed">{errorMsg}</p>
-              <button
-                onClick={startCamera}
-                className="mt-5 px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl shadow-lg transition"
-              >
-                Reintentar Acceso
-              </button>
+              <AlertCircle className="w-12 h-12 text-amber-400 mx-auto mb-3" />
+              <p className="text-xs sm:text-sm leading-relaxed text-slate-200 mb-4">{errorMsg}</p>
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => nativeInputRef.current?.click()}
+                  className="w-full sm:w-auto px-5 py-3 bg-[#10B981] hover:bg-[#059669] active:scale-95 text-white text-xs font-bold rounded-xl shadow-lg transition flex items-center justify-center space-x-2"
+                >
+                  <Camera className="w-4 h-4" />
+                  <span>📸 Tomar Foto con Celular</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={startCamera}
+                  className="w-full sm:w-auto px-4 py-2.5 bg-slate-700 hover:bg-slate-600 active:scale-95 text-white text-xs font-semibold rounded-xl transition"
+                >
+                  Reintentar Web
+                </button>
+              </div>
             </div>
           ) : isLive ? (
             <>
