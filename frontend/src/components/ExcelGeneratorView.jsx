@@ -122,69 +122,149 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
   };
 
   // =========================================================================
-  // BARRAS DE DESPLAZAMIENTO HORIZONTAL IZQUIERDA / DERECHA SINCRONIZADAS
+  // BARRAS DE DESPLAZAMIENTO HORIZONTAL CONTINUAS Y SINCRONIZADAS
   // (Para ambas tablas: Matriz Contratos y Plantilla Datos de Personal)
+  // Sin botones: Barras gruesas de alta visibilidad y slider interactivo de izq a der
   // =========================================================================
   const contractTableScrollRef = useRef(null);
   const contractTopScrollRef = useRef(null);
-  const [contractContentWidth, setContractContentWidth] = useState(1650);
+  const contractBottomScrollRef = useRef(null);
+  const [contractContentWidth, setContractContentWidth] = useState(1850);
+  const [contractScrollPercent, setContractScrollPercent] = useState(0);
 
   const personalTableScrollRef = useRef(null);
   const personalTopScrollRef = useRef(null);
-  const [personalContentWidth, setPersonalContentWidth] = useState(4200);
+  const personalBottomScrollRef = useRef(null);
+  const [personalContentWidth, setPersonalContentWidth] = useState(5500);
+  const [personalScrollPercent, setPersonalScrollPercent] = useState(0);
 
-  const handleContractTopScroll = () => {
-    if (contractTopScrollRef.current && contractTableScrollRef.current) {
-      contractTableScrollRef.current.scrollLeft = contractTopScrollRef.current.scrollLeft;
+  const isSyncingContract = useRef(false);
+  const isSyncingPersonal = useRef(false);
+
+  const syncContractScroll = (source, scrollLeft) => {
+    if (isSyncingContract.current) return;
+    isSyncingContract.current = true;
+
+    if (source !== 'table' && contractTableScrollRef.current) {
+      contractTableScrollRef.current.scrollLeft = scrollLeft;
     }
+    if (source !== 'top' && contractTopScrollRef.current) {
+      contractTopScrollRef.current.scrollLeft = scrollLeft;
+    }
+    if (source !== 'bottom' && contractBottomScrollRef.current) {
+      contractBottomScrollRef.current.scrollLeft = scrollLeft;
+    }
+
+    if (contractTableScrollRef.current) {
+      const max = contractTableScrollRef.current.scrollWidth - contractTableScrollRef.current.clientWidth;
+      if (max > 0) {
+        setContractScrollPercent(Math.min(100, Math.max(0, (scrollLeft / max) * 100)));
+      }
+    }
+
+    requestAnimationFrame(() => {
+      isSyncingContract.current = false;
+    });
   };
 
   const handleContractTableScroll = () => {
-    if (contractTopScrollRef.current && contractTableScrollRef.current) {
-      contractTopScrollRef.current.scrollLeft = contractTableScrollRef.current.scrollLeft;
+    if (contractTableScrollRef.current) {
+      syncContractScroll('table', contractTableScrollRef.current.scrollLeft);
     }
   };
 
-  const scrollContractTable = (direction) => {
+  const handleContractTopScroll = () => {
+    if (contractTopScrollRef.current) {
+      syncContractScroll('top', contractTopScrollRef.current.scrollLeft);
+    }
+  };
+
+  const handleContractBottomScroll = () => {
+    if (contractBottomScrollRef.current) {
+      syncContractScroll('bottom', contractBottomScrollRef.current.scrollLeft);
+    }
+  };
+
+  const handleContractSliderChange = (e) => {
+    const pct = parseFloat(e.target.value);
+    setContractScrollPercent(pct);
     if (contractTableScrollRef.current) {
-      const offset = direction === 'left' ? -380 : 380;
-      contractTableScrollRef.current.scrollBy({ left: offset, behavior: 'smooth' });
+      const max = contractTableScrollRef.current.scrollWidth - contractTableScrollRef.current.clientWidth;
+      syncContractScroll('slider', (pct / 100) * max);
+    }
+  };
+
+  const syncPersonalScroll = (source, scrollLeft) => {
+    if (isSyncingPersonal.current) return;
+    isSyncingPersonal.current = true;
+
+    if (source !== 'table' && personalTableScrollRef.current) {
+      personalTableScrollRef.current.scrollLeft = scrollLeft;
+    }
+    if (source !== 'top' && personalTopScrollRef.current) {
+      personalTopScrollRef.current.scrollLeft = scrollLeft;
+    }
+    if (source !== 'bottom' && personalBottomScrollRef.current) {
+      personalBottomScrollRef.current.scrollLeft = scrollLeft;
+    }
+
+    if (personalTableScrollRef.current) {
+      const max = personalTableScrollRef.current.scrollWidth - personalTableScrollRef.current.clientWidth;
+      if (max > 0) {
+        setPersonalScrollPercent(Math.min(100, Math.max(0, (scrollLeft / max) * 100)));
+      }
+    }
+
+    requestAnimationFrame(() => {
+      isSyncingPersonal.current = false;
+    });
+  };
+
+  const handlePersonalTableScroll = () => {
+    if (personalTableScrollRef.current) {
+      syncPersonalScroll('table', personalTableScrollRef.current.scrollLeft);
     }
   };
 
   const handlePersonalTopScroll = () => {
-    if (personalTopScrollRef.current && personalTableScrollRef.current) {
-      personalTableScrollRef.current.scrollLeft = personalTopScrollRef.current.scrollLeft;
+    if (personalTopScrollRef.current) {
+      syncPersonalScroll('top', personalTopScrollRef.current.scrollLeft);
     }
   };
 
-  const handlePersonalTableScroll = () => {
-    if (personalTopScrollRef.current && personalTableScrollRef.current) {
-      personalTopScrollRef.current.scrollLeft = personalTableScrollRef.current.scrollLeft;
+  const handlePersonalBottomScroll = () => {
+    if (personalBottomScrollRef.current) {
+      syncPersonalScroll('bottom', personalBottomScrollRef.current.scrollLeft);
     }
   };
 
-  const scrollPersonalTable = (direction) => {
+  const handlePersonalSliderChange = (e) => {
+    const pct = parseFloat(e.target.value);
+    setPersonalScrollPercent(pct);
     if (personalTableScrollRef.current) {
-      const offset = direction === 'left' ? -420 : 420;
-      personalTableScrollRef.current.scrollBy({ left: offset, behavior: 'smooth' });
+      const max = personalTableScrollRef.current.scrollWidth - personalTableScrollRef.current.clientWidth;
+      syncPersonalScroll('slider', (pct / 100) * max);
     }
   };
 
   useEffect(() => {
     const updateWidths = () => {
       if (contractTableScrollRef.current) {
-        setContractContentWidth(contractTableScrollRef.current.scrollWidth || 1650);
+        const sw = contractTableScrollRef.current.scrollWidth;
+        if (sw > 0) setContractContentWidth(sw);
       }
       if (personalTableScrollRef.current) {
-        setPersonalContentWidth(personalTableScrollRef.current.scrollWidth || 4200);
+        const sw = personalTableScrollRef.current.scrollWidth;
+        if (sw > 0) setPersonalContentWidth(sw);
       }
     };
     updateWidths();
-    const timer = setTimeout(updateWidths, 300);
+    const timer1 = setTimeout(updateWidths, 150);
+    const timer2 = setTimeout(updateWidths, 600);
     window.addEventListener('resize', updateWidths);
     return () => {
-      clearTimeout(timer);
+      clearTimeout(timer1);
+      clearTimeout(timer2);
       window.removeEventListener('resize', updateWidths);
     };
   }, [records, viewMode]);
@@ -1174,31 +1254,13 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
               </span>
             </div>
 
-            {/* CONTROLES DE DESPLAZAMIENTO HORIZONTAL IZQUIERDA / DERECHA */}
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#060D1A] border border-[#274468] shadow-inner">
-                <span className="text-[10px] font-extrabold text-cyan-300 uppercase flex items-center gap-1">
-                  <ArrowLeftRight className="w-3.5 h-3.5 text-cyan-400" />
-                  <span className="hidden sm:inline">Desplazar:</span>
+            {/* INDICADOR DE NAVEGACIÓN HORIZONTAL (SIN BOTONES) */}
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-2 px-3 py-1 rounded-lg bg-[#060D1A] border border-[#274468] shadow-inner">
+                <ArrowLeftRight className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
+                <span className="text-[11px] font-mono text-cyan-200">
+                  Posición: <strong className="text-cyan-300 font-bold">{Math.round(contractScrollPercent)}%</strong>
                 </span>
-                <button
-                  type="button"
-                  onClick={() => scrollContractTable('left')}
-                  className="px-2.5 py-1 rounded bg-[#101F3B] hover:bg-cyan-500 hover:text-slate-950 text-cyan-200 font-black text-xs flex items-center gap-1 border border-[#274468] transition active:scale-95 shadow-sm"
-                  title="Desplazar tabla hacia la izquierda"
-                >
-                  <ChevronLeft className="w-4 h-4 stroke-[2.5]" />
-                  <span>Izquierda</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => scrollContractTable('right')}
-                  className="px-2.5 py-1 rounded bg-[#101F3B] hover:bg-cyan-500 hover:text-slate-950 text-cyan-200 font-black text-xs flex items-center gap-1 border border-[#274468] transition active:scale-95 shadow-sm"
-                  title="Desplazar tabla hacia la derecha"
-                >
-                  <span>Derecha</span>
-                  <ChevronRight className="w-4 h-4 stroke-[2.5]" />
-                </button>
               </div>
 
               <div className="hidden xl:flex items-center gap-2 text-[11px] text-slate-400">
@@ -1212,14 +1274,14 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
             </div>
           </div>
 
-          {/* BARRA DE DESPLAZAMIENTO SUPERIOR SINCRONIZADA (Top Scrollbar) */}
+          {/* BARRA DE DESPLAZAMIENTO SUPERIOR GRUESA SINCRONIZADA (Top Scrollbar) */}
           <div
             ref={contractTopScrollRef}
             onScroll={handleContractTopScroll}
-            className="w-full overflow-x-auto bg-[#040914] border-b border-cyan-500/50 custom-table-scrollbar shadow-inner"
+            className="w-full overflow-x-auto bg-[#040914] border-b-2 border-cyan-500/60 custom-table-scrollbar shadow-inner"
             title="Barra de desplazamiento horizontal superior (arrastra para moverte a la izquierda o derecha)"
           >
-            <div style={{ width: `${contractContentWidth}px`, height: '12px' }} />
+            <div style={{ width: `${contractContentWidth}px`, height: '22px' }} />
           </div>
 
           {/* Tabla de 11 Columnas con scroll horizontal responsive */}
@@ -1228,7 +1290,7 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
             onScroll={handleContractTableScroll}
             className="overflow-x-auto max-h-[calc(100vh-280px)] min-h-[400px] custom-table-scrollbar"
           >
-            <table className="w-full border-collapse text-left text-xs">
+            <table className="min-w-max w-full border-collapse text-left text-xs">
               <thead className="sticky top-0 z-20 shadow-md">
                 <tr className="divide-x divide-slate-800 text-[11px] font-extrabold uppercase">
                   {/* Selector checkbox */}
@@ -1680,31 +1742,42 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
             </table>
           </div>
 
-          {/* BARRA DE DESPLAZAMIENTO INFERIOR CON CONTROLES DE NAVEGACIÓN */}
-          <div className="px-4 py-2 bg-slate-950 border-t border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs">
-            <span className="text-[11px] text-slate-400 font-mono flex items-center gap-1.5">
-              <ArrowLeftRight className="w-3.5 h-3.5 text-cyan-400" />
-              <span>Desplazamiento horizontal de columnas (11 columnas oficiales de Contratos NISIRA)</span>
-            </span>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => scrollContractTable('left')}
-                className="px-3 py-1.5 rounded-lg bg-[#101F3B] hover:bg-cyan-500 hover:text-slate-950 text-cyan-200 font-bold text-xs flex items-center gap-1.5 border border-[#274468] transition active:scale-95 shadow-sm"
-                title="Desplazar tabla hacia la izquierda"
-              >
-                <ChevronLeft className="w-4 h-4 stroke-[2.5]" />
-                <span>◀ Desplazar Izquierda</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => scrollContractTable('right')}
-                className="px-3 py-1.5 rounded-lg bg-[#101F3B] hover:bg-cyan-500 hover:text-slate-950 text-cyan-200 font-bold text-xs flex items-center gap-1.5 border border-[#274468] transition active:scale-95 shadow-sm"
-                title="Desplazar tabla hacia la derecha"
-              >
-                <span>Desplazar Derecha ▶</span>
-                <ChevronRight className="w-4 h-4 stroke-[2.5]" />
-              </button>
+          {/* BARRA DE DESPLAZAMIENTO INFERIOR GRUESA SINCRONIZADA (Bottom Scrollbar) */}
+          <div
+            ref={contractBottomScrollRef}
+            onScroll={handleContractBottomScroll}
+            className="w-full overflow-x-auto bg-[#040914] border-t-2 border-cyan-500/60 custom-table-scrollbar shadow-inner"
+            title="Barra de desplazamiento horizontal inferior (arrastra para moverte a la izquierda o derecha)"
+          >
+            <div style={{ width: `${contractContentWidth}px`, height: '22px' }} />
+          </div>
+
+          {/* BARRA DESLIZANTE CONTINUA DE DERECHA A IZQUIERDA (SIN BOTONES, ULTRA VISIBLE) */}
+          <div className="px-4 py-3 bg-[#030712] border-t border-slate-800 flex flex-col md:flex-row items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <ArrowLeftRight className="w-4 h-4 text-cyan-400" />
+              <span className="text-[12px] font-bold text-cyan-200 font-mono">
+                Desplazamiento horizontal ({Math.round(contractScrollPercent)}%)
+              </span>
+            </div>
+
+            <div className="flex-1 w-full flex items-center gap-3">
+              <span className="text-[11px] font-mono text-slate-400 whitespace-nowrap hidden sm:inline">
+                ◀ Inicio (Col 1)
+              </span>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                step="0.2"
+                value={contractScrollPercent}
+                onChange={handleContractSliderChange}
+                className="custom-range-slider flex-1 w-full"
+                title="Desliza suavemente de izquierda a derecha para ver todas las columnas"
+              />
+              <span className="text-[11px] font-mono text-slate-400 whitespace-nowrap hidden sm:inline">
+                Final (Col 11) ▶
+              </span>
             </div>
           </div>
         </div>
@@ -1741,31 +1814,13 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
               </span>
             </div>
 
-            {/* CONTROLES DE DESPLAZAMIENTO HORIZONTAL IZQUIERDA / DERECHA */}
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#060D1A] border border-[#274468] shadow-inner">
-                <span className="text-[10px] font-extrabold text-cyan-300 uppercase flex items-center gap-1">
-                  <ArrowLeftRight className="w-3.5 h-3.5 text-cyan-400" />
-                  <span className="hidden sm:inline">Desplazar:</span>
+            {/* INDICADOR DE NAVEGACIÓN HORIZONTAL (SIN BOTONES) */}
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-2 px-3 py-1 rounded-lg bg-[#060D1A] border border-[#274468] shadow-inner">
+                <ArrowLeftRight className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
+                <span className="text-[11px] font-mono text-cyan-200">
+                  Posición: <strong className="text-cyan-300 font-bold">{Math.round(personalScrollPercent)}%</strong>
                 </span>
-                <button
-                  type="button"
-                  onClick={() => scrollPersonalTable('left')}
-                  className="px-2.5 py-1 rounded bg-[#101F3B] hover:bg-cyan-500 hover:text-slate-950 text-cyan-200 font-black text-xs flex items-center gap-1 border border-[#274468] transition active:scale-95 shadow-sm"
-                  title="Desplazar tabla hacia la izquierda"
-                >
-                  <ChevronLeft className="w-4 h-4 stroke-[2.5]" />
-                  <span>Izquierda</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => scrollPersonalTable('right')}
-                  className="px-2.5 py-1 rounded bg-[#101F3B] hover:bg-cyan-500 hover:text-slate-950 text-cyan-200 font-black text-xs flex items-center gap-1 border border-[#274468] transition active:scale-95 shadow-sm"
-                  title="Desplazar tabla hacia la derecha"
-                >
-                  <span>Derecha</span>
-                  <ChevronRight className="w-4 h-4 stroke-[2.5]" />
-                </button>
               </div>
 
               <div className="hidden xl:flex items-center gap-2 text-[11px] text-slate-400">
@@ -1779,14 +1834,14 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
             </div>
           </div>
 
-          {/* BARRA DE DESPLAZAMIENTO SUPERIOR SINCRONIZADA (Top Scrollbar) */}
+          {/* BARRA DE DESPLAZAMIENTO SUPERIOR GRUESA SINCRONIZADA (Top Scrollbar) */}
           <div
             ref={personalTopScrollRef}
             onScroll={handlePersonalTopScroll}
-            className="w-full overflow-x-auto bg-[#040914] border-b border-cyan-500/50 custom-table-scrollbar shadow-inner"
+            className="w-full overflow-x-auto bg-[#040914] border-b-2 border-cyan-500/60 custom-table-scrollbar shadow-inner"
             title="Barra de desplazamiento horizontal superior (arrastra para moverte a la izquierda o derecha)"
           >
-            <div style={{ width: `${personalContentWidth}px`, height: '12px' }} />
+            <div style={{ width: `${personalContentWidth}px`, height: '22px' }} />
           </div>
 
           {/* Tabla de Datos de Personal NISIRA con scroll horizontal completo */}
@@ -1795,7 +1850,7 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
             onScroll={handlePersonalTableScroll}
             className="overflow-x-auto max-h-[calc(100vh-280px)] min-h-[400px] custom-table-scrollbar"
           >
-            <table className="w-full border-collapse text-left text-xs">
+            <table className="min-w-max w-full border-collapse text-left text-xs">
               <thead className="sticky top-0 z-20 shadow-md">
                 <tr className="divide-x divide-slate-800 text-[11px] font-extrabold uppercase">
                   {/* Selector checkbox */}
@@ -2655,31 +2710,42 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
             </table>
           </div>
 
-          {/* BARRA DE DESPLAZAMIENTO INFERIOR CON CONTROLES DE NAVEGACIÓN */}
-          <div className="px-4 py-2 bg-slate-950 border-t border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs">
-            <span className="text-[11px] text-slate-400 font-mono flex items-center gap-1.5">
-              <ArrowLeftRight className="w-3.5 h-3.5 text-cyan-400" />
-              <span>Desplazamiento horizontal de columnas (Plantilla Oficial Datos Personal NISIRA)</span>
-            </span>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => scrollPersonalTable('left')}
-                className="px-3 py-1.5 rounded-lg bg-[#101F3B] hover:bg-cyan-500 hover:text-slate-950 text-cyan-200 font-bold text-xs flex items-center gap-1.5 border border-[#274468] transition active:scale-95 shadow-sm"
-                title="Desplazar tabla hacia la izquierda"
-              >
-                <ChevronLeft className="w-4 h-4 stroke-[2.5]" />
-                <span>◀ Desplazar Izquierda</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => scrollPersonalTable('right')}
-                className="px-3 py-1.5 rounded-lg bg-[#101F3B] hover:bg-cyan-500 hover:text-slate-950 text-cyan-200 font-bold text-xs flex items-center gap-1.5 border border-[#274468] transition active:scale-95 shadow-sm"
-                title="Desplazar tabla hacia la derecha"
-              >
-                <span>Desplazar Derecha ▶</span>
-                <ChevronRight className="w-4 h-4 stroke-[2.5]" />
-              </button>
+          {/* BARRA DE DESPLAZAMIENTO INFERIOR GRUESA SINCRONIZADA (Bottom Scrollbar) */}
+          <div
+            ref={personalBottomScrollRef}
+            onScroll={handlePersonalBottomScroll}
+            className="w-full overflow-x-auto bg-[#040914] border-t-2 border-cyan-500/60 custom-table-scrollbar shadow-inner"
+            title="Barra de desplazamiento horizontal inferior (arrastra para moverte a la izquierda o derecha)"
+          >
+            <div style={{ width: `${personalContentWidth}px`, height: '22px' }} />
+          </div>
+
+          {/* BARRA DESLIZANTE CONTINUA DE DERECHA A IZQUIERDA (SIN BOTONES, ULTRA VISIBLE) */}
+          <div className="px-4 py-3 bg-[#030712] border-t border-slate-800 flex flex-col md:flex-row items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <ArrowLeftRight className="w-4 h-4 text-cyan-400" />
+              <span className="text-[12px] font-bold text-cyan-200 font-mono">
+                Desplazamiento horizontal ({Math.round(personalScrollPercent)}%)
+              </span>
+            </div>
+
+            <div className="flex-1 w-full flex items-center gap-3">
+              <span className="text-[11px] font-mono text-slate-400 whitespace-nowrap hidden sm:inline">
+                ◀ Inicio (Col 1)
+              </span>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                step="0.2"
+                value={personalScrollPercent}
+                onChange={handlePersonalSliderChange}
+                className="custom-range-slider flex-1 w-full"
+                title="Desliza suavemente de izquierda a derecha para ver las 77 columnas completas de NISIRA"
+              />
+              <span className="text-[11px] font-mono text-slate-400 whitespace-nowrap hidden sm:inline">
+                Final (Col 77) ▶
+              </span>
             </div>
           </div>
         </div>
