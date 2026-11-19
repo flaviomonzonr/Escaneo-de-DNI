@@ -127,15 +127,9 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
   // Sin botones: Barras gruesas de alta visibilidad y slider interactivo de izq a der
   // =========================================================================
   const contractTableScrollRef = useRef(null);
-  const contractTopScrollRef = useRef(null);
-  const contractBottomScrollRef = useRef(null);
-  const [contractContentWidth, setContractContentWidth] = useState(1850);
   const [contractScrollPercent, setContractScrollPercent] = useState(0);
 
   const personalTableScrollRef = useRef(null);
-  const personalTopScrollRef = useRef(null);
-  const personalBottomScrollRef = useRef(null);
-  const [personalContentWidth, setPersonalContentWidth] = useState(5500);
   const [personalScrollPercent, setPersonalScrollPercent] = useState(0);
 
   const isSyncingContract = useRef(false);
@@ -147,12 +141,6 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
 
     if (source !== 'table' && contractTableScrollRef.current) {
       contractTableScrollRef.current.scrollLeft = scrollLeft;
-    }
-    if (source !== 'top' && contractTopScrollRef.current) {
-      contractTopScrollRef.current.scrollLeft = scrollLeft;
-    }
-    if (source !== 'bottom' && contractBottomScrollRef.current) {
-      contractBottomScrollRef.current.scrollLeft = scrollLeft;
     }
 
     if (contractTableScrollRef.current) {
@@ -170,18 +158,6 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
   const handleContractTableScroll = () => {
     if (contractTableScrollRef.current) {
       syncContractScroll('table', contractTableScrollRef.current.scrollLeft);
-    }
-  };
-
-  const handleContractTopScroll = () => {
-    if (contractTopScrollRef.current) {
-      syncContractScroll('top', contractTopScrollRef.current.scrollLeft);
-    }
-  };
-
-  const handleContractBottomScroll = () => {
-    if (contractBottomScrollRef.current) {
-      syncContractScroll('bottom', contractBottomScrollRef.current.scrollLeft);
     }
   };
 
@@ -209,12 +185,6 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
     if (source !== 'table' && personalTableScrollRef.current) {
       personalTableScrollRef.current.scrollLeft = scrollLeft;
     }
-    if (source !== 'top' && personalTopScrollRef.current) {
-      personalTopScrollRef.current.scrollLeft = scrollLeft;
-    }
-    if (source !== 'bottom' && personalBottomScrollRef.current) {
-      personalBottomScrollRef.current.scrollLeft = scrollLeft;
-    }
 
     if (personalTableScrollRef.current) {
       const max = personalTableScrollRef.current.scrollWidth - personalTableScrollRef.current.clientWidth;
@@ -231,18 +201,6 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
   const handlePersonalTableScroll = () => {
     if (personalTableScrollRef.current) {
       syncPersonalScroll('table', personalTableScrollRef.current.scrollLeft);
-    }
-  };
-
-  const handlePersonalTopScroll = () => {
-    if (personalTopScrollRef.current) {
-      syncPersonalScroll('top', personalTopScrollRef.current.scrollLeft);
-    }
-  };
-
-  const handlePersonalBottomScroll = () => {
-    if (personalBottomScrollRef.current) {
-      syncPersonalScroll('bottom', personalBottomScrollRef.current.scrollLeft);
     }
   };
 
@@ -1288,14 +1246,17 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
             </div>
           </div>
 
-          {/* DESLIZADOR HORIZONTAL SUPERIOR INTUITIVO (NAVEGACIÓN DE 0% A 100%) */}
-          <div className="px-4 py-2.5 bg-slate-900/90 border-b border-slate-700/80 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs shadow-inner">
+          {/* BARRA DE DESPLAZAMIENTO HORIZONTAL SUPERIOR GRUESA Y FÁCIL DE AGARRAR (ENCIMA DE LA TABLA) */}
+          <div
+            className="px-4 py-3 border-b flex flex-col md:flex-row items-center justify-between gap-3 text-xs shadow-md select-none"
+            style={{ backgroundColor: 'var(--bg-surface-elevated)', borderColor: 'var(--border-subtle)', color: 'var(--text-primary)' }}
+          >
             <div className="flex items-center gap-2 flex-shrink-0">
-              <span className="p-1 rounded bg-cyan-950/60 border border-cyan-500/40 text-cyan-300">
+              <span className="p-1.5 rounded-lg bg-cyan-950/60 border border-cyan-500/50 text-cyan-300 shadow-xs">
                 <ArrowLeftRight className="w-4 h-4 animate-pulse" />
               </span>
-              <span className="text-xs font-bold text-slate-200 font-mono">
-                Desplazar Tabla: <strong className="text-cyan-300 font-extrabold">{Math.round(contractScrollPercent)}%</strong>
+              <span className="text-xs font-bold font-mono">
+                Desplazar Columnas: <strong className="text-cyan-400 font-extrabold text-sm">{Math.round(contractScrollPercent)}%</strong>
               </span>
             </div>
 
@@ -1303,30 +1264,31 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
               <button
                 type="button"
                 onClick={() => handleJumpContractScroll(0)}
-                className={`px-2 py-0.5 rounded text-[10px] font-mono whitespace-nowrap transition border ${
+                className={`px-2.5 py-1 rounded-md text-[11px] font-mono font-bold whitespace-nowrap transition border shadow-xs ${
                   contractScrollPercent <= 10
-                    ? 'bg-cyan-500 text-slate-950 font-bold border-cyan-400'
-                    : 'bg-slate-800 text-slate-300 hover:text-white border-slate-700'
+                    ? 'bg-cyan-500 text-slate-950 border-cyan-300 shadow-cyan-500/25 font-black'
+                    : 'bg-slate-800/80 text-slate-200 hover:text-white border-slate-700'
                 }`}
-                title="Ir a Columna 1 (DNI / Nombre)"
+                title="Ir a Columna 1 (DNI / Nombres)"
               >
-                0% DNI
+                ◀ Inicio (Col 1)
               </button>
 
               <button
                 type="button"
                 onClick={() => handleJumpContractScroll(35)}
-                className={`px-2 py-0.5 rounded text-[10px] font-mono whitespace-nowrap transition border hidden md:inline ${
+                className={`px-2.5 py-1 rounded-md text-[11px] font-mono font-bold whitespace-nowrap transition border shadow-xs hidden sm:inline ${
                   contractScrollPercent > 10 && contractScrollPercent <= 50
-                    ? 'bg-teal-500 text-slate-950 font-bold border-teal-400'
-                    : 'bg-slate-800 text-slate-300 hover:text-white border-slate-700'
+                    ? 'bg-teal-500 text-slate-950 border-teal-300 shadow-teal-500/25 font-black'
+                    : 'bg-slate-800/80 text-slate-200 hover:text-white border-slate-700'
                 }`}
                 title="Ir a Básico y Planilla"
               >
-                35% Básico
+                Básico (Col 5)
               </button>
 
-              <div className="relative flex-1 flex items-center">
+              {/* TRACK Y CONTROL DESLIZANTE GRUESO */}
+              <div className="relative flex-1 flex items-center min-w-[140px]">
                 <input
                   type="range"
                   min="0"
@@ -1335,46 +1297,36 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
                   value={contractScrollPercent}
                   onChange={handleContractSliderChange}
                   className="custom-range-slider w-full touch-pan-x"
-                  title="Arrastra el deslizador hacia la derecha o izquierda para ver todas las columnas"
+                  title="Arrastra el control deslizante hacia la izquierda o derecha para mover las columnas"
                 />
               </div>
 
               <button
                 type="button"
                 onClick={() => handleJumpContractScroll(70)}
-                className={`px-2 py-0.5 rounded text-[10px] font-mono whitespace-nowrap transition border hidden md:inline ${
+                className={`px-2.5 py-1 rounded-md text-[11px] font-mono font-bold whitespace-nowrap transition border shadow-xs hidden sm:inline ${
                   contractScrollPercent > 50 && contractScrollPercent < 90
-                    ? 'bg-teal-500 text-slate-950 font-bold border-teal-400'
-                    : 'bg-slate-800 text-slate-300 hover:text-white border-slate-700'
+                    ? 'bg-teal-500 text-slate-950 border-teal-300 shadow-teal-500/25 font-black'
+                    : 'bg-slate-800/80 text-slate-200 hover:text-white border-slate-700'
                 }`}
                 title="Ir a Fechas de Contrato"
               >
-                70% Fechas
+                Fechas (Col 8)
               </button>
 
               <button
                 type="button"
                 onClick={() => handleJumpContractScroll(100)}
-                className={`px-2 py-0.5 rounded text-[10px] font-mono whitespace-nowrap transition border ${
+                className={`px-2.5 py-1 rounded-md text-[11px] font-mono font-bold whitespace-nowrap transition border shadow-xs ${
                   contractScrollPercent >= 90
-                    ? 'bg-cyan-500 text-slate-950 font-bold border-cyan-400'
-                    : 'bg-slate-800 text-slate-300 hover:text-white border-slate-700'
+                    ? 'bg-cyan-500 text-slate-950 border-cyan-300 shadow-cyan-500/25 font-black'
+                    : 'bg-slate-800/80 text-slate-200 hover:text-white border-slate-700'
                 }`}
-                title="Ir a Tipo de Contrato y Contrato Ref"
+                title="Ir a la última columna (Tipo de Contrato y Ref)"
               >
-                100% Contratos
+                Final (Col 11) ▶
               </button>
             </div>
-          </div>
-
-          {/* BARRA DE DESPLAZAMIENTO SUPERIOR GRUESA SINCRONIZADA (Top Scrollbar) */}
-          <div
-            ref={contractTopScrollRef}
-            onScroll={handleContractTopScroll}
-            className="w-full overflow-x-auto bg-slate-900/90 border-b-2 border-cyan-500/60 custom-table-scrollbar shadow-inner"
-            title="Barra de desplazamiento horizontal superior (arrastra para moverte a la izquierda o derecha)"
-          >
-            <div style={{ width: `${contractContentWidth}px`, height: '22px' }} />
           </div>
 
           {/* Tabla de 11 Columnas con scroll horizontal responsive */}
@@ -1383,7 +1335,7 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
             onScroll={handleContractTableScroll}
             className="overflow-x-auto max-h-[calc(100vh-280px)] min-h-[400px] custom-table-scrollbar"
           >
-            <table className="min-w-max w-full border-collapse text-left text-xs">
+            <table className="min-w-[1850px] w-full border-collapse text-left text-xs">
               <thead className="sticky top-0 z-20 shadow-md">
                 <tr className="divide-x divide-slate-700 text-[11px] font-extrabold uppercase">
                   {/* Selector checkbox */}
@@ -1561,9 +1513,12 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
                     </div>
                   </th>
 
-                  {/* Celda buffer para pantallas pequeñas */}
-                  <th className="p-2 w-14 min-w-[56px] bg-slate-800 text-slate-500 text-center border-b-2 border-slate-600 font-mono text-[9px]">
-                    FIN
+                  {/* Celda buffer para pantallas pequeñas y amplio recorrido sin corte */}
+                  <th
+                    className="p-2 w-32 min-w-[128px] text-center border-b-2 font-mono text-[9px]"
+                    style={{ backgroundColor: 'var(--table-header-bg)', borderColor: 'var(--border-subtle)', color: 'var(--text-tertiary)' }}
+                  >
+                    ✔ FIN
                   </th>
                 </tr>
               </thead>
@@ -1837,9 +1792,9 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
                           </div>
                         </td>
 
-                        {/* Celda buffer para pantallas pequeñas */}
-                        <td className="p-2 w-14 text-center text-slate-500 text-[10px] font-mono">
-                          ✔
+                        {/* Celda buffer para pantallas pequeñas y amplio recorrido sin corte */}
+                        <td className="p-2 w-32 min-w-[128px] text-center font-mono text-[10px]" style={{ color: 'var(--text-tertiary)' }}>
+                          ✔ COMPLETO
                         </td>
                       </tr>
                     );
@@ -1849,24 +1804,17 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
             </table>
           </div>
 
-          {/* BARRA DE DESPLAZAMIENTO INFERIOR GRUESA SINCRONIZADA (Bottom Scrollbar) */}
+          {/* BARRA DE DESPLAZAMIENTO HORIZONTAL INFERIOR GRUESA Y FÁCIL DE AGARRAR (PARTE INFERIOR DE LA TABLA) */}
           <div
-            ref={contractBottomScrollRef}
-            onScroll={handleContractBottomScroll}
-            className="w-full overflow-x-auto bg-slate-900/90 border-t-2 border-cyan-500/60 custom-table-scrollbar shadow-inner"
-            title="Barra de desplazamiento horizontal inferior (arrastra para moverte a la izquierda o derecha)"
+            className="px-4 py-3 border-t flex flex-col md:flex-row items-center justify-between gap-3 text-xs shadow-2xl select-none"
+            style={{ backgroundColor: 'var(--bg-surface-elevated)', borderColor: 'var(--border-subtle)', color: 'var(--text-primary)' }}
           >
-            <div style={{ width: `${contractContentWidth}px`, height: '22px' }} />
-          </div>
-
-          {/* DESLIZADOR HORIZONTAL INFERIOR INTUITIVO (NAVEGACIÓN CON SALTOS RÁPIDOS) */}
-          <div className="px-4 py-3 bg-slate-900/95 border-t border-slate-700/80 flex flex-col md:flex-row items-center justify-between gap-3 text-xs shadow-2xl">
             <div className="flex items-center gap-2 flex-shrink-0">
-              <span className="p-1 rounded bg-cyan-950/60 border border-cyan-500/40 text-cyan-300">
+              <span className="p-1.5 rounded-lg bg-cyan-950/60 border border-cyan-500/50 text-cyan-300 shadow-xs">
                 <ArrowLeftRight className="w-4 h-4 animate-pulse" />
               </span>
-              <span className="text-xs font-bold text-slate-200 font-mono">
-                Desplazamiento horizontal (<strong className="text-cyan-300 font-extrabold">{Math.round(contractScrollPercent)}%</strong>)
+              <span className="text-xs font-bold font-mono">
+                Desplazamiento horizontal: <strong className="text-cyan-400 font-extrabold text-sm">{Math.round(contractScrollPercent)}%</strong>
               </span>
             </div>
 
@@ -1874,10 +1822,10 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
               <button
                 type="button"
                 onClick={() => handleJumpContractScroll(0)}
-                className={`px-2 py-0.5 rounded text-[10px] font-mono whitespace-nowrap transition border ${
+                className={`px-2.5 py-1 rounded-md text-[11px] font-mono font-bold whitespace-nowrap transition border shadow-xs ${
                   contractScrollPercent <= 10
-                    ? 'bg-cyan-500 text-slate-950 font-bold border-cyan-400'
-                    : 'bg-slate-800 text-slate-300 hover:text-white border-slate-700'
+                    ? 'bg-cyan-500 text-slate-950 border-cyan-300 shadow-cyan-500/25 font-black'
+                    : 'bg-slate-800/80 text-slate-200 hover:text-white border-slate-700'
                 }`}
                 title="Ir al inicio (Columna 1: DNI / Nombres)"
               >
@@ -1887,17 +1835,17 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
               <button
                 type="button"
                 onClick={() => handleJumpContractScroll(35)}
-                className={`px-2 py-0.5 rounded text-[10px] font-mono whitespace-nowrap transition border hidden lg:inline ${
+                className={`px-2.5 py-1 rounded-md text-[11px] font-mono font-bold whitespace-nowrap transition border shadow-xs hidden lg:inline ${
                   contractScrollPercent > 10 && contractScrollPercent <= 50
-                    ? 'bg-teal-500 text-slate-950 font-bold border-teal-400'
-                    : 'bg-slate-800 text-slate-300 hover:text-white border-slate-700'
+                    ? 'bg-teal-500 text-slate-950 border-teal-300 shadow-teal-500/25 font-black'
+                    : 'bg-slate-800/80 text-slate-200 hover:text-white border-slate-700'
                 }`}
                 title="Ir a Básico y Planilla"
               >
                 Básico (Col 5)
               </button>
 
-              <div className="relative flex-1 flex items-center">
+              <div className="relative flex-1 flex items-center min-w-[140px]">
                 <input
                   type="range"
                   min="0"
@@ -1906,17 +1854,17 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
                   value={contractScrollPercent}
                   onChange={handleContractSliderChange}
                   className="custom-range-slider w-full touch-pan-x"
-                  title="Desliza suavemente de izquierda a derecha para ver todas las 11 columnas"
+                  title="Arrastra el control deslizante hacia la izquierda o derecha para mover las columnas"
                 />
               </div>
 
               <button
                 type="button"
                 onClick={() => handleJumpContractScroll(70)}
-                className={`px-2 py-0.5 rounded text-[10px] font-mono whitespace-nowrap transition border hidden lg:inline ${
+                className={`px-2.5 py-1 rounded-md text-[11px] font-mono font-bold whitespace-nowrap transition border shadow-xs hidden lg:inline ${
                   contractScrollPercent > 50 && contractScrollPercent < 90
-                    ? 'bg-teal-500 text-slate-950 font-bold border-teal-400'
-                    : 'bg-slate-800 text-slate-300 hover:text-white border-slate-700'
+                    ? 'bg-teal-500 text-slate-950 border-teal-300 shadow-teal-500/25 font-black'
+                    : 'bg-slate-800/80 text-slate-200 hover:text-white border-slate-700'
                 }`}
                 title="Ir a Fechas de Contrato"
               >
@@ -1926,12 +1874,12 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
               <button
                 type="button"
                 onClick={() => handleJumpContractScroll(100)}
-                className={`px-2 py-0.5 rounded text-[10px] font-mono whitespace-nowrap transition border ${
+                className={`px-2.5 py-1 rounded-md text-[11px] font-mono font-bold whitespace-nowrap transition border shadow-xs ${
                   contractScrollPercent >= 90
-                    ? 'bg-cyan-500 text-slate-950 font-bold border-cyan-400'
-                    : 'bg-slate-800 text-slate-300 hover:text-white border-slate-700'
+                    ? 'bg-cyan-500 text-slate-950 border-cyan-300 shadow-cyan-500/25 font-black'
+                    : 'bg-slate-800/80 text-slate-200 hover:text-white border-slate-700'
                 }`}
-                title="Ir al final (Columna 11: Tipo Contrato / Ref)"
+                title="Ir al final (Columna 11: Tipo de Contrato y Ref)"
               >
                 Final (Col 11) ▶
               </button>
@@ -1989,14 +1937,17 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
             </div>
           </div>
 
-          {/* DESLIZADOR HORIZONTAL SUPERIOR INTUITIVO (NAVEGACIÓN 77 COLUMNAS NISIRA) */}
-          <div className="px-4 py-2.5 bg-slate-900/90 border-b border-slate-700/80 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs shadow-inner">
+          {/* BARRA DE DESPLAZAMIENTO HORIZONTAL SUPERIOR GRUESA Y FÁCIL DE AGARRAR (ENCIMA DE LA TABLA) */}
+          <div
+            className="px-4 py-3 border-b flex flex-col md:flex-row items-center justify-between gap-3 text-xs shadow-md select-none"
+            style={{ backgroundColor: 'var(--bg-surface-elevated)', borderColor: 'var(--border-subtle)', color: 'var(--text-primary)' }}
+          >
             <div className="flex items-center gap-2 flex-shrink-0">
-              <span className="p-1 rounded bg-cyan-950/60 border border-cyan-500/40 text-cyan-300">
+              <span className="p-1.5 rounded-lg bg-cyan-950/60 border border-cyan-500/50 text-cyan-300 shadow-xs">
                 <ArrowLeftRight className="w-4 h-4 animate-pulse" />
               </span>
-              <span className="text-xs font-bold text-slate-200 font-mono">
-                Desplazar Personal: <strong className="text-cyan-300 font-extrabold">{Math.round(personalScrollPercent)}%</strong>
+              <span className="text-xs font-bold font-mono">
+                Desplazar Personal: <strong className="text-cyan-400 font-extrabold text-sm">{Math.round(personalScrollPercent)}%</strong>
               </span>
             </div>
 
@@ -2004,30 +1955,31 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
               <button
                 type="button"
                 onClick={() => handleJumpPersonalScroll(0)}
-                className={`px-2 py-0.5 rounded text-[10px] font-mono whitespace-nowrap transition border ${
+                className={`px-2.5 py-1 rounded-md text-[11px] font-mono font-bold whitespace-nowrap transition border shadow-xs ${
                   personalScrollPercent <= 10
-                    ? 'bg-cyan-500 text-slate-950 font-bold border-cyan-400'
-                    : 'bg-slate-800 text-slate-300 hover:text-white border-slate-700'
+                    ? 'bg-cyan-500 text-slate-950 border-cyan-300 shadow-cyan-500/25 font-black'
+                    : 'bg-slate-800/80 text-slate-200 hover:text-white border-slate-700'
                 }`}
-                title="Ir al inicio (DNI / Nombre)"
+                title="Ir al inicio (Columna 1: DNI / Nombres)"
               >
-                0% DNI
+                ◀ Inicio (Col 1)
               </button>
 
               <button
                 type="button"
                 onClick={() => handleJumpPersonalScroll(25)}
-                className={`px-2 py-0.5 rounded text-[10px] font-mono whitespace-nowrap transition border hidden md:inline ${
+                className={`px-2.5 py-1 rounded-md text-[11px] font-mono font-bold whitespace-nowrap transition border shadow-xs hidden md:inline ${
                   personalScrollPercent > 10 && personalScrollPercent <= 40
-                    ? 'bg-teal-500 text-slate-950 font-bold border-teal-400'
-                    : 'bg-slate-800 text-slate-300 hover:text-white border-slate-700'
+                    ? 'bg-teal-500 text-slate-950 border-teal-300 shadow-teal-500/25 font-black'
+                    : 'bg-slate-800/80 text-slate-200 hover:text-white border-slate-700'
                 }`}
                 title="Ir a Datos Laborales"
               >
-                25% Laboral
+                Laboral (Col 20)
               </button>
 
-              <div className="relative flex-1 flex items-center">
+              {/* TRACK Y CONTROL DESLIZANTE GRUESO */}
+              <div className="relative flex-1 flex items-center min-w-[140px]">
                 <input
                   type="range"
                   min="0"
@@ -2036,46 +1988,36 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
                   value={personalScrollPercent}
                   onChange={handlePersonalSliderChange}
                   className="custom-range-slider w-full touch-pan-x"
-                  title="Arrastra el deslizador horizontalmente para ver las 77 columnas completas de NISIRA"
+                  title="Arrastra el control deslizante hacia la izquierda o derecha para mover las 77 columnas"
                 />
               </div>
 
               <button
                 type="button"
                 onClick={() => handleJumpPersonalScroll(60)}
-                className={`px-2 py-0.5 rounded text-[10px] font-mono whitespace-nowrap transition border hidden md:inline ${
+                className={`px-2.5 py-1 rounded-md text-[11px] font-mono font-bold whitespace-nowrap transition border shadow-xs hidden md:inline ${
                   personalScrollPercent > 40 && personalScrollPercent < 85
-                    ? 'bg-teal-500 text-slate-950 font-bold border-teal-400'
-                    : 'bg-slate-800 text-slate-300 hover:text-white border-slate-700'
+                    ? 'bg-teal-500 text-slate-950 border-teal-300 shadow-teal-500/25 font-black'
+                    : 'bg-slate-800/80 text-slate-200 hover:text-white border-slate-700'
                 }`}
                 title="Ir a Ubigeo y Dirección"
               >
-                60% Ubigeo
+                Ubigeo (Col 40)
               </button>
 
               <button
                 type="button"
                 onClick={() => handleJumpPersonalScroll(100)}
-                className={`px-2 py-0.5 rounded text-[10px] font-mono whitespace-nowrap transition border ${
+                className={`px-2.5 py-1 rounded-md text-[11px] font-mono font-bold whitespace-nowrap transition border shadow-xs ${
                   personalScrollPercent >= 85
-                    ? 'bg-cyan-500 text-slate-950 font-bold border-cyan-400'
-                    : 'bg-slate-800 text-slate-300 hover:text-white border-slate-700'
+                    ? 'bg-cyan-500 text-slate-950 border-cyan-300 shadow-cyan-500/25 font-black'
+                    : 'bg-slate-800/80 text-slate-200 hover:text-white border-slate-700'
                 }`}
                 title="Ir al final (Columna 77)"
               >
-                100% Fin
+                Final (Col 77) ▶
               </button>
             </div>
-          </div>
-
-          {/* BARRA DE DESPLAZAMIENTO SUPERIOR GRUESA SINCRONIZADA (Top Scrollbar) */}
-          <div
-            ref={personalTopScrollRef}
-            onScroll={handlePersonalTopScroll}
-            className="w-full overflow-x-auto bg-slate-900/90 border-b-2 border-cyan-500/60 custom-table-scrollbar shadow-inner"
-            title="Barra de desplazamiento horizontal superior (arrastra para moverte a la izquierda o derecha)"
-          >
-            <div style={{ width: `${personalContentWidth}px`, height: '22px' }} />
           </div>
 
           {/* Tabla de Datos de Personal NISIRA con scroll horizontal completo */}
@@ -2084,7 +2026,7 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
             onScroll={handlePersonalTableScroll}
             className="overflow-x-auto max-h-[calc(100vh-280px)] min-h-[400px] custom-table-scrollbar"
           >
-            <table className="min-w-max w-full border-collapse text-left text-xs">
+            <table className="min-w-[1850px] w-full border-collapse text-left text-xs">
               <thead className="sticky top-0 z-20 shadow-md">
                 <tr className="divide-x divide-slate-800 text-[11px] font-extrabold uppercase">
                   {/* Selector checkbox */}
@@ -2424,9 +2366,12 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
                     </div>
                   </th>
 
-                  {/* Celda buffer para pantallas pequeñas */}
-                  <th className="p-2 w-14 text-center bg-slate-900 text-slate-400 text-[10px]">
-                    ✔
+                  {/* Celda buffer para pantallas pequeñas y amplio recorrido sin corte */}
+                  <th
+                    className="p-2 w-32 min-w-[128px] text-center border-b-2 font-mono text-[9px]"
+                    style={{ backgroundColor: 'var(--table-header-bg)', borderColor: 'var(--border-subtle)', color: 'var(--text-tertiary)' }}
+                  >
+                    ✔ FIN
                   </th>
                 </tr>
               </thead>
@@ -2946,9 +2891,9 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
                           </div>
                         </td>
 
-                        {/* Celda buffer para pantallas pequeñas */}
-                        <td className="p-2 w-14 text-center text-slate-500 text-[10px] font-mono">
-                          ✔
+                        {/* Celda buffer para pantallas pequeñas y amplio recorrido sin corte */}
+                        <td className="p-2 w-32 min-w-[128px] text-center font-mono text-[10px]" style={{ color: 'var(--text-tertiary)' }}>
+                          ✔ COMPLETO
                         </td>
                       </tr>
                     );
@@ -2958,24 +2903,17 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
             </table>
           </div>
 
-          {/* BARRA DE DESPLAZAMIENTO INFERIOR GRUESA SINCRONIZADA (Bottom Scrollbar) */}
+          {/* BARRA DE DESPLAZAMIENTO HORIZONTAL INFERIOR GRUESA Y FÁCIL DE AGARRAR (PARTE INFERIOR DE LA TABLA) */}
           <div
-            ref={personalBottomScrollRef}
-            onScroll={handlePersonalBottomScroll}
-            className="w-full overflow-x-auto bg-slate-900/90 border-t-2 border-cyan-500/60 custom-table-scrollbar shadow-inner"
-            title="Barra de desplazamiento horizontal inferior (arrastra para moverte a la izquierda o derecha)"
+            className="px-4 py-3 border-t flex flex-col md:flex-row items-center justify-between gap-3 text-xs shadow-2xl select-none"
+            style={{ backgroundColor: 'var(--bg-surface-elevated)', borderColor: 'var(--border-subtle)', color: 'var(--text-primary)' }}
           >
-            <div style={{ width: `${personalContentWidth}px`, height: '22px' }} />
-          </div>
-
-          {/* DESLIZADOR HORIZONTAL INFERIOR INTUITIVO (NAVEGACIÓN 77 COLUMNAS NISIRA) */}
-          <div className="px-4 py-3 bg-slate-900/95 border-t border-slate-700/80 flex flex-col md:flex-row items-center justify-between gap-3 text-xs shadow-2xl">
             <div className="flex items-center gap-2 flex-shrink-0">
-              <span className="p-1 rounded bg-cyan-950/60 border border-cyan-500/40 text-cyan-300">
+              <span className="p-1.5 rounded-lg bg-cyan-950/60 border border-cyan-500/50 text-cyan-300 shadow-xs">
                 <ArrowLeftRight className="w-4 h-4 animate-pulse" />
               </span>
-              <span className="text-xs font-bold text-slate-200 font-mono">
-                Desplazamiento horizontal (<strong className="text-cyan-300 font-extrabold">{Math.round(personalScrollPercent)}%</strong>)
+              <span className="text-xs font-bold font-mono">
+                Desplazamiento horizontal: <strong className="text-cyan-400 font-extrabold text-sm">{Math.round(personalScrollPercent)}%</strong>
               </span>
             </div>
 
@@ -2983,10 +2921,10 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
               <button
                 type="button"
                 onClick={() => handleJumpPersonalScroll(0)}
-                className={`px-2 py-0.5 rounded text-[10px] font-mono whitespace-nowrap transition border ${
+                className={`px-2.5 py-1 rounded-md text-[11px] font-mono font-bold whitespace-nowrap transition border shadow-xs ${
                   personalScrollPercent <= 10
-                    ? 'bg-cyan-500 text-slate-950 font-bold border-cyan-400'
-                    : 'bg-slate-800 text-slate-300 hover:text-white border-slate-700'
+                    ? 'bg-cyan-500 text-slate-950 border-cyan-300 shadow-cyan-500/25 font-black'
+                    : 'bg-slate-800/80 text-slate-200 hover:text-white border-slate-700'
                 }`}
                 title="Ir al inicio (Columna 1: DNI / Nombres)"
               >
@@ -2996,17 +2934,17 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
               <button
                 type="button"
                 onClick={() => handleJumpPersonalScroll(25)}
-                className={`px-2 py-0.5 rounded text-[10px] font-mono whitespace-nowrap transition border hidden lg:inline ${
+                className={`px-2.5 py-1 rounded-md text-[11px] font-mono font-bold whitespace-nowrap transition border shadow-xs hidden lg:inline ${
                   personalScrollPercent > 10 && personalScrollPercent <= 40
-                    ? 'bg-teal-500 text-slate-950 font-bold border-teal-400'
-                    : 'bg-slate-800 text-slate-300 hover:text-white border-slate-700'
+                    ? 'bg-teal-500 text-slate-950 border-teal-300 shadow-teal-500/25 font-black'
+                    : 'bg-slate-800/80 text-slate-200 hover:text-white border-slate-700'
                 }`}
                 title="Ir a Datos Laborales"
               >
                 Laboral (Col 20)
               </button>
 
-              <div className="relative flex-1 flex items-center">
+              <div className="relative flex-1 flex items-center min-w-[140px]">
                 <input
                   type="range"
                   min="0"
@@ -3015,17 +2953,17 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
                   value={personalScrollPercent}
                   onChange={handlePersonalSliderChange}
                   className="custom-range-slider w-full touch-pan-x"
-                  title="Desliza suavemente de izquierda a derecha para ver las 77 columnas completas de NISIRA"
+                  title="Arrastra el control deslizante hacia la izquierda o derecha para ver las 77 columnas"
                 />
               </div>
 
               <button
                 type="button"
                 onClick={() => handleJumpPersonalScroll(60)}
-                className={`px-2 py-0.5 rounded text-[10px] font-mono whitespace-nowrap transition border hidden lg:inline ${
+                className={`px-2.5 py-1 rounded-md text-[11px] font-mono font-bold whitespace-nowrap transition border shadow-xs hidden lg:inline ${
                   personalScrollPercent > 40 && personalScrollPercent < 85
-                    ? 'bg-teal-500 text-slate-950 font-bold border-teal-400'
-                    : 'bg-slate-800 text-slate-300 hover:text-white border-slate-700'
+                    ? 'bg-teal-500 text-slate-950 border-teal-300 shadow-teal-500/25 font-black'
+                    : 'bg-slate-800/80 text-slate-200 hover:text-white border-slate-700'
                 }`}
                 title="Ir a Ubigeo y Dirección"
               >
@@ -3035,10 +2973,10 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
               <button
                 type="button"
                 onClick={() => handleJumpPersonalScroll(100)}
-                className={`px-2 py-0.5 rounded text-[10px] font-mono whitespace-nowrap transition border ${
+                className={`px-2.5 py-1 rounded-md text-[11px] font-mono font-bold whitespace-nowrap transition border shadow-xs ${
                   personalScrollPercent >= 85
-                    ? 'bg-cyan-500 text-slate-950 font-bold border-cyan-400'
-                    : 'bg-slate-800 text-slate-300 hover:text-white border-slate-700'
+                    ? 'bg-cyan-500 text-slate-950 border-cyan-300 shadow-cyan-500/25 font-black'
+                    : 'bg-slate-800/80 text-slate-200 hover:text-white border-slate-700'
                 }`}
                 title="Ir al final (Columna 77)"
               >

@@ -186,9 +186,11 @@ export default function App() {
   };
 
   return (
-    <div className={`min-h-screen text-slate-100 flex flex-col lg:flex-row transition-colors duration-250 ${
-      theme === 'dark' ? 'bg-[#060D1A]' : 'bg-[#F4F7FB] text-[#070E1C]'
-    }`}>
+    <div
+      data-theme={theme}
+      style={{ backgroundColor: 'var(--bg-canvas)', color: 'var(--text-primary)' }}
+      className="min-h-screen flex flex-col lg:flex-row transition-colors duration-200"
+    >
       
       {/* 1. Left Vertical Sidebar (Hidden on simulated mobile or collapsed in tablet) */}
       {deviceMode !== 'mobile' && (

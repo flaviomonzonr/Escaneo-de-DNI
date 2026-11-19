@@ -64,19 +64,23 @@ export default function Sidebar({
         />
       )}
 
-      {/* Main Vertical Sidebar - Chavín Navy & Steel Blue */}
+      {/* Main Vertical Sidebar - Responde dinámicamente a todos los temas */}
       <aside
-        className={`fixed top-0 bottom-0 left-0 z-50 flex flex-col justify-between transition-all duration-200 ease-in-out select-none shadow-2xl bg-[#040914] border-r border-[#1E3557] ${
+        className={`fixed top-0 bottom-0 left-0 z-50 flex flex-col justify-between transition-all duration-200 ease-in-out select-none shadow-2xl border-r ${
           collapsed ? 'w-[72px]' : 'w-[260px]'
         } ${
           mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
+        style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border-subtle)' }}
       >
         {/* Top Section: Brand & Nav Items */}
         <div className="flex flex-col flex-1 overflow-y-auto overflow-x-hidden">
           
           {/* Header Brand */}
-          <div className="flex items-center justify-between p-3.5 border-b border-[#1E3557] min-h-[58px]">
+          <div
+            className="flex items-center justify-between p-3.5 border-b min-h-[58px]"
+            style={{ borderColor: 'var(--border-subtle)' }}
+          >
             <div className="flex items-center space-x-2.5 overflow-hidden">
               {/* Chavín Lithic Stepped Emblem */}
               <div className="relative flex-shrink-0 w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500 via-[#162A4F] to-[#0B1528] p-0.5 border border-cyan-400/40 shadow-glow-turquoise flex items-center justify-center">
@@ -197,30 +201,35 @@ export default function Sidebar({
         </div>
 
         {/* Bottom Section: Telemetry & Ubigeo reference */}
-        <div className="p-2.5 border-t border-[#1E3557] space-y-2 bg-[#040914] font-mono text-xs">
+        <div
+          className="p-2.5 border-t space-y-2 font-mono text-xs"
+          style={{ backgroundColor: 'var(--bg-viewfinder)', borderColor: 'var(--border-subtle)' }}
+        >
           {!collapsed && (
             <a
               href={api.getUbigeoExcelUrl()}
               target="_blank"
               rel="noreferrer"
-              className="flex items-center space-x-2 px-2.5 py-2 rounded-md bg-[#0B1528] hover:bg-[#101F3B] border border-[#1E3557] text-slate-200 hover:text-white transition group btn-precision text-xs shadow-xs"
+              className="flex items-center space-x-2 px-2.5 py-2 rounded-md transition group btn-precision text-xs shadow-xs"
+              style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border-subtle)', color: 'var(--text-primary)' }}
               title="Descargar base oficial de Ubigeos en Excel"
             >
               <FileSpreadsheet className="w-4 h-4 text-teal-400 flex-shrink-0" />
               <div className="min-w-0 flex-1">
-                <span className="block font-bold text-white">UBIGEO_DB.XLSX</span>
-                <span className="block text-[9px] text-slate-400 font-semibold">1,839 DISTRITOS</span>
+                <span className="block font-bold">UBIGEO_DB.XLSX</span>
+                <span className="block text-[9px] text-[var(--text-muted)] font-semibold">1,839 DISTRITOS</span>
               </div>
               <ExternalLink className="w-3.5 h-3.5 text-slate-400 group-hover:text-cyan-300" />
             </a>
           )}
 
           <div
-            className={`flex items-center rounded-md border border-[#1E3557] bg-[#060D1A] ${
+            className={`flex items-center rounded-md border ${
               collapsed
                 ? 'justify-center p-2'
                 : 'px-2.5 py-1.5 justify-between'
             }`}
+            style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border-subtle)' }}
           >
             <div className="flex items-center space-x-2 min-w-0">
               <span className="relative flex h-2 w-2 flex-shrink-0">
@@ -236,14 +245,14 @@ export default function Sidebar({
                 />
               </span>
               {!collapsed && (
-                <span className="text-[11px] font-bold text-slate-200 truncate block">
+                <span className="text-[11px] font-bold truncate block" style={{ color: 'var(--text-secondary)' }}>
                   {isOnline ? 'RAPIDOCR: ONLINE' : 'ENGINE: OFFLINE'}
                 </span>
               )}
             </div>
 
             {!collapsed && (
-              <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-[#101F3B] text-cyan-300 border border-[#274468]">
+              <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-cyan-950/60 text-cyan-300 border border-cyan-500/40">
                 v2.6
               </span>
             )}
