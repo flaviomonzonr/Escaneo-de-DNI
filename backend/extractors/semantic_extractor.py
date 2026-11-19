@@ -36,7 +36,12 @@ DISALLOWED_NAME_KEYWORDS = [
     "DOMICILIO", "DIRECCION", "DIRECCIÓN", "UBIGEO", "REGISTRO", "RENIEC", "PRIMER",
     "SEGUNDO", "APELLIDO", "APELLIDOS", "PRENOMBRES", "PRENOMBRE", "NOMBRE", "NOMBRES",
     "FECHA", "LUGAR", "DIGITO", "VERIFICACION", "FIRMA", "HUELLA", "TITULAR", "ELECTRONICO",
-    "SUPERINTENDENCIA", "MIGRACIONES", "EXTRANJERIA", "CALIDAD", "MIGRATORIA"
+    "SUPERINTENDENCIA", "MIGRACIONES", "EXTRANJERIA", "CALIDAD", "MIGRATORIA", "FOTO",
+    "FOTOGRAFIA", "FOTOGRAFÍA", "NACIONALIDAD", "NATIONALITY", "PER", "CUI", "NRO",
+    "TARJETA", "CHIP", "CAN", "MASCULINO", "FEMENINO", "SOLTERO", "SOLTERA", "CASADO",
+    "CASADA", "VIUDO", "VIUDA", "DIVORCIADO", "DIVORCIADA", "SURNAMES", "GIVEN", "NAMES",
+    "DATE", "BIRTH", "EXPIRY", "ISSUE", "ESTE", "CARNE", "CARNET", "INVALIDA", "ANTERIOR",
+    "REPUBLICADELPERU", "PASAPORTE", "CEDULA", "NPCIP", "STATUS", "MARITAL"
 ]
 
 
@@ -45,9 +50,22 @@ def is_valid_name_token(token: str) -> bool:
     if not token or len(token) < 2:
         return False
     clean = token.strip().upper()
+    # Standalone prepositions and particles cannot be a surname by themselves
+    if clean in ["DE", "DEL", "LA", "LAS", "LOS", "SAN", "SANTA", "EL", "Y", "E", "AL"]:
+        return False
     if clean in DISALLOWED_NAME_KEYWORDS:
         return False
     if any(kw == clean for kw in DISALLOWED_NAME_KEYWORDS):
+        return False
+    # Avoid tokens that start with administrative prefixes or document labels
+    admin_prefixes = [
+        "FECHA", "FEC", "PEEN", "NACIONAL", "REPUBLICA", "DOCUMENTO", "CARNE", "CARNET", "INVALID",
+        "PRIMER", "SEGUND", "BOGURD", "BOGUND", "PRENOM", "APEL", "NOMBR", "CALID", "MIGRAT", "MIGRAC",
+        "EXTRANJ", "SUPERINT", "ESTADO", "CIVIL", "SUFRAGIO", "VOTACION", "INSCRIP", "EMIS", "EMIN"
+    ]
+    if any(clean.startswith(pref) for pref in admin_prefixes):
+        return False
+    if any(pref in clean for pref in ["MIGRAT", "MIGRAC", "EXTRANJ", "REPUBLIC", "SUPERINT", "CALID", "EMISION", "EMINIO", "APPLID", "APELID"]):
         return False
     # Must be mostly alphabetic
     letters = sum(1 for c in clean if c.isalpha())
@@ -169,47 +187,98 @@ def parse_icao_td1_mrz_robust(mrz_text: str) -> Optional[Dict[str, Any]]:
 
     parsed: Dict[str, Any] = {}
 
-    # Line 1: DNI (8 digits)
+    # Line 1: DNI (8 digits) + Check Digit
     if line1:
-        m1 = re.search(r"(?:[I1]<PER|[I1]DPER|<PER|PER|[I1]<|[I1]D)?<*([0-9A-Z]{8})", line1)
+        # Match DNI (8 alphanumeric chars) and following check digit or delimiter
+        m1 = re.search(r"(?:[I1]<PER|[I1]DPER|<PER|PER|[I1]<|[I1]D)?<*([0-9A-Z]{8})<*([0-9A-Z<]?)", line1)
         if m1:
-            norm_dni = normalize_numeric_ocr(m1.group(1))
+            raw_dni = m1.group(1)
+            raw_cd = m1.group(2)
+            norm_dni = normalize_numeric_ocr(raw_dni)
             val_ok, valid_dni, _ = validate_dni(norm_dni)
+
+            # Check digit validation (ICAO 9303 TD1: pos 6-14 with 7-3-1 weight matrix)
+            dni_checksum_valid = False
+            norm_cd = normalize_numeric_ocr(raw_cd) if raw_cd else ""
+            if norm_cd and norm_cd.isdigit():
+                found_cd = int(norm_cd)
+                # Check both with '<' padding (standard TD1 9-char document field) and unpadded
+                if compute_mrz_check_digit(valid_dni + "<") == found_cd or compute_mrz_check_digit(valid_dni) == found_cd:
+                    dni_checksum_valid = True
+                else:
+                    # Attempt single character substitution correction using checksum
+                    for idx, ch in enumerate(raw_dni):
+                        if ch in DIGIT_FROM_CHAR_MAP:
+                            cand_dni = list(norm_dni)
+                            for alt_digit in ["0", "1", "2", "3", "5", "6", "8"]:
+                                cand_dni[idx] = alt_digit
+                                cand_str = "".join(cand_dni)
+                                if (compute_mrz_check_digit(cand_str + "<") == found_cd or
+                                        compute_mrz_check_digit(cand_str) == found_cd):
+                                    valid_dni = cand_str
+                                    val_ok = True
+                                    dni_checksum_valid = True
+                                    break
+                            if dni_checksum_valid:
+                                break
+
             if val_ok:
                 parsed["dni"] = valid_dni
+                parsed["dni_verified_by_checksum"] = dni_checksum_valid
 
-    # Line 2: DOB, Sex, Expiry
+    # Line 2: DOB, Sex, Expiry + Check Digits
     if line2:
-        m2 = re.search(r"([0-9A-Z]{6})<*([0-9A-Z<]*)<*([MF])<*([0-9A-Z<]{6})?", line2)
+        m2 = re.search(r"([0-9A-Z]{6})<*([0-9A-Z<]*)<*([MF])<*([0-9A-Z<]{6})?<*([0-9A-Z<]?)", line2)
         if not m2:
-            m2 = re.search(r"([0-9A-Z]{6})<*([0-9A-Z<]?)\s*([MF<])<*([0-9A-Z<]{6})?", line2)
+            m2 = re.search(r"([0-9A-Z]{6})<*([0-9A-Z<]?)\s*([MF<])<*([0-9A-Z<]{6})?<*([0-9A-Z<]?)", line2)
         if m2:
             raw_dob = m2.group(1)
+            raw_dob_cd = m2.group(2)
             norm_dob = normalize_numeric_ocr(raw_dob)
+            dob_checksum_valid = False
+
             if len(norm_dob) == 6 and norm_dob.isdigit():
+                norm_dob_cd = normalize_numeric_ocr(raw_dob_cd) if raw_dob_cd else ""
+                if norm_dob_cd and norm_dob_cd.isdigit():
+                    if compute_mrz_check_digit(norm_dob) == int(norm_dob_cd):
+                        dob_checksum_valid = True
+
                 yy = int(norm_dob[0:2])
                 mm = norm_dob[2:4]
                 dd = norm_dob[4:6]
                 if 1 <= int(mm) <= 12 and 1 <= int(dd) <= 31:
                     curr_yy = datetime.now().year % 100
-                    full_year = 2000 + yy if yy <= curr_yy else 1900 + yy
+                    # Adult worker century resolution: threshold (curr_yy - 15)
+                    # For curr_yy=26: 00-11 -> 2000-2011 (age 15-26); 12-99 -> 1912-1999
+                    threshold = max(0, curr_yy - 15)
+                    full_year = 2000 + yy if yy <= threshold else 1900 + yy
                     parsed["birth_date"] = f"{dd}/{mm}/{full_year}"
+                    parsed["birth_date_verified_by_checksum"] = dob_checksum_valid
 
             raw_sex = m2.group(3)
             if raw_sex in ["M", "F"]:
                 parsed["sex"] = raw_sex
 
             raw_exp = m2.group(4)
+            raw_exp_cd = m2.group(5)
             if raw_exp:
                 norm_exp = normalize_numeric_ocr(raw_exp)
+                exp_checksum_valid = False
                 if norm_exp in ["000101", "000000", "999999"] or "<<<<" in raw_exp:
                     parsed["expiry_date"] = "NO CADUCA"
+                    parsed["expiry_date_verified_by_checksum"] = True
                 elif len(norm_exp) == 6 and norm_exp.isdigit():
+                    norm_exp_cd = normalize_numeric_ocr(raw_exp_cd) if raw_exp_cd else ""
+                    if norm_exp_cd and norm_exp_cd.isdigit():
+                        if compute_mrz_check_digit(norm_exp) == int(norm_exp_cd):
+                            exp_checksum_valid = True
+
                     exp_yy = int(norm_exp[0:2])
                     exp_mm = norm_exp[2:4]
                     exp_dd = norm_exp[4:6]
                     if 1 <= int(exp_mm) <= 12 and 1 <= int(exp_dd) <= 31:
                         parsed["expiry_date"] = f"{exp_dd}/{exp_mm}/20{exp_yy:02d}"
+                        parsed["expiry_date_verified_by_checksum"] = exp_checksum_valid
 
     # Line 3: Surnames & First Names
     if line3:
@@ -279,37 +348,47 @@ class SemanticExtractor:
         candidate_pool: Optional[List[Tuple[str, float, str]]] = None,
     ) -> FieldExtractionResult:
         """Semantic extraction of 8-digit DNI number."""
-        # 1. Check MRZ (Absolute highest confidence: 99.0%)
+        # 1. Check MRZ (Absolute highest confidence: 99.0% - 99.8% with verified checksum)
         if mrz_data and mrz_data.get("dni"):
             dni_val = mrz_data["dni"]
             val_ok, norm_val, err_msg = validate_dni(dni_val)
             if val_ok:
+                is_checksum_verified = mrz_data.get("dni_verified_by_checksum", False)
                 return FieldExtractionResult(
                     field_key="doc_number",
                     value=norm_val,
-                    confidence=99.0,
+                    confidence=99.8 if is_checksum_verified else 99.0,
                     is_valid=True,
                     status="CONFIRMADO",
-                    origin_type="LEIDO_OCR",
-                    anchor_matched="MRZ ICAO TD1",
+                    origin_type="LEIDO_MRZ_VALIDADO" if is_checksum_verified else "LEIDO_OCR",
+                    anchor_matched="MRZ ICAO TD1 (Dígito de control verificado)" if is_checksum_verified else "MRZ ICAO TD1",
                 )
 
-        # 2. Check Candidate Pool from Multi-Variant Consensus
+        # 2. Check Candidate Pool from Multi-Variant Consensus (excluding dates)
         if candidate_pool:
             from backend.ocr.consensus_engine import evaluate_field_consensus
-            win_val, win_conf, votes, total = evaluate_field_consensus("", candidate_pool, is_numeric=True)
-            val_ok, norm_val, err_msg = validate_dni(win_val)
-            if val_ok:
-                status = "CONFIRMADO" if win_conf >= 80.0 else "REVISAR"
-                return FieldExtractionResult(
-                    field_key="doc_number",
-                    value=norm_val,
-                    confidence=win_conf,
-                    is_valid=True,
-                    status=status,
-                    origin_type="LEIDO_OCR",
-                    anchor_matched=f"Consenso Multi-Intento ({votes}/{total} votos)",
-                )
+            valid_pool = []
+            for cand_val, cand_w, cand_src in candidate_pool:
+                if len(cand_val) == 8 and cand_val.isdigit():
+                    d_c, m_c, y_c = int(cand_val[:2]), int(cand_val[2:4]), int(cand_val[4:])
+                    if 1 <= d_c <= 31 and 1 <= m_c <= 12 and (1930 <= y_c <= 2040):
+                        continue
+                valid_pool.append((cand_val, cand_w, cand_src))
+
+            if valid_pool:
+                win_val, win_conf, votes, total = evaluate_field_consensus("", valid_pool, is_numeric=True)
+                val_ok, norm_val, err_msg = validate_dni(win_val)
+                if val_ok:
+                    status = "CONFIRMADO" if win_conf >= 80.0 else "REVISAR"
+                    return FieldExtractionResult(
+                        field_key="doc_number",
+                        value=norm_val,
+                        confidence=win_conf,
+                        is_valid=True,
+                        status=status,
+                        origin_type="LEIDO_OCR",
+                        anchor_matched=f"Consenso Multi-Intento ({votes}/{total} votos)",
+                    )
 
         # 3. Anchor search in OCR lines (DNI label, header, or attached prefix)
         for i, line in enumerate(ocr_lines):

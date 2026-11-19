@@ -8,7 +8,7 @@ import {
   ChevronsRight,
   Layers,
   X,
-  Sparkles,
+  ExternalLink,
 } from 'lucide-react';
 import { api } from '../services/api';
 
@@ -24,25 +24,29 @@ export default function Sidebar({
   const mainNavItems = [
     {
       id: 'scan',
-      label: 'Escanear DNI',
+      label: 'Consulta DNI & Registro',
+      code: 'VIEW_SCAN',
       icon: Scan,
-      description: 'Captura y OCR Automático',
+      description: 'Factiliza API y Registro Manual',
     },
     {
       id: 'batch_excel',
       label: 'Generar Excel por Lote',
+      code: 'BATCH_GEN',
       icon: FileSpreadsheet,
-      description: 'Listado por fecha y hora',
+      description: 'Lotes cronológicos',
     },
     {
       id: 'templates',
       label: 'Plantillas Excel',
-      icon: FileSpreadsheet,
-      description: 'Mapeo de celdas amarillas',
+      code: 'XLSX_MAP',
+      icon: Layers,
+      description: 'Mapeo de celdas NISIRA',
     },
     {
       id: 'scan_history',
       label: 'Historial de Registros',
+      code: 'DB_RECORDS',
       icon: History,
       description: 'Base de datos de escaneos',
     },
@@ -56,14 +60,14 @@ export default function Sidebar({
       {mobileOpen && (
         <div
           onClick={() => setMobileOpen(false)}
-          className="fixed inset-0 z-40 bg-slate-950/70 backdrop-blur-sm lg:hidden transition-opacity"
+          className="fixed inset-0 z-40 bg-black/80 backdrop-blur-sm lg:hidden transition-opacity"
         />
       )}
 
-      {/* Main Vertical Sidebar */}
+      {/* Main Vertical Sidebar - Chavín Navy & Steel Blue */}
       <aside
-        className={`fixed top-0 bottom-0 left-0 z-50 flex flex-col justify-between transition-all duration-300 ease-in-out select-none shadow-2xl bg-[#0B132B] border-r border-[#1E293B] ${
-          collapsed ? 'w-[80px]' : 'w-[280px]'
+        className={`fixed top-0 bottom-0 left-0 z-50 flex flex-col justify-between transition-all duration-200 ease-in-out select-none shadow-2xl bg-[#040914] border-r border-[#1E3557] ${
+          collapsed ? 'w-[72px]' : 'w-[260px]'
         } ${
           mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
@@ -72,31 +76,31 @@ export default function Sidebar({
         <div className="flex flex-col flex-1 overflow-y-auto overflow-x-hidden">
           
           {/* Header Brand */}
-          <div className="flex items-center justify-between p-4 border-b border-slate-800/80 min-h-[76px]">
-            <div className="flex items-center space-x-3 overflow-hidden">
-              {/* Logo Emblem */}
-              <div className="relative flex-shrink-0 w-10 h-10 rounded-xl bg-gradient-to-br from-[#1E40AF] to-[#0A1E5C] border border-blue-400/30 flex items-center justify-center shadow-md">
-                <div className="flex w-5 h-3.5 rounded-xs overflow-hidden shadow-inner">
-                  <div className="w-1/3 bg-[#DC2626]"></div>
-                  <div className="w-1/3 bg-white flex items-center justify-center">
-                    <div className="w-1.5 h-1.5 rounded-full bg-[#1E40AF]"></div>
+          <div className="flex items-center justify-between p-3.5 border-b border-[#1E3557] min-h-[58px]">
+            <div className="flex items-center space-x-2.5 overflow-hidden">
+              {/* Chavín Lithic Stepped Emblem */}
+              <div className="relative flex-shrink-0 w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500 via-[#162A4F] to-[#0B1528] p-0.5 border border-cyan-400/40 shadow-glow-turquoise flex items-center justify-center">
+                <div className="w-full h-full bg-[#060D1A] rounded-[6px] flex items-center justify-center">
+                  <div className="flex flex-col items-center">
+                    <div className="w-2.5 h-1 bg-cyan-400 rounded-2xs mb-0.5"></div>
+                    <div className="w-4 h-1 bg-teal-400 rounded-2xs mb-0.5"></div>
+                    <div className="w-2.5 h-1 bg-cyan-400 rounded-2xs"></div>
                   </div>
-                  <div className="w-1/3 bg-[#DC2626]"></div>
                 </div>
               </div>
 
               {!collapsed && (
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center space-x-1.5">
-                    <span className="text-base font-extrabold text-white tracking-tight">
-                      EscanDNI
+                <div className="min-w-0 flex-1 font-mono">
+                  <div className="flex items-center space-x-1.5 leading-none">
+                    <span className="text-xs font-black text-white tracking-wider">
+                      ESCANDNI
                     </span>
-                    <span className="text-base font-extrabold text-[#EF4444] tracking-tight">
-                      Perú
+                    <span className="text-[10px] text-cyan-400 font-black">
+                      CHAVÍN
                     </span>
                   </div>
-                  <p className="text-[10px] text-slate-400 font-medium truncate">
-                    Sistema Empresarial OCR
+                  <p className="text-[10px] text-slate-400 font-semibold truncate mt-1">
+                    ENTERPRISE_OCR_v2.6
                   </p>
                 </div>
               )}
@@ -105,20 +109,20 @@ export default function Sidebar({
             {/* Mobile Close Button */}
             <button
               onClick={() => setMobileOpen(false)}
-              className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 lg:hidden transition min-h-[44px] min-w-[44px] flex items-center justify-center"
+              className="p-1.5 rounded-md text-slate-300 hover:text-white hover:bg-[#101F3B] lg:hidden transition min-h-[36px] min-w-[36px] flex items-center justify-center"
               title="Cerrar menú"
             >
-              <X className="w-6 h-6" />
+              <X className="w-5 h-5" />
             </button>
 
-            {/* Desktop Collapse Toggle */}
+            {/* Desktop / Tablet Collapse Toggle */}
             <button
               onClick={() => setCollapsed(!collapsed)}
-              className="hidden lg:flex p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition"
-              title={collapsed ? 'Expandir menú' : 'Contraer menú'}
+              className="hidden lg:flex p-1.5 rounded-md text-slate-300 hover:text-white hover:bg-[#101F3B] transition btn-precision border border-transparent hover:border-[#1E3557]"
+              title={collapsed ? 'Expandir menú' : 'Contraer a riel de iconos'}
             >
               {collapsed ? (
-                <ChevronsRight className="w-4 h-4 text-[#0D9488]" />
+                <ChevronsRight className="w-4 h-4 text-cyan-400" />
               ) : (
                 <ChevronsLeft className="w-4 h-4 text-slate-400" />
               )}
@@ -126,7 +130,7 @@ export default function Sidebar({
           </div>
 
           {/* Navigation Links */}
-          <nav className="p-3 space-y-1.5">
+          <nav className="p-2.5 space-y-1.5">
             {mainNavItems.map((item) => {
               const Icon = item.icon;
               const isActive = activeTab === item.id;
@@ -139,38 +143,34 @@ export default function Sidebar({
                     setMobileOpen(false);
                   }}
                   title={collapsed ? item.label : undefined}
-                  className={`w-full flex items-center rounded-xl transition-all duration-200 group relative text-left min-h-[48px] ${
+                  className={`w-full flex items-center rounded-lg transition-all duration-150 group relative text-left min-h-[44px] btn-precision ${
                     collapsed
-                      ? 'justify-center p-3'
-                      : 'justify-between px-3.5 py-3'
+                      ? 'justify-center p-2.5'
+                      : 'justify-between px-3 py-2.5'
                   } ${
                     isActive
-                      ? 'bg-gradient-to-r from-[#1E40AF] to-[#0D9488] text-white font-bold shadow-md shadow-blue-950/50 border border-blue-400/20'
-                      : 'bg-white/3 hover:bg-white/8 text-slate-300 hover:text-white border border-transparent'
+                      ? 'bg-[#101F3B] text-white font-bold border border-cyan-400/60 shadow-md shadow-cyan-950/50'
+                      : 'text-slate-300 hover:text-white hover:bg-[#0B1528] border border-transparent hover:border-[#1E3557]'
                   }`}
                 >
-                  <div className="flex items-center space-x-3 min-w-0">
+                  <div className="flex items-center space-x-2.5 min-w-0">
                     <div
-                      className={`flex-shrink-0 p-1 rounded-lg ${
+                      className={`flex-shrink-0 transition-colors ${
                         isActive
-                          ? 'text-white'
-                          : 'text-slate-400 group-hover:text-teal-300 transition-colors'
+                          ? 'text-cyan-400'
+                          : 'text-slate-400 group-hover:text-cyan-300'
                       }`}
                     >
-                      <Icon className="w-5 h-5" />
+                      <Icon className="w-4 h-4 stroke-[2.2]" />
                     </div>
 
                     {!collapsed && (
                       <div className="min-w-0">
-                        <span className="text-xs sm:text-sm font-bold block leading-tight truncate">
+                        <span className="text-xs font-bold block leading-tight truncate">
                           {item.label}
                         </span>
-                        <span
-                          className={`text-[10px] block leading-tight truncate mt-0.5 ${
-                            isActive ? 'text-blue-100 font-medium' : 'text-slate-500 group-hover:text-slate-400'
-                          }`}
-                        >
-                          {item.description}
+                        <span className="text-[10px] font-mono text-slate-400 font-semibold block leading-tight truncate mt-0.5">
+                          {item.code}
                         </span>
                       </div>
                     )}
@@ -178,15 +178,15 @@ export default function Sidebar({
 
                   {!collapsed && (
                     <ChevronRight
-                      className={`w-4 h-4 flex-shrink-0 transition ${
-                        isActive ? 'text-white translate-x-0.5' : 'text-slate-600 group-hover:text-slate-400'
+                      className={`w-4 h-4 flex-shrink-0 transition-transform ${
+                        isActive ? 'text-cyan-400 translate-x-0.5' : 'text-slate-500 group-hover:text-slate-300'
                       }`}
                     />
                   )}
 
-                  {/* Tooltip in Collapsed Mode */}
+                  {/* Tooltip in Collapsed / Rail Mode */}
                   {collapsed && (
-                    <div className="absolute left-full ml-3 px-3 py-2 rounded-xl bg-[#0B132B] border border-slate-700 text-white text-xs font-bold whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-150 shadow-2xl z-50">
+                    <div className="absolute left-full ml-2.5 px-2.5 py-1 rounded-md bg-[#0B1528] border border-[#274468] text-white font-mono text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-150 shadow-xl z-50">
                       {item.label}
                     </div>
                   )}
@@ -196,56 +196,55 @@ export default function Sidebar({
           </nav>
         </div>
 
-        {/* Bottom Section: Compact Status Pill & Ubigeo Excel link */}
-        <div className="p-3 border-t border-slate-800/80 space-y-2 bg-black/20">
+        {/* Bottom Section: Telemetry & Ubigeo reference */}
+        <div className="p-2.5 border-t border-[#1E3557] space-y-2 bg-[#040914] font-mono text-xs">
           {!collapsed && (
             <a
               href={api.getUbigeoExcelUrl()}
               target="_blank"
               rel="noreferrer"
-              className="flex items-center space-x-2 px-3 py-2 rounded-xl bg-slate-900/50 hover:bg-slate-800 border border-slate-700/60 text-xs text-slate-300 hover:text-white transition group"
-              title="Descargar base de datos oficial de Ubigeos Perú en Excel"
+              className="flex items-center space-x-2 px-2.5 py-2 rounded-md bg-[#0B1528] hover:bg-[#101F3B] border border-[#1E3557] text-slate-200 hover:text-white transition group btn-precision text-xs shadow-xs"
+              title="Descargar base oficial de Ubigeos en Excel"
             >
-              <FileSpreadsheet className="w-4 h-4 text-[#10B981] group-hover:scale-110 transition flex-shrink-0" />
+              <FileSpreadsheet className="w-4 h-4 text-teal-400 flex-shrink-0" />
               <div className="min-w-0 flex-1">
-                <span className="block font-bold text-[11px] text-slate-200">Base Ubigeos (Excel)</span>
-                <span className="block text-[9px] text-[#00BFA5]">1,839 Distritos • INEI / RENIEC</span>
+                <span className="block font-bold text-white">UBIGEO_DB.XLSX</span>
+                <span className="block text-[9px] text-slate-400 font-semibold">1,839 DISTRITOS</span>
               </div>
+              <ExternalLink className="w-3.5 h-3.5 text-slate-400 group-hover:text-cyan-300" />
             </a>
           )}
 
           <div
-            className={`flex items-center rounded-xl transition border border-slate-800 bg-slate-900/60 ${
+            className={`flex items-center rounded-md border border-[#1E3557] bg-[#060D1A] ${
               collapsed
-                ? 'justify-center p-2.5'
-                : 'px-3 py-2.5 justify-between'
+                ? 'justify-center p-2'
+                : 'px-2.5 py-1.5 justify-between'
             }`}
           >
-            <div className="flex items-center space-x-2.5 min-w-0">
-              <span
-                className={`w-2.5 h-2.5 rounded-full block flex-shrink-0 ${
-                  isOnline ? 'bg-[#10B981] shadow-glow-green' : 'bg-rose-500 animate-ping'
-                }`}
-              />
+            <div className="flex items-center space-x-2 min-w-0">
+              <span className="relative flex h-2 w-2 flex-shrink-0">
+                <span
+                  className={`animate-ping absolute inline-flex h-full w-full rounded-full ${
+                    isOnline ? 'bg-teal-400 opacity-75' : 'bg-cyan-500 opacity-75'
+                  }`}
+                />
+                <span
+                  className={`relative inline-flex rounded-full h-2 w-2 ${
+                    isOnline ? 'bg-teal-400' : 'bg-cyan-400'
+                  }`}
+                />
+              </span>
               {!collapsed && (
-                <div className="min-w-0">
-                  <span className="text-[10px] text-slate-400 block font-medium">Estado del Sistema</span>
-                  <span className="text-xs font-bold text-slate-200 truncate block">
-                    {isOnline ? 'RapidOCR AI • Conectado' : 'Backend Desconectado'}
-                  </span>
-                </div>
+                <span className="text-[11px] font-bold text-slate-200 truncate block">
+                  {isOnline ? 'RAPIDOCR: ONLINE' : 'ENGINE: OFFLINE'}
+                </span>
               )}
             </div>
 
             {!collapsed && (
-              <span
-                className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${
-                  isOnline
-                    ? 'bg-emerald-950 text-emerald-300 border border-emerald-800'
-                    : 'bg-rose-950 text-rose-300 border border-rose-800'
-                }`}
-              >
-                {isOnline ? 'Activo' : 'Offline'}
+              <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-[#101F3B] text-cyan-300 border border-[#274468]">
+                v2.6
               </span>
             )}
           </div>

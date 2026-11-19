@@ -23,11 +23,12 @@ def get_rapid_ocr_instance():
     """
     global _RAPID_OCR_INSTANCE
     if _RAPID_OCR_INSTANCE is None:
-        os.environ.setdefault("OMP_NUM_THREADS", "1")
-        os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
         try:
             from rapidocr_onnxruntime import RapidOCR
             _RAPID_OCR_INSTANCE = RapidOCR()
+            _RAPID_OCR_INSTANCE.use_angle_cls = False
+            if hasattr(_RAPID_OCR_INSTANCE, "text_recognizer"):
+                _RAPID_OCR_INSTANCE.text_recognizer.rec_batch_num = 16
         except Exception as e:
             raise RuntimeError(f"Error inicializando RapidOCR: {str(e)}")
     return _RAPID_OCR_INSTANCE

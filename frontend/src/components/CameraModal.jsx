@@ -242,25 +242,25 @@ export default function CameraModal({
   const isBack = currentStep === 'back_live' || currentStep === 'back_preview';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-950/85 backdrop-blur-md animate-fade-in select-none">
-      <div className="relative w-full max-w-2xl bg-slate-900 rounded-3xl overflow-hidden border border-slate-700 shadow-2xl flex flex-col max-h-[96vh] sm:max-h-[92vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-[#040914]/85 backdrop-blur-md animate-fade-in select-none">
+      <div className="relative w-full max-w-2xl bg-[#0B1528] rounded-3xl overflow-hidden border border-[#274468] shadow-2xl flex flex-col max-h-[96vh] sm:max-h-[92vh]">
         
-        {/* Top Header Bar */}
-        <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 bg-[#0A1E5C] border-b border-blue-900/60 text-white">
+        {/* Top Header Bar - Chavín Navy */}
+        <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 bg-[#060D1A] border-b border-[#1E3557] text-white">
           <div className="flex items-center space-x-3">
-            <div className="w-9 h-9 rounded-2xl bg-white/10 flex items-center justify-center text-[#14B8A6] border border-white/15 shadow-sm">
+            <div className="w-9 h-9 rounded-2xl bg-[#101F3B] flex items-center justify-center text-cyan-400 border border-[#274468] shadow-sm">
               <Camera className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center space-x-2">
                 <span className="text-sm font-extrabold text-white tracking-wide">
-                  {isFront ? 'Paso 1: Foto del Anverso' : 'Paso 2: Foto del Reverso'}
+                  {mode === 'front' ? 'Foto del Anverso (Cara Frontal)' : isFront ? 'Paso 1: Foto del Anverso' : 'Paso 2: Foto del Reverso'}
                 </span>
-                <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-[#0D9488] text-white">
-                  {mode === 'sequential' ? (isFront ? '1 de 2' : '2 de 2') : 'Reemplazar'}
+                <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-teal-500 text-slate-950">
+                  {mode === 'sequential' ? (isFront ? '1 de 2' : '2 de 2') : 'Toma única'}
                 </span>
               </div>
-              <p className="text-[11px] text-blue-200">
+              <p className="text-[11px] text-cyan-200">
                 {isFront
                   ? 'Cara frontal con foto y número de DNI'
                   : 'Cara posterior con código de barras / MRZ'}
@@ -279,37 +279,37 @@ export default function CameraModal({
 
         {/* Step Progress Bar */}
         {mode === 'sequential' && (
-          <div className="grid grid-cols-2 bg-slate-950 border-b border-slate-800 text-[11px] font-bold">
+          <div className="grid grid-cols-2 bg-[#040914] border-b border-[#1E3557] text-[11px] font-bold">
             <div
               className={`py-2 px-3 text-center transition-colors flex items-center justify-center space-x-1.5 ${
                 isFront
-                  ? 'bg-blue-600/30 text-blue-300 border-b-2 border-blue-400'
+                  ? 'bg-cyan-500/20 text-cyan-300 border-b-2 border-cyan-400'
                   : frontData
-                  ? 'bg-emerald-950/40 text-emerald-400'
+                  ? 'bg-[#0A3D44]/60 text-teal-300'
                   : 'text-slate-500'
               }`}
             >
-              {frontData ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> : <span>1.</span>}
+              {frontData ? <CheckCircle2 className="w-3.5 h-3.5 text-teal-300" /> : <span>1.</span>}
               <span>1. Anverso (Frontal)</span>
             </div>
 
             <div
               className={`py-2 px-3 text-center transition-colors flex items-center justify-center space-x-1.5 ${
                 isBack
-                  ? 'bg-teal-600/30 text-teal-300 border-b-2 border-teal-400'
+                  ? 'bg-teal-500/20 text-teal-300 border-b-2 border-teal-400'
                   : backData
-                  ? 'bg-emerald-950/40 text-emerald-400'
+                  ? 'bg-[#0A3D44]/60 text-teal-300'
                   : 'text-slate-500'
               }`}
             >
-              {backData ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> : <span>2.</span>}
+              {backData ? <CheckCircle2 className="w-3.5 h-3.5 text-teal-300" /> : <span>2.</span>}
               <span>2. Reverso (Posterior)</span>
             </div>
           </div>
         )}
 
         {/* Viewport Area */}
-        <div className="relative flex-1 bg-slate-950 min-h-[340px] sm:min-h-[420px] max-h-[580px] flex items-center justify-center overflow-hidden">
+        <div className="relative flex-1 bg-[#040914] min-h-[340px] sm:min-h-[420px] max-h-[580px] flex items-center justify-center overflow-hidden">
           <input
             ref={nativeInputRef}
             type="file"
@@ -320,22 +320,22 @@ export default function CameraModal({
           />
 
           {errorMsg ? (
-            <div className="p-6 text-center text-slate-300 max-w-md">
-              <AlertCircle className="w-12 h-12 text-amber-400 mx-auto mb-3" />
+            <div className="p-6 text-center text-slate-200 max-w-md">
+              <AlertCircle className="w-12 h-12 text-cyan-400 mx-auto mb-3" />
               <p className="text-xs sm:text-sm leading-relaxed text-slate-200 mb-4">{errorMsg}</p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-2.5">
                 <button
                   type="button"
                   onClick={() => nativeInputRef.current?.click()}
-                  className="w-full sm:w-auto px-5 py-3 bg-[#10B981] hover:bg-[#059669] active:scale-95 text-white text-xs font-bold rounded-xl shadow-lg transition flex items-center justify-center space-x-2"
+                  className="w-full sm:w-auto px-5 py-3 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 active:scale-95 text-slate-950 text-xs font-black rounded-xl shadow-lg shadow-teal-500/25 transition flex items-center justify-center space-x-2 border border-teal-300/40"
                 >
-                  <Camera className="w-4 h-4" />
+                  <Camera className="w-4 h-4 stroke-[2.5]" />
                   <span>📸 Tomar Foto con Celular</span>
                 </button>
                 <button
                   type="button"
                   onClick={startCamera}
-                  className="w-full sm:w-auto px-4 py-2.5 bg-slate-700 hover:bg-slate-600 active:scale-95 text-white text-xs font-semibold rounded-xl transition"
+                  className="w-full sm:w-auto px-4 py-2.5 bg-[#101F3B] hover:bg-[#162A4F] active:scale-95 text-white text-xs font-bold rounded-xl border border-[#274468] transition"
                 >
                   Reintentar Web
                 </button>
@@ -410,18 +410,18 @@ export default function CameraModal({
           <canvas ref={canvasRef} className="hidden" />
         </div>
 
-        {/* Bottom Control Bar (Touch Optimized) */}
-        <div className="px-4 sm:px-6 py-4 bg-slate-900 border-t border-slate-800 flex items-center justify-between gap-3">
+        {/* Bottom Control Bar (Touch Optimized - Chavín Navy) */}
+        <div className="px-4 sm:px-6 py-4 bg-[#040914] border-t border-[#1E3557] flex items-center justify-between gap-3">
           {isLive ? (
             <>
               {/* Rotate Camera Button */}
               <button
                 type="button"
                 onClick={toggleFacingMode}
-                className="flex items-center justify-center space-x-1.5 px-3.5 py-3 text-xs font-bold text-slate-200 bg-slate-800 hover:bg-slate-700 active:bg-slate-600 rounded-2xl border border-slate-700 transition min-h-[48px] min-w-[48px]"
+                className="flex items-center justify-center space-x-1.5 px-3.5 py-3 text-xs font-bold text-slate-200 bg-[#0B1528] hover:bg-[#101F3B] active:bg-[#162A4F] rounded-2xl border border-[#274468] transition min-h-[48px] min-w-[48px]"
                 title="Girar entre cámara trasera y frontal"
               >
-                <RefreshCw className="w-4 h-4 text-[#14B8A6]" />
+                <RefreshCw className="w-4 h-4 text-cyan-400" />
                 <span className="hidden sm:inline">Girar</span>
               </button>
 
@@ -430,9 +430,9 @@ export default function CameraModal({
                 type="button"
                 onClick={takeSnapshot}
                 disabled={!stream}
-                className="flex-1 flex items-center justify-center space-x-2 px-6 py-3.5 bg-gradient-to-r from-[#1D4ED8] to-[#0A1E5C] hover:from-[#2563EB] hover:to-[#1E40AF] active:scale-98 text-white font-extrabold text-sm sm:text-base rounded-2xl shadow-xl border border-blue-400/30 transition min-h-[52px]"
+                className="flex-1 flex items-center justify-center space-x-2 px-6 py-3.5 bg-gradient-to-r from-cyan-500 via-teal-500 to-teal-600 hover:from-cyan-400 hover:to-teal-500 active:scale-98 text-slate-950 font-black text-sm sm:text-base rounded-2xl shadow-xl shadow-cyan-500/20 border border-cyan-300/40 transition min-h-[52px]"
               >
-                <Camera className="w-5 h-5 text-[#14B8A6]" />
+                <Camera className="w-5 h-5 text-slate-950 stroke-[2.5]" />
                 <span>
                   {isFront ? '📸 Tomar Foto Anverso' : '📸 Tomar Foto Reverso'}
                 </span>
@@ -442,7 +442,7 @@ export default function CameraModal({
               <button
                 type="button"
                 onClick={handleClose}
-                className="px-3.5 py-3 text-xs font-bold text-slate-400 hover:text-white bg-slate-800/80 rounded-2xl border border-slate-700/60 min-h-[48px]"
+                className="px-3.5 py-3 text-xs font-bold text-slate-300 hover:text-white bg-[#0B1528] rounded-2xl border border-[#1E3557] min-h-[48px]"
               >
                 Cancelar
               </button>
@@ -454,7 +454,7 @@ export default function CameraModal({
               <button
                 type="button"
                 onClick={isFront ? handleFrontRetake : handleBackRetake}
-                className="flex-1 flex items-center justify-center space-x-2 px-4 py-3.5 text-xs sm:text-sm font-bold text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 active:scale-98 border border-slate-700 rounded-2xl transition min-h-[50px]"
+                className="flex-1 flex items-center justify-center space-x-2 px-4 py-3.5 text-xs sm:text-sm font-bold text-slate-200 hover:text-white bg-[#0B1528] hover:bg-[#101F3B] active:scale-98 border border-[#274468] rounded-2xl transition min-h-[50px]"
               >
                 <RotateCcw className="w-4 h-4 text-slate-400" />
                 <span>🔄 Repetir Foto</span>
@@ -465,18 +465,22 @@ export default function CameraModal({
                 <button
                   type="button"
                   onClick={handleFrontContinue}
-                  className="flex-1 flex items-center justify-center space-x-2 px-4 py-3.5 bg-gradient-to-r from-[#0D9488] to-[#0F766E] hover:from-[#14B8A6] hover:to-[#0D9488] text-white font-extrabold text-xs sm:text-sm rounded-2xl shadow-xl transition active:scale-98 min-h-[50px]"
+                  className="flex-1 flex items-center justify-center space-x-2 px-4 py-3.5 bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-slate-950 font-black text-xs sm:text-sm rounded-2xl shadow-xl transition active:scale-98 min-h-[50px] border border-cyan-300/40"
                 >
-                  <span>Continuar al Reverso</span>
-                  <ArrowRight className="w-4 h-4" />
+                  <span>{mode === 'front' ? '✅ Usar Foto Anverso' : 'Continuar al Reverso'}</span>
+                  {mode === 'front' ? (
+                    <Check className="w-4 h-4 stroke-[2.5]" />
+                  ) : (
+                    <ArrowRight className="w-4 h-4 stroke-[2.5]" />
+                  )}
                 </button>
               ) : (
                 <button
                   type="button"
                   onClick={handleFinish}
-                  className="flex-1 flex items-center justify-center space-x-2 px-4 py-3.5 bg-gradient-to-r from-[#10B981] to-[#059669] hover:from-[#34D399] hover:to-[#10B981] text-white font-extrabold text-xs sm:text-sm rounded-2xl shadow-xl transition active:scale-98 min-h-[50px]"
+                  className="flex-1 flex items-center justify-center space-x-2 px-4 py-3.5 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-slate-950 font-black text-xs sm:text-sm rounded-2xl shadow-xl transition active:scale-98 min-h-[50px] border border-teal-300/40"
                 >
-                  <Check className="w-5 h-5 text-white" />
+                  <Check className="w-5 h-5 text-slate-950 stroke-[3]" />
                   <span>✅ Confirmar y Finalizar</span>
                 </button>
               )}

@@ -63,6 +63,31 @@ class ScannedRecord(Base):
     pension_system = Column(String(50), default="", nullable=True)
     pension_commission = Column(String(50), default="", nullable=True)
     cuspp = Column(String(50), default="", nullable=True)
+
+    # Contract NISIRA assignment fields
+    cod_planilla = Column(String(10), default="ORP", nullable=True)
+    nro_contrato = Column(String(50), default="", nullable=True)
+    basico = Column(Float, default=1025.0, nullable=True)
+    inicio_contrato = Column(String(20), default="", nullable=True)
+    duracion = Column(String(20), default="3", nullable=True)
+    fin_contrato = Column(String(20), default="", nullable=True)
+    fecha_firma_contrato = Column(String(20), default="", nullable=True)
+    tipo_contrato = Column(String(10), default="05", nullable=True)
+    nro_contrato_ref = Column(String(50), default="", nullable=True)
+
+    # Personal NISIRA fields (Defaults para OBRERO DE PLANTA)
+    cod_cargo = Column(String(10), default="048", nullable=True)
+    cod_tipo_trab = Column(String(10), default="76", nullable=True)
+    cat_ocupacional = Column(String(10), default="02", nullable=True)
+    period_pago = Column(String(10), default="3", nullable=True)
+    cod_sucursal = Column(String(10), default="CA3", nullable=True)
+    grupo_trabajo = Column(String(10), default="013", nullable=True)
+    tipo_personal = Column(String(10), default="05", nullable=True)
+    reg_laboral = Column(String(10), default="26", nullable=True)
+    niv_educativo = Column(String(10), default="007", nullable=True)
+    tipo_comision = Column(String(10), default="0", nullable=True)
+    asignacion_familiar = Column(String(10), default="NO", nullable=True)
+    fec_ingreso = Column(String(20), default="", nullable=True)
     
     # Notes & observations
     observations = Column(Text, default="", nullable=True)
@@ -128,6 +153,28 @@ class ScannedRecord(Base):
             "is_blurry_front": self.is_blurry_front,
             "is_blurry_back": self.is_blurry_back,
             "field_confidences": confidences,
+            "cod_planilla": self.cod_planilla or "ORP",
+            "nro_contrato": self.nro_contrato or "",
+            "basico": self.basico if self.basico is not None else 1025.0,
+            "inicio_contrato": self.inicio_contrato or "",
+            "duracion": self.duracion or "3",
+            "fin_contrato": self.fin_contrato or "",
+            "fecha_firma_contrato": self.fecha_firma_contrato or "",
+            "tipo_contrato": self.tipo_contrato or "05",
+            "nro_contrato_ref": self.nro_contrato_ref or "",
+            # Personal NISIRA
+            "cod_cargo": self.cod_cargo or "048",
+            "cod_tipo_trab": self.cod_tipo_trab or "76",
+            "cat_ocupacional": self.cat_ocupacional or "02",
+            "period_pago": self.period_pago or "3",
+            "cod_sucursal": self.cod_sucursal or "CA3",
+            "grupo_trabajo": self.grupo_trabajo or "013",
+            "tipo_personal": self.tipo_personal or "05",
+            "reg_laboral": self.reg_laboral or "26",
+            "niv_educativo": self.niv_educativo or "007",
+            "tipo_comision": self.tipo_comision or "0",
+            "asignacion_familiar": self.asignacion_familiar or "NO",
+            "fec_ingreso": self.fec_ingreso or "",
         }
 
 
@@ -194,6 +241,125 @@ class OCRLearningRecord(Base):
         }
 
 
+class HistoricalWorker(Base):
+    """
+    Padrón maestro de Data Histórica importada desde Excel (ej. DATA HISTORICA.xlsx).
+    Permite consultar trabajadores existentes instantáneamente sin consumir tokens de Factiliza.
+    """
+    __tablename__ = "historical_workers"
+
+    id = Column(Integer, primary_key=True, index=True)
+    doc_number = Column(String(50), nullable=False, index=True, unique=True)
+    doc_type = Column(String(50), default="DNI", index=True)
+    paternal_surname = Column(String(100), default="", nullable=True)
+    maternal_surname = Column(String(100), default="", nullable=True)
+    first_names = Column(String(150), default="", nullable=True)
+    full_name = Column(String(250), default="", nullable=True)
+    birth_date = Column(String(20), default="", nullable=True)
+    sex = Column(String(20), default="", nullable=True)
+    civil_status = Column(String(50), default="", nullable=True)
+    nationality = Column(String(50), default="PERUANA", nullable=True)
+    address = Column(Text, default="", nullable=True)
+    ubigeo_inei = Column(String(20), default="", nullable=True)
+    ubigeo_reniec = Column(String(20), default="", nullable=True)
+    ubigeo = Column(String(100), default="", nullable=True)
+    department = Column(String(100), default="", nullable=True)
+    province = Column(String(100), default="", nullable=True)
+    district = Column(String(100), default="", nullable=True)
+    phone = Column(String(50), default="999999999", nullable=True)
+    email = Column(String(100), default="sincorreo@gmail.com", nullable=True)
+    pension_system = Column(String(50), default="", nullable=True)
+    pension_commission = Column(String(50), default="", nullable=True)
+    cuspp = Column(String(50), default="", nullable=True)
+    bank_id = Column(String(50), default="", nullable=True)
+    bank_account = Column(String(100), default="", nullable=True)
+    cargo = Column(String(100), default="", nullable=True)
+    codigo_general = Column(String(50), default="", nullable=True)
+    codigo_control = Column(String(50), default="", nullable=True)
+    created_at = Column(DateTime, default=get_peru_now, nullable=False)
+
+    def to_dict(self):
+        return {
+            "success": True,
+            "status_code": 200,
+            "source": "data_historica",
+            "is_historical": True,
+            "message": "Trabajador encontrado en Data Histórica (Ahorro de token Factiliza)",
+            "doc_type": self.doc_type or "DNI",
+            "doc_number": self.doc_number,
+            "first_names": self.first_names or "",
+            "paternal_surname": self.paternal_surname or "",
+            "maternal_surname": self.maternal_surname or "",
+            "full_name": self.full_name or f"{self.paternal_surname} {self.maternal_surname} {self.first_names}".strip(),
+            "birth_date": self.birth_date or "",
+            "sex": self.sex or "",
+            "civil_status": self.civil_status or "",
+            "nationality": self.nationality or "PERUANA",
+            "address": self.address or "",
+            "department": self.department or "",
+            "province": self.province or "",
+            "district": self.district or "",
+            "ubigeo_inei": self.ubigeo_inei or "",
+            "ubigeo_reniec": self.ubigeo_reniec or "",
+            "ubigeo": self.ubigeo or (f"{self.department} / {self.province} / {self.district}" if self.department else ""),
+            "phone": self.phone or "999999999",
+            "email": self.email or "sincorreo@gmail.com",
+            "pension_system": self.pension_system or "",
+            "pension_commission": self.pension_commission or "",
+            "cuspp": self.cuspp or "",
+            "bank_account": self.bank_account or "",
+            "cargo": self.cargo or "",
+            "raw_response": {
+                "origen": "DATA_HISTORICA",
+                "doc_number": self.doc_number,
+                "full_name": self.full_name,
+                "afps": self.pension_system,
+                "cuspp": self.cuspp,
+                "cuenta_banco": self.bank_account,
+                "cargo": self.cargo,
+            }
+        }
+
+
+class SBSRecord(Base):
+    __tablename__ = "sbs_records"
+
+    id = Column(Integer, primary_key=True, index=True)
+    doc_number = Column(String(50), nullable=False, index=True)
+    doc_type = Column(String(20), default="DNI", nullable=False)
+    paternal_surname = Column(String(100), default="", nullable=True)
+    maternal_surname = Column(String(100), default="", nullable=True)
+    first_names = Column(String(150), default="", nullable=True)
+
+    afp_actual = Column(String(100), default="ONP / SNP", nullable=True)
+    cuspp = Column(String(50), default="-", nullable=True)
+    fecha_afiliacion_spp = Column(String(50), default="-", nullable=True)
+    situacion_actual = Column(String(100), default="ONP / SNP", nullable=True)
+    ultimo_aporte = Column(String(50), default="-", nullable=True)
+
+    consulted_at = Column(DateTime, default=get_peru_now, nullable=False)
+    raw_text = Column(Text, default="", nullable=True)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "doc_number": self.doc_number,
+            "doc_type": self.doc_type,
+            "paternal_surname": self.paternal_surname or "",
+            "maternal_surname": self.maternal_surname or "",
+            "first_names": self.first_names or "",
+            "full_name": f"{self.paternal_surname or ''} {self.maternal_surname or ''} {self.first_names or ''}".strip(),
+            "afp_actual": self.afp_actual or "ONP / SNP",
+            "pension_system": self.afp_actual or "ONP / SNP",
+            "cuspp": self.cuspp or "-",
+            "fecha_afiliacion_spp": self.fecha_afiliacion_spp or "-",
+            "situacion_actual": self.situacion_actual or "ONP / SNP",
+            "ultimo_aporte": self.ultimo_aporte or "-",
+            "consulted_at": self.consulted_at.isoformat() if self.consulted_at else "",
+            "source": "sbs_local",
+        }
+
+
 def init_db():
     Base.metadata.create_all(bind=engine)
     # Safe migration for new columns in SQLite
@@ -209,6 +375,27 @@ def init_db():
             ("district", "VARCHAR(100)", "''"),
             ("ubigeo_reniec", "VARCHAR(20)", "''"),
             ("ubigeo_inei", "VARCHAR(20)", "''"),
+            ("cod_planilla", "VARCHAR(10)", "'ORP'"),
+            ("nro_contrato", "VARCHAR(50)", "''"),
+            ("basico", "FLOAT", "1025.0"),
+            ("inicio_contrato", "VARCHAR(20)", "''"),
+            ("duracion", "VARCHAR(20)", "'3'"),
+            ("fin_contrato", "VARCHAR(20)", "''"),
+            ("fecha_firma_contrato", "VARCHAR(20)", "''"),
+            ("tipo_contrato", "VARCHAR(10)", "'05'"),
+            ("nro_contrato_ref", "VARCHAR(50)", "''"),
+            ("cod_cargo", "VARCHAR(10)", "'048'"),
+            ("cod_tipo_trab", "VARCHAR(10)", "'76'"),
+            ("cat_ocupacional", "VARCHAR(10)", "'02'"),
+            ("period_pago", "VARCHAR(10)", "'3'"),
+            ("cod_sucursal", "VARCHAR(10)", "'CA3'"),
+            ("grupo_trabajo", "VARCHAR(10)", "'013'"),
+            ("tipo_personal", "VARCHAR(10)", "'05'"),
+            ("reg_laboral", "VARCHAR(10)", "'26'"),
+            ("niv_educativo", "VARCHAR(10)", "'007'"),
+            ("tipo_comision", "VARCHAR(10)", "'0'"),
+            ("asignacion_familiar", "VARCHAR(10)", "'NO'"),
+            ("fec_ingreso", "VARCHAR(20)", "''"),
         ]:
             try:
                 conn.execute(text(f"ALTER TABLE scanned_records ADD COLUMN {col_name} {col_type} DEFAULT {default_val}"))

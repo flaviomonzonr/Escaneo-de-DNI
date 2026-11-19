@@ -26,7 +26,7 @@ export default function Navbar({ activeTab, setActiveTab, healthInfo }) {
               <div className="flex w-6 h-4 rounded overflow-hidden shadow-sm border border-white/20">
                 <div className="w-1/3 bg-red-600"></div>
                 <div className="w-1/3 bg-white flex items-center justify-center">
-                  <div className="w-1 h-1 rounded-full bg-amber-500"></div>
+                  <div className="w-1 h-1 rounded-full bg-cyan-400"></div>
                 </div>
                 <div className="w-1/3 bg-red-600"></div>
               </div>
@@ -74,7 +74,7 @@ export default function Navbar({ activeTab, setActiveTab, healthInfo }) {
             <div className="flex items-center space-x-2 px-3 py-1.5 rounded-lg bg-slate-900/60 border border-slate-800 text-xs text-slate-300">
               <span
                 className={`w-2 h-2 rounded-full ${
-                  healthInfo?.status === 'healthy' ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'
+                  healthInfo?.status === 'healthy' ? 'bg-emerald-500 animate-pulse' : 'bg-cyan-400'
                 }`}
               ></span>
               <span>

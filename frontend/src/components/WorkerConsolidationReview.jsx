@@ -165,8 +165,8 @@ export default function WorkerConsolidationReview({
       badgeClass = 'bg-blue-950/80 text-blue-300 border-blue-800/60';
       icon = <Eye className="w-3 h-3 inline mr-1 text-blue-400" />;
     } else if (type === 'CALCULATED') {
-      badgeClass = 'bg-amber-950/80 text-amber-300 border-amber-800/60';
-      icon = <Clock className="w-3 h-3 inline mr-1 text-amber-400" />;
+      badgeClass = 'bg-[#101F3B] text-cyan-300 border-cyan-500/40';
+      icon = <Clock className="w-3 h-3 inline mr-1 text-cyan-400" />;
     } else if (type === 'USER') {
       badgeClass = 'bg-indigo-950/80 text-indigo-300 border-indigo-800/60';
       icon = <User className="w-3 h-3 inline mr-1 text-indigo-400" />;
@@ -201,7 +201,7 @@ export default function WorkerConsolidationReview({
                   <span>Consolidado en Excel</span>
                 </span>
               ) : (
-                <span className="px-3 py-1 rounded-full bg-amber-600/20 border border-amber-500/30 text-amber-400 text-xs font-semibold flex items-center space-x-1">
+                <span className="px-3 py-1 rounded-full bg-[#0A3D44] border border-teal-500/40 text-teal-200 text-xs font-semibold flex items-center space-x-1">
                   <Info className="w-3.5 h-3.5 mr-1" />
                   <span>Nuevo / Extraído por OCR</span>
                 </span>
@@ -534,7 +534,7 @@ export default function WorkerConsolidationReview({
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-slate-300 flex items-center justify-between">
                 <span>Fecha de Inicio del Contrato:</span>
-                <span className="text-[10px] text-amber-400 font-mono">Ingreso Manual Obligatorio</span>
+                <span className="text-[10px] text-cyan-400 font-mono">Ingreso Manual Obligatorio</span>
               </label>
               <input
                 type="text"

@@ -9,6 +9,7 @@
   ],
   "scripts": {
     "dev": "node dev.js",
+    "stop": "node dev.js --stop",
     "dev:share": "node dev.js --share",
     "start": "node dev.js",
     "share": "cd frontend && node start_tunnel.cjs",

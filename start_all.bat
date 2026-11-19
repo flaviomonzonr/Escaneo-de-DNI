@@ -30,15 +30,18 @@ echo.
 echo   💻 EN TU LAPTOP:
 echo      http://localhost:5173
 echo.
-echo   📶 EN TU CELULAR / TABLET (Misma red Wi-Fi):
+echo   ⚡ EN TU CELULAR / TABLET (Misma red Wi-Fi - RECOMENDADO, ABRE EN 1 SEGUNDO):
 if defined LOCAL_IP (
     echo      http://%LOCAL_IP%:5173
 ) else (
-    echo      http://192.168.68.61:5173
+    echo      http://192.168.68.75:5173
 )
 echo.
-echo   🌐 EN TU CELULAR (Diferente Wi-Fi / Datos Moviles):
-echo      https://obsessive-antiquity-synthesis.ngrok-free.dev
+set TUNNEL_URL=https://ons-subjects-pizza-specialties.trycloudflare.com
+if exist "data\tunnel_url.txt" set /p TUNNEL_URL=<"data\tunnel_url.txt"
+echo   🌐 EN TU CELULAR U OTRA LAPTOP (Fuera de oficina / Datos Moviles / Otra Red):
+echo      %TUNNEL_URL%
+echo      (Enlace seguro HTTPS - Revisa tambien "ENLACE_CELULAR_DNI.txt" en tu Escritorio)
 echo.
 echo   ⚙️ BACKEND API DOCS:
 echo      http://127.0.0.1:8000/docs

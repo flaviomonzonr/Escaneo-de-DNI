@@ -203,9 +203,14 @@ def classify_document(
     best_doc, best_subtype, best_score = scores[0]
 
     if best_score < 20:
-        best_doc = declared_type or "DNI"
-        best_subtype = "DNI Peruano Estándar"
-        conf = 65.0
+        if declared_type and declared_type not in ["AUTO", "", None]:
+            best_doc = declared_type
+            best_subtype = f"{declared_type} (Declarado por usuario)"
+            conf = 50.0
+        else:
+            best_doc = "INDETERMINADO"
+            best_subtype = "Documento no identificado con certeza (Requiere revisión)"
+            conf = round(float(max(10.0, best_score)), 1)
     else:
         conf = min(99.0, max(50.0, float(best_score)))
 

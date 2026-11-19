@@ -2,28 +2,27 @@ import React, { useState, useEffect } from 'react';
 import {
   Search,
   Download,
-  Filter,
   Trash2,
   Eye,
+  RefreshCw,
+  FileSpreadsheet,
+  AlertCircle,
   Calendar,
+  Layers,
   CreditCard,
   ShieldCheck,
-  FileSpreadsheet,
-  RefreshCw,
   Clock,
-  Layers,
-  Sparkles,
 } from 'lucide-react';
 import { api } from '../services/api';
 import RecordDetailModal from './RecordDetailModal';
 
-export default function HistoryView({ reconnectTrigger }) {
+export default function HistoryView({ reconnectTrigger = 0 }) {
   const [records, setRecords] = useState([]);
-  const [stats, setStats] = useState(null);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
-  const [pageSize] = useState(15);
-  const [loading, setLoading] = useState(true);
+  const pageSize = 15;
+
+  const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
 
   // Filters
@@ -32,29 +31,24 @@ export default function HistoryView({ reconnectTrigger }) {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
 
-  // Selected record for modal detail
+  // Stats
+  const [stats, setStats] = useState(null);
+
+  // Detail Modal
   const [selectedRecord, setSelectedRecord] = useState(null);
 
   useEffect(() => {
     fetchRecords();
     fetchStats();
-  }, [page, selectedDocType, startDate, endDate]);
-
-  // Auto-reload on reconnectTrigger
-  useEffect(() => {
-    if (reconnectTrigger !== undefined && reconnectTrigger > 0) {
-      fetchRecords();
-      fetchStats();
-    }
-  }, [reconnectTrigger]);
+  }, [page, selectedDocType, startDate, endDate, reconnectTrigger]);
 
   const fetchRecords = async () => {
     setLoading(true);
     setErrorMsg(null);
     try {
       const data = await api.getRecords({
-        page,
-        page_size: pageSize,
+        skip: (page - 1) * pageSize,
+        limit: pageSize,
         search: searchTerm,
         doc_type: selectedDocType,
         start_date: startDate,
@@ -64,12 +58,11 @@ export default function HistoryView({ reconnectTrigger }) {
       setTotal(data.total || 0);
     } catch (err) {
       console.error('Error fetching records:', err);
-      setErrorMsg('No se pudo conectar con el servidor Backend (Python). Todos tus registros están 100% seguros y guardados en tu equipo. Inicia start_backend.bat o start_all.bat para visualizarlos.');
+      setErrorMsg('No se pudo conectar con la base de datos local.');
     } finally {
       setLoading(false);
     }
   };
-
 
   const fetchStats = async () => {
     try {
@@ -92,9 +85,6 @@ export default function HistoryView({ reconnectTrigger }) {
     setStartDate('');
     setEndDate('');
     setPage(1);
-    setTimeout(() => {
-      fetchRecords();
-    }, 50);
   };
 
   const handleDelete = async (id, docNumber) => {
@@ -113,56 +103,56 @@ export default function HistoryView({ reconnectTrigger }) {
   const totalPages = Math.ceil(total / pageSize) || 1;
 
   return (
-    <div className="space-y-4 animate-fade-in">
+    <div className="space-y-4 animate-fade-in text-white">
       
-      {/* Top Stats Cards (Compact & High-Impact) */}
-      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      {/* Top Stats Cards - Chavín Navy, Steel Blue, Turquoise & Petroleum Green */}
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         
-        <div className="bg-white p-3.5 rounded-xl border border-[#E2E8F0] shadow-xs flex items-center justify-between">
+        <div className="card-enterprise bg-[#0B1528] p-4 rounded-xl border border-[#1E3557] shadow-lg flex items-center justify-between">
           <div>
-            <span className="text-[11px] font-semibold text-[#64748B] block">Total Escaneados</span>
-            <span className="text-xl font-black text-[#080F72] mt-0.5 block">
+            <span className="text-[11px] font-bold text-slate-300 block">Total Escaneados</span>
+            <span className="text-xl sm:text-2xl font-black text-white mt-0.5 block font-mono">
               {stats?.total_records ?? 0}
             </span>
           </div>
-          <div className="p-2 rounded-lg bg-blue-50 text-[#101BCB] border border-blue-100">
-            <Layers className="w-4 h-4" />
+          <div className="p-2.5 rounded-lg bg-[#101F3B] text-cyan-400 border border-[#274468]">
+            <Layers className="w-5 h-5 stroke-[2.2]" />
           </div>
         </div>
 
-        <div className="bg-white p-3.5 rounded-xl border border-[#E2E8F0] shadow-xs flex items-center justify-between">
+        <div className="card-enterprise bg-[#0B1528] p-4 rounded-xl border border-[#1E3557] shadow-lg flex items-center justify-between">
           <div>
-            <span className="text-[11px] font-semibold text-[#64748B] block">DNI Peruanos</span>
-            <span className="text-xl font-black text-[#080F72] mt-0.5 block">
+            <span className="text-[11px] font-bold text-slate-300 block">DNI Peruanos</span>
+            <span className="text-xl sm:text-2xl font-black text-cyan-300 mt-0.5 block font-mono">
               {stats?.dni_count ?? 0}
             </span>
           </div>
-          <div className="p-2 rounded-lg bg-indigo-50 text-[#101BCB] border border-indigo-100">
-            <CreditCard className="w-4 h-4" />
+          <div className="p-2.5 rounded-lg bg-[#101F3B] text-cyan-400 border border-[#274468]">
+            <CreditCard className="w-5 h-5 stroke-[2.2]" />
           </div>
         </div>
 
-        <div className="bg-white p-3.5 rounded-xl border border-[#E2E8F0] shadow-xs flex items-center justify-between">
+        <div className="card-enterprise bg-[#0B1528] p-4 rounded-xl border border-[#1E3557] shadow-lg flex items-center justify-between">
           <div>
-            <span className="text-[11px] font-semibold text-[#64748B] block">Carnet Extranjería</span>
-            <span className="text-xl font-black text-[#080F72] mt-0.5 block">
+            <span className="text-[11px] font-bold text-slate-300 block">Carnet Extranjería</span>
+            <span className="text-xl sm:text-2xl font-black text-teal-300 mt-0.5 block font-mono">
               {stats?.ce_count ?? 0}
             </span>
           </div>
-          <div className="p-2 rounded-lg bg-amber-50 text-amber-600 border border-amber-100">
-            <ShieldCheck className="w-4 h-4" />
+          <div className="p-2.5 rounded-lg bg-[#0A3D44] text-teal-300 border border-teal-500/40">
+            <ShieldCheck className="w-5 h-5 stroke-[2.2]" />
           </div>
         </div>
 
-        <div className="bg-white p-3.5 rounded-xl border border-[#E2E8F0] shadow-xs flex items-center justify-between">
+        <div className="card-enterprise bg-[#0B1528] p-4 rounded-xl border border-[#1E3557] shadow-lg flex items-center justify-between">
           <div>
-            <span className="text-[11px] font-semibold text-[#64748B] block">Escaneados Hoy</span>
-            <span className="text-xl font-black text-[#166534] mt-0.5 block">
+            <span className="text-[11px] font-bold text-slate-300 block">Escaneados Hoy</span>
+            <span className="text-xl sm:text-2xl font-black text-emerald-300 mt-0.5 block font-mono">
               {stats?.scanned_today ?? 0}
             </span>
           </div>
-          <div className="p-2 rounded-lg bg-emerald-50 text-[#166534] border border-emerald-100">
-            <Clock className="w-4 h-4" />
+          <div className="p-2.5 rounded-lg bg-[#0A3D44] text-emerald-300 border border-emerald-500/40">
+            <Clock className="w-5 h-5 stroke-[2.2]" />
           </div>
         </div>
 
@@ -170,9 +160,9 @@ export default function HistoryView({ reconnectTrigger }) {
 
       {/* Error Message Banner */}
       {errorMsg && (
-        <div className="p-4 rounded-xl bg-[#FEF2F2] border border-[#FCA5A5] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-[#991B1B] text-xs sm:text-sm animate-fade-in shadow-xs">
+        <div className="p-4 rounded-xl bg-rose-950/80 border border-rose-500/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-rose-200 text-xs sm:text-sm animate-fade-in shadow-md">
           <div className="flex items-center space-x-3">
-            <AlertCircle className="w-5 h-5 text-[#DC2626] flex-shrink-0" />
+            <AlertCircle className="w-5 h-5 text-rose-400 flex-shrink-0" />
             <span>{errorMsg}</span>
           </div>
           <button
@@ -180,7 +170,7 @@ export default function HistoryView({ reconnectTrigger }) {
               fetchRecords();
               fetchStats();
             }}
-            className="px-3.5 py-1.5 rounded-lg bg-[#DC2626] hover:bg-[#B91C1C] text-white text-xs font-bold flex items-center space-x-1.5 transition shrink-0 shadow-2xs"
+            className="px-3.5 py-1.5 rounded-lg bg-rose-800 hover:bg-rose-700 text-white text-xs font-bold flex items-center space-x-1.5 transition shrink-0 btn-precision"
           >
             <RefreshCw className="w-3.5 h-3.5" />
             <span>Reintentar Carga</span>
@@ -188,26 +178,26 @@ export default function HistoryView({ reconnectTrigger }) {
         </div>
       )}
 
-      {/* Search, Filters & Excel Download Bar (Compact & Sleek) */}
-      <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#E2E8F0] shadow-xs space-y-3">
+      {/* Search, Filters & Excel Download Bar - High Contrast Chavín */}
+      <div className="card-enterprise bg-[#0B1528] p-4 sm:p-5 rounded-2xl border border-[#1E3557] shadow-xl space-y-4">
         
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
           
           {/* Search Form */}
           <form onSubmit={handleSearchSubmit} className="flex-1 flex items-center space-x-2">
             <div className="relative flex-1">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748B]" />
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-cyan-400" />
               <input
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Buscar por DNI, Nombres, Apellidos o Dirección..."
-                className="w-full pl-10 pr-4 py-2 rounded-xl bg-white border border-[#CBD5E1] text-[#1E293B] text-xs focus:outline-none focus:border-[#101BCB] focus:ring-1 focus:ring-[#101BCB]"
+                className="w-full pl-10 pr-4 py-2 rounded-xl bg-[#060D1A] border border-[#1D334E] text-white text-xs placeholder-slate-400 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400/40"
               />
             </div>
             <button
               type="submit"
-              className="px-4 py-2 bg-[#101BCB] hover:bg-[#080F72] text-white font-bold text-xs rounded-xl shadow-xs transition"
+              className="px-5 py-2 bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-slate-950 font-black text-xs rounded-xl shadow-md transition btn-precision border border-cyan-300/40"
             >
               Buscar
             </button>
@@ -218,10 +208,10 @@ export default function HistoryView({ reconnectTrigger }) {
             <a
               href={api.getDownloadFullBackupZipUrl()}
               download
-              className="flex items-center space-x-1.5 px-3.5 py-2 bg-blue-50 hover:bg-blue-100 text-[#101BCB] border border-blue-200 text-xs font-bold rounded-xl shadow-xs transition transform active:scale-95"
+              className="flex items-center space-x-1.5 px-3.5 py-2 bg-[#101F3B] hover:bg-[#162A4F] text-cyan-300 border border-[#274468] text-xs font-bold rounded-xl shadow-xs transition btn-precision"
               title="Descargar copia de seguridad completa con SQLite y Excel"
             >
-              <ShieldCheck className="w-3.5 h-3.5" />
+              <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" />
               <span>Respaldo ZIP</span>
             </a>
 
@@ -233,28 +223,27 @@ export default function HistoryView({ reconnectTrigger }) {
                 end_date: endDate,
               })}
               download
-              className="flex items-center space-x-1.5 px-3.5 py-2 bg-[#16A34A] hover:bg-[#15803d] text-white text-xs font-bold rounded-xl shadow-xs transition transform active:scale-95"
+              className="flex items-center space-x-1.5 px-4 py-2 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-slate-950 text-xs font-black rounded-xl shadow-md transition btn-precision border border-teal-300/40"
             >
-              <FileSpreadsheet className="w-3.5 h-3.5" />
+              <FileSpreadsheet className="w-3.5 h-3.5 stroke-[2.5]" />
               <span>Descargar Excel</span>
             </a>
           </div>
 
         </div>
 
-
         {/* Filters Row */}
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 pt-3 border-t border-[#E2E8F0]">
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 pt-3 border-t border-[#1E3557]">
           
           <div>
-            <label className="text-[11px] font-bold text-[#64748B] block mb-1">Tipo de Documento</label>
+            <label className="text-[11px] font-bold text-slate-300 block mb-1">Tipo de Documento</label>
             <select
               value={selectedDocType}
               onChange={(e) => {
                 setSelectedDocType(e.target.value);
                 setPage(1);
               }}
-              className="w-full px-3 py-2 rounded-xl bg-white border border-[#CBD5E1] text-[#1E293B] text-xs focus:outline-none focus:border-[#101BCB]"
+              className="w-full px-3 py-2 rounded-xl bg-[#060D1A] border border-[#1D334E] text-white text-xs focus:outline-none focus:border-cyan-400"
             >
               <option value="">Todos los Tipos</option>
               <option value="DNI">DNI Peruano</option>
@@ -263,7 +252,7 @@ export default function HistoryView({ reconnectTrigger }) {
           </div>
 
           <div>
-            <label className="text-[11px] font-bold text-[#64748B] block mb-1">Fecha Desde</label>
+            <label className="text-[11px] font-bold text-slate-300 block mb-1">Fecha Desde</label>
             <input
               type="date"
               value={startDate}
@@ -271,12 +260,12 @@ export default function HistoryView({ reconnectTrigger }) {
                 setStartDate(e.target.value);
                 setPage(1);
               }}
-              className="w-full px-3 py-2 rounded-xl bg-white border border-[#CBD5E1] text-[#1E293B] text-xs focus:outline-none focus:border-[#101BCB]"
+              className="w-full px-3 py-2 rounded-xl bg-[#060D1A] border border-[#1D334E] text-white text-xs focus:outline-none focus:border-cyan-400 font-mono"
             />
           </div>
 
           <div>
-            <label className="text-[11px] font-bold text-[#64748B] block mb-1">Fecha Hasta</label>
+            <label className="text-[11px] font-bold text-slate-300 block mb-1">Fecha Hasta</label>
             <input
               type="date"
               value={endDate}
@@ -284,7 +273,7 @@ export default function HistoryView({ reconnectTrigger }) {
                 setEndDate(e.target.value);
                 setPage(1);
               }}
-              className="w-full px-3 py-2 rounded-xl bg-white border border-[#CBD5E1] text-[#1E293B] text-xs focus:outline-none focus:border-[#101BCB]"
+              className="w-full px-3 py-2 rounded-xl bg-[#060D1A] border border-[#1D334E] text-white text-xs focus:outline-none focus:border-cyan-400 font-mono"
             />
           </div>
 
@@ -292,7 +281,7 @@ export default function HistoryView({ reconnectTrigger }) {
             <button
               type="button"
               onClick={handleResetFilters}
-              className="w-full py-2 px-3 text-xs font-semibold text-[#64748B] hover:text-[#1E293B] bg-slate-100 hover:bg-slate-200 rounded-xl border border-[#CBD5E1] transition"
+              className="w-full py-2 px-3 text-xs font-bold text-slate-300 hover:text-white bg-[#101F3B] hover:bg-[#162A4F] rounded-xl border border-[#274468] transition btn-precision"
             >
               Limpiar Filtros
             </button>
@@ -302,13 +291,13 @@ export default function HistoryView({ reconnectTrigger }) {
 
       </div>
 
-      {/* Records Table */}
-      <div className="bg-white rounded-2xl border border-[#E2E8F0] shadow-corporate-sm overflow-hidden">
+      {/* Records Table - Fullscreen Widescreen Responsive Layout */}
+      <div className="card-enterprise bg-[#0B1528] rounded-2xl border border-[#1E3557] shadow-xl overflow-hidden">
         
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b border-[#E2E8F0] bg-[#080F72] text-[11px] font-bold uppercase tracking-wider text-white">
+              <tr className="border-b border-[#1E3557] bg-[#060D1A] text-[11px] font-black uppercase tracking-wider text-slate-300">
                 <th className="py-3.5 px-4">Fecha Escaneo</th>
                 <th className="py-3.5 px-4">Tipo</th>
                 <th className="py-3.5 px-4">N° Documento</th>
@@ -319,66 +308,66 @@ export default function HistoryView({ reconnectTrigger }) {
                 <th className="py-3.5 px-4 text-center">Acciones</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#E2E8F0] text-xs">
+            <tbody className="divide-y divide-[#1E3557] text-xs">
               {loading ? (
                 <tr>
-                  <td colSpan="8" className="py-12 text-center text-[#64748B]">
-                    <RefreshCw className="w-6 h-6 animate-spin mx-auto text-[#101BCB] mb-2" />
+                  <td colSpan="8" className="py-12 text-center text-slate-400">
+                    <RefreshCw className="w-6 h-6 animate-spin mx-auto text-cyan-400 mb-2" />
                     <span>Cargando registros...</span>
                   </td>
                 </tr>
               ) : records.length === 0 ? (
                 <tr>
-                  <td colSpan="8" className="py-12 text-center text-[#64748B]">
-                    <CreditCard className="w-10 h-10 mx-auto text-slate-400 mb-2" />
-                    <p className="font-bold text-[#1E293B]">No se encontraron registros</p>
-                    <p className="text-[11px] text-[#64748B] mt-0.5">Escanee un nuevo documento para agregarlo al sistema.</p>
+                  <td colSpan="8" className="py-12 text-center text-slate-400">
+                    <CreditCard className="w-10 h-10 mx-auto text-slate-600 mb-2" />
+                    <p className="font-bold text-white">No se encontraron registros</p>
+                    <p className="text-[11px] text-slate-400 mt-0.5">Escanee un nuevo documento para agregarlo al sistema.</p>
                   </td>
                 </tr>
               ) : (
                 records.map((r) => {
                   const isDni = r.doc_type === 'DNI';
                   return (
-                    <tr key={r.id} className="hover:bg-[#EEF2FF] transition">
-                      <td className="py-3 px-4 text-[#64748B] font-mono whitespace-nowrap">
+                    <tr key={r.id} className="hover:bg-[#101F3B]/60 transition">
+                      <td className="py-3 px-4 text-slate-300 font-mono whitespace-nowrap">
                         {r.scan_date ? new Date(r.scan_date).toLocaleString('es-PE') : '-'}
                       </td>
                       <td className="py-3 px-4">
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border font-mono ${
                           isDni
-                            ? 'bg-blue-50 text-[#101BCB] border-blue-200'
-                            : 'bg-amber-50 text-amber-700 border-amber-200'
+                            ? 'bg-[#101F3B] text-cyan-300 border-cyan-400/40'
+                            : 'bg-[#0A3D44] text-teal-200 border-teal-500/40'
                         }`}>
                           {r.doc_type}
                         </span>
                       </td>
-                      <td className="py-3 px-4 font-mono font-bold text-[#080F72] whitespace-nowrap">
+                      <td className="py-3 px-4 font-mono font-bold text-cyan-300 whitespace-nowrap">
                         {r.doc_number}
                       </td>
-                      <td className="py-3 px-4 font-semibold text-[#1E293B]">
+                      <td className="py-3 px-4 font-bold text-white">
                         {r.paternal_surname} {r.maternal_surname} {r.first_names}
                       </td>
-                      <td className="py-3 px-4 text-[#1E293B]">
+                      <td className="py-3 px-4 text-slate-200">
                         {r.sex || '-'}
                       </td>
-                      <td className="py-3 px-4 text-[#1E293B] font-mono whitespace-nowrap">
+                      <td className="py-3 px-4 text-slate-300 font-mono whitespace-nowrap">
                         {r.birth_date || '-'}
                       </td>
-                      <td className="py-3 px-4 text-[#64748B] max-w-[220px] truncate" title={r.address}>
+                      <td className="py-3 px-4 text-slate-300 max-w-[240px] truncate" title={r.address}>
                         {r.address || '-'}
                       </td>
                       <td className="py-3 px-4 text-center whitespace-nowrap">
                         <div className="flex items-center justify-center space-x-1.5">
                           <button
                             onClick={() => setSelectedRecord(r)}
-                            className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-[#080F72] transition"
+                            className="p-1.5 rounded-lg bg-[#101F3B] hover:bg-[#162A4F] text-cyan-300 border border-[#274468] transition btn-precision"
                             title="Ver detalles e imágenes"
                           >
                             <Eye className="w-3.5 h-3.5" />
                           </button>
                           <button
                             onClick={() => handleDelete(r.id, r.doc_number)}
-                            className="p-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-[#DC2626] transition"
+                            className="p-1.5 rounded-lg bg-rose-950/60 hover:bg-rose-900/80 text-rose-300 border border-rose-500/40 transition btn-precision"
                             title="Eliminar registro"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -394,26 +383,26 @@ export default function HistoryView({ reconnectTrigger }) {
         </div>
 
         {/* Pagination Controls */}
-        <div className="px-6 py-4 bg-[#F8FAFC] border-t border-[#E2E8F0] flex items-center justify-between text-xs text-[#64748B]">
+        <div className="px-6 py-4 bg-[#060D1A] border-t border-[#1E3557] flex items-center justify-between text-xs text-slate-400">
           <div>
-            Mostrando <strong>{records.length}</strong> de <strong>{total}</strong> registros
+            Mostrando <strong className="text-white">{records.length}</strong> de <strong className="text-white">{total}</strong> registros
           </div>
 
           <div className="flex items-center space-x-2">
             <button
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page === 1}
-              className="px-3 py-1.5 rounded-lg bg-white border border-[#CBD5E1] hover:bg-slate-50 text-[#1E293B] disabled:opacity-40 disabled:cursor-not-allowed transition"
+              className="px-3 py-1.5 rounded-lg bg-[#101F3B] border border-[#274468] hover:bg-[#162A4F] text-slate-200 disabled:opacity-40 disabled:cursor-not-allowed transition btn-precision"
             >
               Anterior
             </button>
-            <span className="font-semibold text-[#1E293B] px-2">
+            <span className="font-mono font-bold text-cyan-300 px-2">
               Página {page} de {totalPages}
             </span>
             <button
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page >= totalPages}
-              className="px-3 py-1.5 rounded-lg bg-white border border-[#CBD5E1] hover:bg-slate-50 text-[#1E293B] disabled:opacity-40 disabled:cursor-not-allowed transition"
+              className="px-3 py-1.5 rounded-lg bg-[#101F3B] border border-[#274468] hover:bg-[#162A4F] text-slate-200 disabled:opacity-40 disabled:cursor-not-allowed transition btn-precision"
             >
               Siguiente
             </button>

@@ -1,33 +1,45 @@
-const ngrok = require('@ngrok/ngrok');
+const { spawn } = require('child_process');
+const fs = require('fs');
+const path = require('path');
 
-async function start() {
-  try {
-    console.log('=======================================================================');
-    console.log('  ESCANDNI PERU - ACCESO PERMANENTE DESDE CELULAR (NGROK FIJO)');
-    console.log('=======================================================================');
-    console.log('  Iniciando conexion con tu dominio permanente...');
-    
-    const listener = await ngrok.forward({
-      addr: 5173,
-      authtoken: '3JiMmGx5tWGjTS1csJ7eJEyzGDX_5caaF5NoGDxv8iFBqAanA',
-      domain: 'obsessive-antiquity-synthesis.ngrok-free.dev',
-    });
+console.log('=======================================================================');
+console.log('  ESCANDNI PERU - TUNEL NUBE TEMPORAL (CLOUDFLARE)');
+console.log('  Acceso para celular (4G/5G) y otra laptop desde cualquier lugar');
+console.log('=======================================================================');
 
+const npxCmd = process.platform === 'win32' ? 'npx.cmd' : 'npx';
+const cf = spawn(npxCmd, ['-y', 'cloudflared', 'tunnel', '--url', 'http://localhost:5173'], {
+  stdio: ['ignore', 'pipe', 'pipe'],
+  shell: true,
+});
+
+let tunnelUrl = '';
+
+function checkOutput(data) {
+  const str = data.toString();
+  const match = str.match(/https:\/\/[a-zA-Z0-9-]+\.trycloudflare\.com/);
+  if (match && !tunnelUrl) {
+    tunnelUrl = match[0];
     console.log('\n  =====================================================================');
-    console.log('    TU ENLACE PERMANENTE Y FIJO ESTA ACTIVO:');
-    console.log('    >>> ' + listener.url());
+    console.log('    TU ENLACE TEMPORAL DE ACCESO PUBLICO ESTA ACTIVO:');
+    console.log('    >>> ' + tunnelUrl);
     console.log('  =====================================================================');
-    console.log('\n  * Abre este enlace en el navegador de tu celular.');
-    console.log('  * NUNCA cambiara.');
-    console.log('  * IMPORTANTE: Mantenga esta ventana abierta mientras use el sistema.');
-    console.log('=======================================================================\n');
+    console.log('  * Abre este enlace en el celular (incluso con datos moviles 4G/5G).');
+    console.log('  * O abrelo en otra laptop o computadora.');
+    console.log('  * 100% seguro con HTTPS sin bloqueos ni pantallas en blanco.');
+    console.log('  =====================================================================\n');
 
-    // Mantener el proceso Node.js vivo indefinidamente
-    setInterval(() => {}, 1000 * 60 * 60);
-  } catch (err) {
-    console.error('\n  [!] Error al iniciar el tunel:', err.message || err);
-    console.log('\n  Asegurate de que el sistema este iniciado con INICIAR_TODO.bat\n');
+    try {
+      const dataDir = path.join(__dirname, '..', 'data');
+      if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+      fs.writeFileSync(path.join(dataDir, 'tunnel_url.txt'), tunnelUrl, 'utf8');
+    } catch (e) {}
   }
 }
 
-start();
+cf.stdout.on('data', checkOutput);
+cf.stderr.on('data', checkOutput);
+
+cf.on('close', (code) => {
+  console.log(`[!] Tunel Cloudflare finalizo con codigo ${code}`);
+});

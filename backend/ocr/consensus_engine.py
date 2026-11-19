@@ -101,51 +101,39 @@ class ConsensusEngine:
         passes: List[VariantOCRPass] = []
         mrz_fragments: List[str] = []
         seen_mrz_lines = set()
-
-        variants_to_process = list(variant_result.variants.values())[:max_variants_to_run]
-        
-        # If warped original is not in variants, ensure it's evaluated
-        if not variants_to_process:
-            variants_to_process = [
-                ImageVariant(
-                    name="warped_bgr",
-                    description="Imagen Enderezada Original",
-                    image=variant_result.warped_bgr,
-                    quality_score=variant_result.laplacian_variance,
-                )
-            ]
-
-        # Prioritize top quality variants for speed and accuracy
-        # (clahe_enhanced, shadow_free, adaptive_thresh / otsu_closed)
-        top_variants = []
-        priority_order = ["clahe_enhanced", "shadow_free", "adaptive_thresh", "otsu_closed"]
-        variant_map = {v.name: v for v in variants_to_process}
-        for name in priority_order:
-            if name in variant_map:
-                top_variants.append(variant_map[name])
-        if not top_variants:
-            top_variants = variants_to_process[:2]
-        else:
-            top_variants = top_variants[:3]
-
         found_mrz = False
-        for variant in top_variants:
-            try:
-                ocr_res = self.ocr_engine.extract(variant.image)
-            except Exception:
-                continue
 
-            # Check if MRZ lines exist in the full text (Line 1: DNI, Line 2: DOB/Sex/Expiry, Line 3: Names)
-            mrz_text = ""
-            for line in ocr_res.lines:
+        # Fast Adaptive Tiered Strategy:
+        # Tier 1: Process the natural perspective-corrected card (warped_bgr)
+        # Neural OCR models (RapidOCR/Paddle) perform best on natural color & contrast without CLAHE noise.
+        if variant_result.warped_bgr is not None:
+            primary_variant = ImageVariant(
+                name="warped_bgr",
+                description="Imagen Enderezada Original",
+                image=variant_result.warped_bgr,
+                quality_score=variant_result.laplacian_variance,
+            )
+        else:
+            primary_variant = variant_result.variants.get("clahe_enhanced")
+            if not primary_variant:
+                all_vars = list(variant_result.variants.values())
+                primary_variant = all_vars[0]
+
+        try:
+            ocr_res1 = self.ocr_engine.extract(primary_variant.image)
+        except Exception:
+            ocr_res1 = None
+
+        if ocr_res1:
+            # Check for authentic MRZ lines (must have real TD1 signature or multiple '<' delimiters)
+            for line in ocr_res1.lines:
                 t_raw = line.text.strip().upper()
                 t_clean = t_raw.replace(" ", "")
                 is_mrz_line = (
-                    bool(re.search(r"(?:[I1]<PER|[I1]DPER|<PER|PER|[I1]<|[I1]D)<*[0-9A-Z]{8}", t_clean))
-                    or bool(re.search(r"[0-9A-Z]{6}<*[0-9A-Z<]?[MF<]", t_clean))
-                    or ("PER" in t_clean and any(c.isdigit() for c in t_clean) and len(t_clean) >= 14)
-                    or ("<<" in t_clean and len(t_clean) >= 10)
-                    or (t_clean.count("<") >= 2 and len(t_clean) >= 10)
+                    bool(re.search(r"(?:[I1]<PER|[I1]DPER|<PER|PER[0-9A-Z]{8}|[I1]<[0-9A-Z]{8})", t_clean))
+                    or bool(re.search(r"[0-9A-Z]{6}<*[0-9A-Z<]?[MF<].*PER", t_clean))
+                    or ("<<" in t_clean and len(t_clean) >= 10 and not any(kw in t_clean for kw in ["REPUBLICA", "NACIONAL"]))
+                    or (t_clean.count("<") >= 2 and len(t_clean) >= 12 and any(c.isdigit() for c in t_clean))
                 )
                 if is_mrz_line:
                     if t_clean not in seen_mrz_lines:
@@ -153,12 +141,12 @@ class ConsensusEngine:
                         seen_mrz_lines.add(t_clean)
                         found_mrz = True
 
-            # If document appears to have MRZ but we have < 3 lines, perform a targeted bottom-strip pass
-            if (found_mrz or any("PER" in l.text.upper() for l in ocr_res.lines)) and len(mrz_fragments) < 3:
+            # If document appears to have genuine MRZ but we have < 3 lines, perform a targeted bottom-strip pass
+            if found_mrz and len(mrz_fragments) < 3:
                 try:
-                    img_h, img_w = variant.image.shape[:2]
-                    if img_h > 100 and img_w > 150:
-                        mrz_crop = variant.image[int(img_h * 0.62):img_h, 0:img_w]
+                    img_h, img_w = primary_variant.image.shape[:2]
+                    if img_h > 120 and img_w > 180:
+                        mrz_crop = primary_variant.image[int(img_h * 0.64):img_h, 0:img_w]
                         crop_ocr = self.ocr_engine.extract(mrz_crop)
                         for c_line in crop_ocr.lines:
                             c_raw = c_line.text.strip().upper()
@@ -170,26 +158,57 @@ class ConsensusEngine:
                 except Exception:
                     pass
 
-            line_cnt = len(ocr_res.lines)
-            word_cnt = len(ocr_res.words)
-            avg_conf = ocr_res.average_confidence
+            passes.append(VariantOCRPass(
+                variant_name=primary_variant.name,
+                description=primary_variant.description,
+                ocr_result=ocr_res1,
+                mrz_text="\n".join(mrz_fragments),
+                quality_score=primary_variant.quality_score,
+                line_count=len(ocr_res1.lines),
+                word_count=len(ocr_res1.words),
+                avg_confidence=ocr_res1.average_confidence,
+            ))
 
-            pass_obj = VariantOCRPass(
-                variant_name=variant.name,
-                description=variant.description,
-                ocr_result=ocr_res,
-                mrz_text=mrz_text,
-                quality_score=variant.quality_score,
-                line_count=line_cnt,
-                word_count=word_cnt,
-                avg_confidence=avg_conf,
+        # Check if Tier 1 gave us high-confidence complete readings
+        has_dni_candidate = False
+        has_ce_candidate = False
+        if ocr_res1:
+            has_dni_candidate = any(re.search(r"\b[0-9OIlLSZB]{8}\b", l.text.upper()) for l in ocr_res1.lines)
+            has_ce_candidate = (
+                any(re.search(r"\b[0-9]{9}\b", l.text) for l in ocr_res1.lines)
+                or any("EXTRANJER" in l.text.upper() or "MIGRAC" in l.text.upper() for l in ocr_res1.lines)
             )
-            passes.append(pass_obj)
 
-            # Early exit inteligente: Si la variante CLAHE principal leyó el DNI o tiene buena confianza (>=70%) y palabras, retornar inmediatamente
-            has_dni_candidate = any(re.search(r"\b[0-9OIlLSZB]{8}\b", l.text.upper()) for l in ocr_res.lines)
-            if len(passes) >= 1 and (has_dni_candidate or (avg_conf >= 70.0 and word_cnt >= 4)):
-                break
+        tier1_satisfactory = (
+            ocr_res1 is not None
+            and (has_dni_candidate or has_ce_candidate or found_mrz)
+            and (ocr_res1.average_confidence >= 65.0 or len(ocr_res1.words) >= 6)
+        )
+
+        # Tier 2: Targeted Retry ONLY IF Tier 1 was inconclusive and image defect justifies it
+        if not tier1_satisfactory and max_variants_to_run > 1:
+            # Pick the best specialized secondary variant for the defect
+            secondary_name = "shadow_free" if variant_result.has_shadows else "adaptive_thresh"
+            secondary_variant = variant_result.variants.get(secondary_name)
+            if not secondary_variant and secondary_name == "shadow_free":
+                secondary_variant = variant_result.variants.get("adaptive_thresh")
+
+            if secondary_variant and secondary_variant.name != primary_variant.name:
+                try:
+                    ocr_res2 = self.ocr_engine.extract(secondary_variant.image)
+                    if ocr_res2 and (len(ocr_res2.lines) > 0 or ocr_res2.average_confidence > 0):
+                        passes.append(VariantOCRPass(
+                            variant_name=secondary_variant.name,
+                            description=secondary_variant.description,
+                            ocr_result=ocr_res2,
+                            mrz_text="",
+                            quality_score=secondary_variant.quality_score,
+                            line_count=len(ocr_res2.lines),
+                            word_count=len(ocr_res2.words),
+                            avg_confidence=ocr_res2.average_confidence,
+                        ))
+                except Exception:
+                    pass
 
 
         if not passes:
@@ -230,13 +249,23 @@ class ConsensusEngine:
             # Find DNI candidates (8 digits)
             for line in p.ocr_result.lines:
                 t = line.text.upper()
-                # 8 digit candidates
-                matches = re.finditer(r"\b([0-9OIlLSZB]{8})\b", t)
+                # Skip lines clearly labeled as dates or voting groups
+                if any(sk in t for sk in ["FECHA", "EMISION", "EMISIÓN", "CADUCIDAD", "VENCIMIENTO", "NACIMIENTO", "INSCRIPCION", "INSCRIPCIÓN", "VOTACION", "GRUPO", "MESA"]):
+                    continue
+                # 8 digit candidates (including with check digit like 70682625-0)
+                matches = re.finditer(r"\b([0-9OIlLSZB]{8})(?:[.\-]\d)?\b", t)
                 for m in matches:
                     raw_val = m.group(1)
                     norm_val = normalize_numeric_ocr(raw_val)
                     if len(norm_val) == 8 and norm_val.isdigit():
-                        candidate_pools["dni_candidates"].append((norm_val, pass_weight * line.confidence, p.variant_name))
+                        # Exclude obvious calendar dates DDMMYYYY
+                        d_val, m_val, y_val = int(norm_val[:2]), int(norm_val[2:4]), int(norm_val[4:])
+                        if 1 <= d_val <= 31 and 1 <= m_val <= 12 and (1930 <= y_val <= 2040):
+                            continue
+                        weight = pass_weight * line.confidence
+                        if any(kw in t for kw in ["DNI", "CUI", "DOCUMENTO", "TARJETA", "NRO", "N°", "Nº"]):
+                            weight += 35.0
+                        candidate_pools["dni_candidates"].append((norm_val, weight, p.variant_name))
 
         # Consensus summary
         total_runs = len(passes)

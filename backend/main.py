@@ -8,7 +8,10 @@ if str(_PROJECT_ROOT) not in sys.path:
 
 import os
 import re
+import logging
 import concurrent.futures
+
+logger = logging.getLogger("main")
 from datetime import datetime, date, timezone
 from typing import Optional, List, Dict, Any, Tuple, Union
 import json
@@ -35,6 +38,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import or_, desc, func
 
 from backend.config import (
+    DATA_DIR,
     UPLOADS_DIR,
     EXPORTS_DIR,
     CONTRACTS_DIR,
@@ -60,12 +64,16 @@ from backend.schemas import (
     ContractGenerateRequest,
     BatchContractGenerateRequest,
     ContractLogResponse,
+    ContractBatchUpdateRequest,
+    StandardPeruDocResponse,
+    format_to_standard_peru_doc,
 )
 from backend.image_processing.multi_variant_pipeline import generate_multi_variants
 from backend.image_processing.classifier import classify_document
 from backend.ocr import get_ocr_engine
 from backend.ocr.consensus_engine import ConsensusEngine
 from backend.extractors import extract_dni_data, extract_ce_data
+from backend.extractors.validators import validate_dni, validate_ce, normalize_and_validate_date
 from backend.ocr_engine import extract_dni_from_bytes, process_dni_image
 from backend.storage.file_manager import save_image_matrix
 from backend.storage.excel_manager import append_record_to_excel, generate_filtered_excel
@@ -79,6 +87,54 @@ from backend.services import (
 )
 from backend.services.worker_matcher import WorkerMatcher
 from backend.services.learning_service import LearningService
+from backend.services.factiliza_service import (
+    query_dni_factiliza,
+    query_cee_factiliza,
+    query_document_factiliza,
+    query_batch_factiliza,
+    get_saved_token,
+    save_token,
+)
+from backend.services.historical_data_service import HistoricalDataService
+from backend.services.sbs_service import SBSService, REPORTE_SBS_EXCEL_PATH
+from backend.database import SBSRecord
+from pydantic import BaseModel as PyBaseModel
+
+
+class SBSQueryRequest(PyBaseModel):
+    doc_number: str
+    paternal_surname: str
+    maternal_surname: Optional[str] = ""
+    first_names: Optional[str] = ""
+    doc_type: Optional[str] = "DNI"
+    force_refresh: Optional[bool] = False
+
+
+class FactilizaQueryRequest(PyBaseModel):
+    dni: Optional[str] = None
+    doc_type: Optional[str] = "DNI"
+    doc_number: Optional[str] = None
+    cee: Optional[str] = None
+    token: Optional[str] = None
+
+
+class FactilizaConfigRequest(PyBaseModel):
+    token: str
+
+
+class FactilizaBatchRequest(PyBaseModel):
+    dnis: List[str]
+    token: Optional[str] = None
+
+
+class FactilizaBatchSaveRequest(PyBaseModel):
+    records: List[Dict[str, Any]]
+    cod_planilla: Optional[str] = "ORP"
+    tipo_contrato: Optional[str] = "05"
+    basico: Optional[float] = 1025.0
+    inicio_contrato: Optional[str] = None
+    duracion: Optional[str] = "3"
+    fin_contrato: Optional[str] = None
 
 
 app = FastAPI(
@@ -118,6 +174,15 @@ def on_startup():
 
     threading.Thread(target=_delayed_warmup, daemon=True).start()
 
+    def _sync_history():
+        try:
+            from backend.services.historical_data_service import HistoricalDataService
+            HistoricalDataService.sync_all_existing_data()
+        except Exception as e:
+            logger.warning(f"Error en sincronización inicial de histórico: {e}")
+
+    threading.Thread(target=_sync_history, daemon=True).start()
+
 
 
 
@@ -127,6 +192,11 @@ worker_matcher = WorkerMatcher(excel_analyzer)
 worker_consolidator = WorkerConsolidator(MASTER_EXCEL_PATH)
 contract_generator = ContractGenerator(TEMPLATES_DIR, CONTRACTS_DIR)
 excel_template_service = ExcelTemplateService()
+
+@app.on_event("startup")
+def warmup_template_cache():
+    import threading
+    threading.Thread(target=excel_template_service.list_templates, daemon=True).start()
 
 _FRONTEND_DIST = _PROJECT_ROOT / "frontend" / "dist"
 if _FRONTEND_DIST.exists():
@@ -166,6 +236,14 @@ def health_check():
     backup_info = backup_service.get_backup_status()
 
     ips = _get_local_ips()
+    tunnel_file = DATA_DIR / "tunnel_url.txt"
+    tunnel_url = ""
+    if tunnel_file.exists():
+        try:
+            tunnel_url = tunnel_file.read_text(encoding="utf-8").strip()
+        except Exception:
+            pass
+
     return {
         "status": "healthy" if ocr_ok else "degraded",
         "ocr_engine": engine_label,
@@ -177,6 +255,7 @@ def health_check():
         "backup": backup_info,
         "network_ips": ips,
         "wifi_urls": [f"http://{ip}:5173" for ip in ips],
+        "tunnel_url": tunnel_url,
     }
 
 
@@ -184,10 +263,19 @@ def health_check():
 def get_network_info():
     """Retorna las direcciones IP locales para compartir la app en la misma red Wi-Fi."""
     ips = _get_local_ips()
+    tunnel_file = DATA_DIR / "tunnel_url.txt"
+    tunnel_url = ""
+    if tunnel_file.exists():
+        try:
+            tunnel_url = tunnel_file.read_text(encoding="utf-8").strip()
+        except Exception:
+            pass
+
     return {
         "laptop_url": "http://localhost:5173",
         "wifi_ips": ips,
         "wifi_urls": [f"http://{ip}:5173" for ip in ips],
+        "tunnel_url": tunnel_url,
     }
 
 
@@ -219,7 +307,7 @@ def download_full_backup_zip():
 
 
 @app.post("/api/scan", response_model=ScanResponse)
-def scan_document(
+async def scan_document(
     front_image: UploadFile = File(...),
     back_image: Optional[UploadFile] = File(None),
     doc_type: str = Form("DNI"),
@@ -310,11 +398,13 @@ def scan_document(
         declared_type=doc_type if doc_type != "AUTO" else "DNI",
     ) if back_variants_res else None
 
-    # Automatic detection takes precedence
-    if doc_type in ["AUTO", "", None] or front_classif.confidence >= 55:
+    # Automatic detection takes precedence unless user explicitly selected document type
+    if doc_type not in ["AUTO", "", None]:
+        effective_doc_type = doc_type
+    elif front_classif.confidence >= 45 and front_classif.doc_type != "INDETERMINADO":
         effective_doc_type = front_classif.doc_type
     else:
-        effective_doc_type = doc_type or front_classif.doc_type
+        effective_doc_type = front_classif.doc_type
 
     doc_subtype = front_classif.doc_subtype
 
@@ -326,20 +416,23 @@ def scan_document(
 
     # 4. Semantic Extraction
     all_warnings = []
+    if effective_doc_type == "INDETERMINADO":
+        all_warnings.append("Tipo de documento no identificado con suficiente certeza. Revise y seleccione el tipo correcto.")
+
     if front_variants_res.is_blurry:
         all_warnings.append(f"Anverso: {front_variants_res.quality_message}")
     if back_variants_res and back_variants_res.is_blurry:
         all_warnings.append(f"Reverso: {back_variants_res.quality_message}")
 
-    if effective_doc_type in ["DNI", "DNI Electrónico"]:
-        extracted_dict, fields_dict, doc_warnings = extract_dni_data(
+    if effective_doc_type == "Carnet de Extranjería":
+        extracted_dict, fields_dict, doc_warnings = extract_ce_data(
             front_ocr=front_consensus.primary_ocr,
             back_ocr=back_consensus.primary_ocr if back_consensus else None,
             mrz_text=combined_mrz,
             candidate_pools=merged_candidate_pools,
         )
     else:
-        extracted_dict, fields_dict, doc_warnings = extract_ce_data(
+        extracted_dict, fields_dict, doc_warnings = extract_dni_data(
             front_ocr=front_consensus.primary_ocr,
             back_ocr=back_consensus.primary_ocr if back_consensus else None,
             mrz_text=combined_mrz,
@@ -347,6 +440,261 @@ def scan_document(
         )
 
     all_warnings.extend(doc_warnings)
+
+    # 4B. REGLA MAESTRA OCR: FOCALIZAR Y PRIORIZAR LOS 4 CAMPOS OBJETIVO
+    # 1. doc_number, 2. birth_date, 3. issue_date, 4. expiry_date
+    for target_key in ["doc_number", "birth_date", "issue_date", "expiry_date"]:
+        if target_key in fields_dict:
+            fields_dict[target_key].source = "ocr"
+
+    clean_doc_number = (extracted_dict.get("doc_number") or "").strip()
+    is_dni_type = (effective_doc_type != "Carnet de Extranjería")
+
+    api_complemented = False
+    api_status_info: Optional[Dict[str, Any]] = None
+
+    # Validar estrictamente el número según tipo documental antes de consultar API
+    is_valid_for_api = False
+    target_query_type = "DNI"
+    target_query_num = clean_doc_number
+
+    if is_dni_type:
+        val_dni_ok, norm_dni, _ = validate_dni(clean_doc_number)
+        if val_dni_ok:
+            is_valid_for_api = True
+            target_query_type = "DNI"
+            target_query_num = norm_dni
+            extracted_dict["doc_number"] = norm_dni
+            if "doc_number" in fields_dict:
+                fields_dict["doc_number"].value = norm_dni
+                fields_dict["doc_number"].is_valid = True
+    else:
+        val_ce_ok, norm_ce, _ = validate_ce(clean_doc_number)
+        if val_ce_ok:
+            is_valid_for_api = True
+            target_query_type = "CEE"
+            target_query_num = norm_ce
+            extracted_dict["doc_number"] = norm_ce
+            if "doc_number" in fields_dict:
+                fields_dict["doc_number"].value = norm_ce
+                fields_dict["doc_number"].is_valid = True
+
+    # 4C. CONSULTA AUTOMÁTICA PARA COMPLEMENTAR DATOS (POST-OCR)
+    # PRIORIDAD ESTRICTA:
+    # 1ª OPCIÓN: Buscar en Data Histórica local (0 tokens)
+    # 2ª OPCIÓN: Si no existe en Data Histórica, recurrir a Factiliza API (Token)
+    if is_valid_for_api:
+        try:
+            # 1. Buscar primero en Data Histórica
+            hist_worker = HistoricalDataService.find_worker_by_doc(target_query_num, db)
+            if hist_worker:
+                api_res = hist_worker
+                source_id = "data_historica"
+                origin_badge_hint = "Data Histórica (Planilla)"
+                status_msg = "Datos del trabajador complementados desde Data Histórica (0 tokens consumidos)."
+            else:
+                # 2. Si no está en Data Histórica, consultar Factiliza API
+                api_res = await query_document_factiliza(
+                    doc_type=target_query_type,
+                    doc_number=target_query_num,
+                )
+                source_id = "factiliza"
+                origin_badge_hint = "Factiliza API (RENIEC)"
+                status_msg = "Datos de identidad complementados exitosamente desde Factiliza / RENIEC."
+
+            if api_res.get("success"):
+                api_complemented = True
+                api_status_info = {
+                    "queried": True,
+                    "success": True,
+                    "source": source_id,
+                    "doc_type": target_query_type,
+                    "message": status_msg,
+                }
+
+                def _set_api_field(field_key: str, val_raw: str, label_hint: str):
+                    s_val = (val_raw or "").strip()
+                    if s_val:
+                        extracted_dict[field_key] = s_val
+                        fields_dict[field_key] = FieldConfidence(
+                            value=s_val,
+                            confidence=99.0,
+                            is_valid=True,
+                            status="CONFIRMADO",
+                            origin_type="COMPLEMENTADO_HISTORICO" if source_id == "data_historica" else "COMPLEMENTADO_API",
+                            source=source_id,
+                            anchor_matched=label_hint,
+                        )
+
+                # Nombres y Apellidos oficiales
+                _set_api_field("first_names", api_res.get("first_names") or "", origin_badge_hint)
+                _set_api_field("paternal_surname", api_res.get("paternal_surname") or "", origin_badge_hint)
+                _set_api_field("maternal_surname", api_res.get("maternal_surname") or "", origin_badge_hint)
+
+                # Sexo y Estado Civil
+                if api_res.get("sex"):
+                    _set_api_field("sex", api_res.get("sex"), f"{origin_badge_hint} (Sexo)")
+                if api_res.get("civil_status"):
+                    _set_api_field("civil_status", api_res.get("civil_status"), f"{origin_badge_hint} (Estado Civil)")
+
+                # Dirección y Ubicación geográfica
+                if api_res.get("address"):
+                    _set_api_field("address", api_res.get("address"), f"{origin_badge_hint} (Dirección)")
+                if api_res.get("department"):
+                    _set_api_field("department", api_res.get("department"), f"{origin_badge_hint} (Departamento)")
+                if api_res.get("province"):
+                    _set_api_field("province", api_res.get("province"), f"{origin_badge_hint} (Provincia)")
+                if api_res.get("district"):
+                    _set_api_field("district", api_res.get("district"), f"{origin_badge_hint} (Distrito)")
+                if api_res.get("ubigeo_reniec"):
+                    _set_api_field("ubigeo_reniec", api_res.get("ubigeo_reniec"), f"{origin_badge_hint} (Ubigeo RENIEC)")
+                if api_res.get("ubigeo_inei"):
+                    _set_api_field("ubigeo_inei", api_res.get("ubigeo_inei"), f"{origin_badge_hint} (Ubigeo INEI)")
+                if api_res.get("nationality"):
+                    _set_api_field("nationality", api_res.get("nationality"), f"{origin_badge_hint} (Nacionalidad)")
+
+                # Campos previsionales y bancarios (Planilla)
+                if api_res.get("pension_system"):
+                    _set_api_field("pension_system", api_res.get("pension_system"), f"{origin_badge_hint} (AFP)")
+                if api_res.get("pension_commission"):
+                    _set_api_field("pension_commission", api_res.get("pension_commission"), f"{origin_badge_hint} (Comisión)")
+                if api_res.get("cuspp"):
+                    _set_api_field("cuspp", api_res.get("cuspp"), f"{origin_badge_hint} (CUSPP)")
+                if api_res.get("bank_account"):
+                    _set_api_field("bank_account", api_res.get("bank_account"), f"{origin_badge_hint} (Cuenta)")
+                if api_res.get("cargo"):
+                    _set_api_field("cargo", api_res.get("cargo"), f"{origin_badge_hint} (Cargo)")
+                if api_res.get("phone") and api_res.get("phone") != "999999999":
+                    _set_api_field("phone", api_res.get("phone"), f"{origin_badge_hint} (Teléfono)")
+                if api_res.get("email") and api_res.get("email") != "sincorreo@gmail.com":
+                    _set_api_field("email", api_res.get("email"), f"{origin_badge_hint} (Email)")
+
+                # Síntesis legible de Ubigeo
+                dept_s = extracted_dict.get("department", "")
+                prov_s = extracted_dict.get("province", "")
+                dist_s = extracted_dict.get("district", "")
+                ub_inei_s = extracted_dict.get("ubigeo_inei", "")
+                if dept_s and dist_s:
+                    extracted_dict["ubigeo"] = f"{dept_s} / {prov_s} / {dist_s} ({ub_inei_s})" if ub_inei_s else f"{dept_s} / {prov_s} / {dist_s}"
+                    fields_dict["ubigeo"] = FieldConfidence(
+                        value=extracted_dict["ubigeo"],
+                        confidence=99.0,
+                        is_valid=True,
+                        status="CONFIRMADO",
+                        origin_type="COMPLEMENTADO_HISTORICO" if source_id == "data_historica" else "COMPLEMENTADO_API",
+                        source=source_id,
+                        anchor_matched=f"{origin_badge_hint} (Ubigeo sintetizado)",
+                    )
+
+                # PRECEDENCIA ESTRICTA DE CAMPOS OBJETIVO:
+                # 1. doc_number: confirmado, conservando atribución OCR
+                if "doc_number" in fields_dict:
+                    fields_dict["doc_number"].status = "CONFIRMADO"
+                    fields_dict["doc_number"].confidence = 99.8
+                    fields_dict["doc_number"].source = "ocr"
+                    fields_dict["doc_number"].validation_message = "Verificado en base de datos"
+
+                # 2. birth_date: PRIORIDAD OCR. Solo si OCR no la detectó, usar Data Histórica / API como respaldo
+                ocr_birth = fields_dict.get("birth_date")
+                if not (ocr_birth and ocr_birth.is_valid and ocr_birth.value):
+                    api_birth = (api_res.get("birth_date") or "").strip()
+                    if api_birth:
+                        val_b_ok, fmt_b, _ = normalize_and_validate_date(api_birth, field_type="birth_date")
+                        if val_b_ok:
+                            extracted_dict["birth_date"] = fmt_b
+                            fields_dict["birth_date"] = FieldConfidence(
+                                value=fmt_b,
+                                confidence=95.0,
+                                is_valid=True,
+                                status="CONFIRMADO",
+                                origin_type="COMPLEMENTADO_HISTORICO" if source_id == "data_historica" else "COMPLEMENTADO_API",
+                                source=source_id,
+                                anchor_matched=f"{origin_badge_hint} (Fecha de nacimiento)",
+                            )
+                else:
+                    fields_dict["birth_date"].source = "ocr"
+
+                # 3. issue_date y expiry_date: Son físicas del documento, NUNCA sobreescribir
+                if "issue_date" in fields_dict:
+                    fields_dict["issue_date"].source = "ocr"
+                if "expiry_date" in fields_dict:
+                    fields_dict["expiry_date"].source = "ocr"
+
+                # 4. Búsqueda automática SBS para completar AFP y CUSPP si están ausentes
+                s_pension = (extracted_dict.get("pension_system") or "").strip()
+                s_cuspp = (extracted_dict.get("cuspp") or "").strip()
+                pat_name = (extracted_dict.get("paternal_surname") or "").strip()
+                f_name = (extracted_dict.get("first_names") or "").strip()
+                m_name = (extracted_dict.get("maternal_surname") or "").strip()
+
+                if clean_doc_number and pat_name and (not s_pension or s_pension in ("-", "ONP / SNP", "")):
+                    try:
+                        sbs_data = await SBSService.consultar_trabajador(
+                            doc_number=clean_doc_number,
+                            paternal_surname=pat_name,
+                            maternal_surname=m_name,
+                            first_names=f_name,
+                            doc_type=effective_doc_type,
+                            db=db,
+                            force_refresh=False,
+                        )
+                        if sbs_data.get("success"):
+                            afp_found = sbs_data.get("afp_actual") or "ONP / SNP"
+                            cuspp_found = sbs_data.get("cuspp") or "-"
+                            extracted_dict["pension_system"] = afp_found
+                            fields_dict["pension_system"] = FieldConfidence(
+                                value=afp_found,
+                                confidence=99.0,
+                                is_valid=True,
+                                status="CONFIRMADO",
+                                origin_type="CONSULTA_SBS",
+                                source="sbs",
+                                anchor_matched=f"SBS Oficial ({sbs_data.get('situacion_actual', 'SPP')})",
+                            )
+                            if cuspp_found and cuspp_found != "-":
+                                extracted_dict["cuspp"] = cuspp_found
+                                fields_dict["cuspp"] = FieldConfidence(
+                                    value=cuspp_found,
+                                    confidence=99.0,
+                                    is_valid=True,
+                                    status="CONFIRMADO",
+                                    origin_type="CONSULTA_SBS",
+                                    source="sbs",
+                                    anchor_matched=f"SBS CUSPP ({sbs_data.get('fecha_afiliacion_spp', '-')})",
+                                )
+                    except Exception as err_sbs:
+                        logger.warning(f"Error consultando SBS en scan_document: {err_sbs}")
+
+            else:
+                err_msg = api_res.get("error", "No se encontró el documento en la base histórica ni en la API.")
+                api_status_info = {
+                    "queried": True,
+                    "success": False,
+                    "source": "factiliza",
+                    "doc_type": target_query_type,
+                    "message": err_msg,
+                    "can_fill_manually": True,
+                }
+                all_warnings.append(f"Aviso: {err_msg}")
+        except Exception as e:
+            logger.warning(f"Error consultando Data Histórica / API tras OCR: {e}")
+            api_status_info = {
+                "queried": True,
+                "success": False,
+                "source": "factiliza",
+                "doc_type": target_query_type,
+                "message": f"Error en consulta automática: {str(e)}",
+                "can_fill_manually": True,
+            }
+    else:
+        api_status_info = {
+            "queried": False,
+            "success": False,
+            "source": "factiliza",
+            "doc_type": target_query_type,
+            "message": "Número de documento no detectado con formato válido para consultar en la API. Por favor verifica o ingresa los datos manualmente.",
+            "can_fill_manually": True,
+        }
 
     # 5. Worker Matcher & Duplicate Detection
     extracted_dni = extracted_dict.get("doc_number", "")
@@ -436,7 +784,537 @@ def scan_document(
         matched_worker_name=match_res.worker_name,
         matched_worker_dni=match_res.worker_dni,
         warnings=all_warnings,
+        api_complemented=api_complemented,
+        api_status=api_status_info,
     )
+
+
+@app.post("/api/scan/standard", response_model=StandardPeruDocResponse)
+async def scan_document_standard(
+    front_image: UploadFile = File(...),
+    back_image: Optional[UploadFile] = File(None),
+    doc_type: str = Form("AUTO"),
+    db: Session = Depends(get_db),
+):
+    """
+    Endpoint conforme al skill 'ocr-documentos-peru'.
+    Retorna estrictamente el esquema JSON estandarizado para DNI Azul, DNIe y Carné de Extranjería.
+    """
+    scan_resp = await scan_document(
+        front_image=front_image,
+        back_image=back_image,
+        doc_type=doc_type,
+        db=db,
+    )
+    return format_to_standard_peru_doc(scan_resp)
+
+
+@app.get("/api/factiliza/config")
+def get_factiliza_config():
+    """Retorna el estado de configuración del Token de Factiliza sin exponer el secreto."""
+    saved = get_saved_token()
+    return {
+        "has_token": bool(saved),
+        "masked_token": f"{saved[:6]}...{saved[-4:]}" if len(saved) > 10 else ("***" if saved else ""),
+    }
+
+
+@app.post("/api/factiliza/config")
+def set_factiliza_config(req: FactilizaConfigRequest):
+    """Guarda o actualiza el Token de Factiliza en la configuración local."""
+    clean = req.token.strip()
+    save_token(clean)
+    return {
+        "success": True,
+        "has_token": bool(clean),
+        "masked_token": f"{clean[:6]}...{clean[-4:]}" if len(clean) > 10 else ("***" if clean else ""),
+        "message": "Token de Factiliza guardado correctamente."
+    }
+
+
+def _enrich_worker_match(result: dict, db: Session):
+    """Enriquece el resultado con verificación de duplicados de trabajadores."""
+    try:
+        matcher = WorkerMatcher()
+        match_res = matcher.find_worker(
+            raw_dni=result.get("doc_number", "") or result.get("dni", ""),
+            first_names=result.get("first_names", ""),
+            paternal_surname=result.get("paternal_surname", ""),
+            maternal_surname=result.get("maternal_surname", ""),
+            db=db,
+        )
+        if match_res:
+            result["duplicate_warning"] = match_res.duplicate_warning
+            result["worker_match_status"] = match_res.match_type
+            result["matched_worker_name"] = match_res.worker_name
+            result["matched_worker_dni"] = match_res.worker_dni
+    except Exception as e:
+        logger.warning(f"Error en WorkerMatcher: {e}")
+
+
+@app.post("/api/factiliza/dni")
+async def lookup_dni_factiliza(req: FactilizaQueryRequest, db: Session = Depends(get_db)):
+    """
+    Consulta un DNI peruano de 8 dígitos:
+    1ª OPCIÓN: Buscar en Data Histórica local (0 tokens consumidos).
+    2ª OPCIÓN: Si no existe, recurrir a la API de Factiliza con el token configurado.
+    3ª COMPLEMENTO AUTOMÁTICO SBS: Búsqueda en portal SBS para obtener AFP y CUSPP, persistiendo en disco local.
+    """
+    dni = req.dni or req.doc_number or ""
+    clean_dni = re.sub(r"\D", "", dni).strip()
+
+    # 1. Buscar en Data Histórica primero (ahorro de tokens)
+    hist_worker = HistoricalDataService.find_worker_by_doc(clean_dni, db)
+    if hist_worker:
+        # Si ya tiene datos de pensión en histórico, guardar en reporte SBS local para unificar historial
+        if hist_worker.get("pension_system"):
+            try:
+                SBSService.save_record_to_local_disk(
+                    doc_num=clean_dni,
+                    doc_type="DNI",
+                    ap_pat=hist_worker.get("paternal_surname", ""),
+                    ap_mat=hist_worker.get("maternal_surname", ""),
+                    nombres=hist_worker.get("first_names", ""),
+                    sbs_data={
+                        "AFP_ACTUAL": hist_worker.get("pension_system", "ONP / SNP"),
+                        "CUSPP": hist_worker.get("cuspp", "-"),
+                        "FECHA_AFILIACION_SPP": "-",
+                        "SITUACION_ACTUAL": "HISTORICO",
+                        "ULTIMO_APORTE": "-",
+                    },
+                    db=db,
+                )
+            except Exception as e:
+                logger.warning(f"Error registrando en SBS local: {e}")
+
+        # Si le falta pensión o CUSPP, consultar a la SBS
+        if not hist_worker.get("pension_system") or hist_worker.get("pension_system") in ("-", "ONP / SNP", ""):
+            try:
+                sbs_data = await SBSService.consultar_trabajador(
+                    doc_number=clean_dni,
+                    paternal_surname=hist_worker.get("paternal_surname", ""),
+                    maternal_surname=hist_worker.get("maternal_surname", ""),
+                    first_names=hist_worker.get("first_names", ""),
+                    doc_type="DNI",
+                    db=db,
+                    force_refresh=False,
+                )
+                if sbs_data.get("success"):
+                    hist_worker["pension_system"] = sbs_data.get("afp_actual", "ONP / SNP")
+                    hist_worker["cuspp"] = sbs_data.get("cuspp", "-")
+                    hist_worker["sbs_status"] = sbs_data
+            except Exception as e:
+                logger.warning(f"Error consultando SBS para histórico: {e}")
+
+        _enrich_worker_match(hist_worker, db)
+        return hist_worker
+
+    # 2. Si no está en Data Histórica, usar Factiliza API
+    result = await query_dni_factiliza(dni, req.token)
+    if not result.get("success"):
+        return result
+
+    # 3. Búsqueda automática en la SBS para completar AFP y CUSPP
+    try:
+        sbs_data = await SBSService.consultar_trabajador(
+            doc_number=clean_dni,
+            paternal_surname=result.get("paternal_surname", ""),
+            maternal_surname=result.get("maternal_surname", ""),
+            first_names=result.get("first_names", ""),
+            doc_type="DNI",
+            db=db,
+            force_refresh=False,
+        )
+        if sbs_data.get("success"):
+            result["pension_system"] = sbs_data.get("afp_actual", "ONP / SNP")
+            result["cuspp"] = sbs_data.get("cuspp", "-")
+            result["sbs_status"] = sbs_data
+    except Exception as e:
+        logger.warning(f"Error consultando SBS para {clean_dni}: {e}")
+
+    try:
+        HistoricalDataService.save_or_update_worker(clean_dni, result, db)
+    except Exception as e:
+        logger.warning(f"Error persistiendo resultado Factiliza en HistoricalWorker: {e}")
+
+    _enrich_worker_match(result, db)
+    return result
+
+
+@app.post("/api/factiliza/cee")
+async def lookup_cee_factiliza(req: FactilizaQueryRequest, db: Session = Depends(get_db)):
+    """
+    Consulta un Carnet de Extranjería:
+    1ª OPCIÓN: Buscar en Data Histórica local (0 tokens).
+    2ª OPCIÓN: Si no existe, recurrir a Factiliza API.
+    3ª COMPLEMENTO AUTOMÁTICO SBS: Búsqueda en SBS para completar AFP y CUSPP.
+    """
+    cee = req.cee or req.doc_number or req.dni or ""
+    clean_cee = (cee or "").strip().upper()
+
+    # 1. Buscar en Data Histórica primero
+    hist_worker = HistoricalDataService.find_worker_by_doc(clean_cee, db)
+    if hist_worker:
+        _enrich_worker_match(hist_worker, db)
+        return hist_worker
+
+    # 2. Si no está en Data Histórica, usar Factiliza API
+    result = await query_cee_factiliza(cee, req.token)
+    if not result.get("success"):
+        return result
+
+    # 3. Búsqueda automática en SBS
+    try:
+        sbs_data = await SBSService.consultar_trabajador(
+            doc_number=clean_cee,
+            paternal_surname=result.get("paternal_surname", ""),
+            maternal_surname=result.get("maternal_surname", ""),
+            first_names=result.get("first_names", ""),
+            doc_type="CE",
+            db=db,
+            force_refresh=False,
+        )
+        if sbs_data.get("success"):
+            result["pension_system"] = sbs_data.get("afp_actual", "ONP / SNP")
+            result["cuspp"] = sbs_data.get("cuspp", "-")
+            result["sbs_status"] = sbs_data
+    except Exception as e:
+        logger.warning(f"Error consultando SBS para CE {clean_cee}: {e}")
+
+    try:
+        HistoricalDataService.save_or_update_worker(clean_dni, result, db)
+    except Exception as e:
+        logger.warning(f"Error persistiendo resultado Factiliza en HistoricalWorker: {e}")
+
+    _enrich_worker_match(result, db)
+    return result
+
+
+@app.post("/api/factiliza/query")
+async def lookup_document_factiliza(req: FactilizaQueryRequest, db: Session = Depends(get_db)):
+    """
+    Consulta cualquier documento (DNI o Carnet de Extranjería) de forma automática:
+    1ª OPCIÓN: Buscar en Data Histórica.
+    2ª OPCIÓN: Si no existe, recurrir a Factiliza.
+    3ª COMPLEMENTO AUTOMÁTICO SBS: Completar AFP y CUSPP.
+    """
+    doc_num = req.doc_number or req.dni or req.cee or ""
+    doc_type = req.doc_type or "DNI"
+
+    # 1. Buscar en Data Histórica primero
+    hist_worker = HistoricalDataService.find_worker_by_doc(doc_num, db)
+    if hist_worker:
+        _enrich_worker_match(hist_worker, db)
+        return hist_worker
+
+    # 2. Si no está en Data Histórica, usar Factiliza API
+    result = await query_document_factiliza(doc_type, doc_num, req.token)
+    if not result.get("success"):
+        return result
+
+    # 3. Consulta automática SBS
+    try:
+        sbs_data = await SBSService.consultar_trabajador(
+            doc_number=doc_num,
+            paternal_surname=result.get("paternal_surname", ""),
+            maternal_surname=result.get("maternal_surname", ""),
+            first_names=result.get("first_names", ""),
+            doc_type=doc_type,
+            db=db,
+            force_refresh=False,
+        )
+        if sbs_data.get("success"):
+            result["pension_system"] = sbs_data.get("afp_actual", "ONP / SNP")
+            result["cuspp"] = sbs_data.get("cuspp", "-")
+            result["sbs_status"] = sbs_data
+    except Exception as e:
+        logger.warning(f"Error consultando SBS para {doc_num}: {e}")
+
+    try:
+        HistoricalDataService.save_or_update_worker(clean_dni, result, db)
+    except Exception as e:
+        logger.warning(f"Error persistiendo resultado Factiliza en HistoricalWorker: {e}")
+
+    _enrich_worker_match(result, db)
+    return result
+
+
+@app.post("/api/factiliza/batch")
+async def batch_lookup_factiliza(req: FactilizaBatchRequest, db: Session = Depends(get_db)):
+    """
+    Búsqueda masiva por lote de DNIs:
+    1ª OPCIÓN: Resolver todos los posibles en Data Histórica local (sin consumir tokens).
+    2ª OPCIÓN: Consultar a Factiliza solo los DNIs que no existan en Data Histórica.
+    """
+    all_results = []
+    missing_dnis = []
+
+    for d in req.dnis:
+        clean_d = re.sub(r"\D", "", d or "").strip()
+        if not clean_d:
+            continue
+        hist_worker = HistoricalDataService.find_worker_by_doc(clean_d, db)
+        if hist_worker:
+            hist_worker["dni"] = clean_d
+            _enrich_worker_match(hist_worker, db)
+            all_results.append(hist_worker)
+        else:
+            missing_dnis.append(clean_d)
+
+    # Solo consultar a la API los que falten
+    if missing_dnis:
+        batch_res = await query_batch_factiliza(missing_dnis, req.token)
+        for item in batch_res.get("results", []):
+            if item.get("success"):
+                try:
+                    _enrich_worker_match(item, db)
+                except Exception as e:
+                    logger.warning(f"Error enriching worker match for {item.get('dni')}: {e}")
+            all_results.append(item)
+
+    found_count = sum(1 for r in all_results if r.get("success"))
+    hist_count = sum(1 for r in all_results if r.get("source") == "data_historica")
+    api_count = sum(1 for r in all_results if r.get("source") == "factiliza")
+
+    return {
+        "success": True,
+        "total_requested": len(req.dnis),
+        "found_count": found_count,
+        "not_found_count": len(all_results) - found_count,
+        "historical_count": hist_count,
+        "api_count": api_count,
+        "message": f"{hist_count} resueltos desde Data Histórica (0 tokens), {api_count} consultados en Factiliza.",
+        "results": all_results,
+    }
+
+
+@app.get("/api/historical/stats")
+def get_historical_data_stats(db: Session = Depends(get_db)):
+    """Retorna las estadísticas del padrón de Data Histórica."""
+    return HistoricalDataService.get_stats(db)
+
+
+@app.post("/api/historical/sync")
+def sync_historical_data(db: Session = Depends(get_db)):
+    """Sincroniza el archivo DATA_HISTORICA.xlsx en la base de datos local SQLite."""
+    return HistoricalDataService.import_from_excel(db=db)
+
+
+# =========================================================================
+# ENDPOINTS OFICIALES SBS (SITUACIÓN PREVISIONAL - AFP Y CUSPP)
+# =========================================================================
+
+@app.post("/api/sbs/consultar")
+async def consultar_sbs_endpoint(req: SBSQueryRequest, db: Session = Depends(get_db)):
+    """
+    Consulta la situación previsional de un trabajador en la SBS (AFP, CUSPP, Estado, Último Aporte).
+    Persiste automáticamente los resultados en disco local (SQLite + Excel REPORTE_SBS_HISTORICO.xlsx).
+    """
+    res = await SBSService.consultar_trabajador(
+        doc_number=req.doc_number,
+        paternal_surname=req.paternal_surname,
+        maternal_surname=req.maternal_surname or "",
+        first_names=req.first_names or "",
+        doc_type=req.doc_type or "DNI",
+        db=db,
+        force_refresh=bool(req.force_refresh),
+    )
+    return res
+
+
+@app.get("/api/sbs/stats")
+def get_sbs_stats(db: Session = Depends(get_db)):
+    """Retorna estadísticas de registros SBS guardados en disco local."""
+    return SBSService.get_stats(db)
+
+
+@app.get("/api/sbs/records")
+def list_sbs_records(limit: int = 100, db: Session = Depends(get_db)):
+    """Retorna los últimos registros consultados en la SBS desde la base local."""
+    records = db.query(SBSRecord).order_by(SBSRecord.consulted_at.desc()).limit(limit).all()
+    return {
+        "success": True,
+        "total": len(records),
+        "records": [r.to_dict() for r in records],
+    }
+
+
+@app.get("/api/sbs/download-excel")
+def download_sbs_excel():
+    """Descarga el reporte maestro de consultas SBS acumulado en disco local (Excel)."""
+    excel_path = SBSService.get_excel_report_path()
+    if not excel_path.exists():
+        raise HTTPException(status_code=404, detail="El archivo Excel de reportes SBS aún no ha sido generado.")
+    return FileResponse(
+        path=str(excel_path),
+        filename="REPORTE_SBS_HISTORICO.xlsx",
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+
+
+@app.post("/api/factiliza/batch-save")
+def batch_save_factiliza(req: FactilizaBatchSaveRequest, db: Session = Depends(get_db)):
+    """
+    Guarda masivamente en SQLite y Registros.xlsx todos los trabajadores encontrados en la búsqueda masiva.
+    """
+    saved = []
+    skipped = []
+    now = get_peru_now()
+
+    for item in req.records:
+        dni = (item.get("doc_number") or item.get("dni") or "").strip()
+        if not dni:
+            continue
+
+        # Verificar si ya existe en la base de datos
+        existing = db.query(ScannedRecord).filter(ScannedRecord.doc_number == dni).first()
+        if existing:
+            skipped.append(dni)
+            continue
+
+        try:
+            db_record = ScannedRecord(
+                scan_date=now,
+                doc_type=item.get("doc_type") or "DNI",
+                paternal_surname=(item.get("paternal_surname") or "").strip().upper(),
+                maternal_surname=(item.get("maternal_surname") or "").strip().upper(),
+                first_names=(item.get("first_names") or "").strip().upper(),
+                doc_number=dni,
+                nationality=(item.get("nationality") or "PERUANA").strip().upper(),
+                birth_date=(item.get("birth_date") or "").strip(),
+                sex=(item.get("sex") or "").strip().upper(),
+                address=(item.get("address") or "").strip(),
+                ubigeo=(item.get("district") or item.get("ubigeo_inei") or "").strip(),
+                department=(item.get("department") or "").strip().upper(),
+                province=(item.get("province") or "").strip().upper(),
+                district=(item.get("district") or "").strip().upper(),
+                ubigeo_reniec=(item.get("ubigeo_reniec") or "").strip(),
+                ubigeo_inei=(item.get("ubigeo_inei") or "").strip(),
+                phone=(item.get("phone") or "999999999").strip(),
+                email=(item.get("email") or "sincorreo@gmail.com").strip(),
+                pension_system=(item.get("pension_system") or "").strip().upper(),
+                pension_commission="",
+                cuspp=(item.get("cuspp") or "").strip().upper(),
+                cod_planilla=(req.cod_planilla or "ORP").strip().upper()[:3],
+                tipo_contrato=(req.tipo_contrato or "05").strip()[:2],
+                basico=req.basico if req.basico is not None else 1025.0,
+                inicio_contrato=(req.inicio_contrato or "").strip(),
+                duracion=(req.duracion or "3").strip(),
+                fin_contrato=(req.fin_contrato or "").strip(),
+                cod_cargo="048",
+                cod_tipo_trab="76",
+                cat_ocupacional="02",
+                period_pago="3",
+                cod_sucursal="CA3",
+                grupo_trabajo="013",
+                tipo_personal="05",
+                reg_laboral="26",
+                niv_educativo="007",
+                tipo_comision="0",
+                asignacion_familiar="NO",
+                observations=f"Carga Masiva Factiliza {now.strftime('%d/%m/%Y')}",
+                field_confidences=json.dumps({"source": "factiliza_batch"}),
+            )
+            db.add(db_record)
+            db.commit()
+            db.refresh(db_record)
+
+            # Agregar a Registros.xlsx
+            try:
+                append_record_to_excel(db_record.to_dict())
+            except Exception as e:
+                logger.warning(f"Error agregando al Excel para DNI {dni}: {e}")
+
+            saved.append(dni)
+        except Exception as e:
+            logger.error(f"Error guardando registro en lote para DNI {dni}: {e}")
+            db.rollback()
+
+    # Ejecutar backup automático
+    try:
+        backup_service.create_backup("batch_factiliza_saved")
+    except Exception as e:
+        logger.warning(f"Backup automático post-batch falló: {e}")
+
+    return {
+        "success": True,
+        "saved_count": len(saved),
+        "skipped_count": len(skipped),
+        "saved_dnis": saved,
+        "skipped_dnis": skipped,
+        "message": f"Se guardaron exitosamente {len(saved)} trabajadores en la Base de Datos y Registros.xlsx" + (f" ({len(skipped)} omitidos porque ya estaban registrados)." if skipped else "."),
+    }
+
+
+@app.post("/api/factiliza/batch-export-excel")
+def export_batch_excel(req: FactilizaBatchSaveRequest):
+    """
+    Genera un archivo Excel (.xlsx) estructurado con los resultados de la consulta masiva.
+    """
+    import io
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    from fastapi.responses import Response
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Consulta Masiva Factiliza"
+
+    headers = [
+        "N°", "DNI", "APELLIDO PATERNO", "APELLIDO MATERNO", "NOMBRES",
+        "NOMBRE COMPLETO", "SEXO", "FECHA NACIMIENTO", "DEPARTAMENTO",
+        "PROVINCIA", "DISTRITO", "UBIGEO INEI", "UBIGEO RENIEC", "DIRECCIÓN", "ESTADO EN PADRÓN"
+    ]
+    ws.append(headers)
+
+    header_font = Font(name="Calibri", size=11, bold=True, color="FFFFFF")
+    header_fill = PatternFill(start_color="0A3D44", end_color="0A3D44", fill_type="solid")
+    align_center = Alignment(horizontal="center", vertical="center")
+
+    for col_idx in range(1, len(headers) + 1):
+        cell = ws.cell(row=1, column=col_idx)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = align_center
+
+    for i, item in enumerate(req.records, 1):
+        full = item.get("full_name") or f"{item.get('first_names', '')} {item.get('paternal_surname', '')} {item.get('maternal_surname', '')}".strip()
+        row = [
+            i,
+            item.get("doc_number") or item.get("dni", ""),
+            item.get("paternal_surname", ""),
+            item.get("maternal_surname", ""),
+            item.get("first_names", ""),
+            full,
+            item.get("sex", ""),
+            item.get("birth_date", ""),
+            item.get("department", ""),
+            item.get("province", ""),
+            item.get("district", ""),
+            item.get("ubigeo_inei", ""),
+            item.get("ubigeo_reniec", ""),
+            item.get("address", ""),
+            (item.get("status") or ("ENCONTRADO" if item.get("success") else "NO ENCONTRADO")).upper(),
+        ]
+        ws.append(row)
+
+    # Ajustar ancho automático de columnas
+    for col in ws.columns:
+        max_len = max(len(str(cell.value or "")) for cell in col)
+        col_letter = col[0].column_letter
+        ws.column_dimensions[col_letter].width = max(max_len + 3, 12)
+
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+
+    filename = f"Consulta_Masiva_DNI_{get_peru_now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+    return Response(
+        content=buf.getvalue(),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
 
 
 @app.post("/api/records", response_model=RecordResponse)
@@ -475,6 +1353,29 @@ def create_record(record_in: RecordCreate, db: Session = Depends(get_db)):
         pension_system=(record_in.pension_system or "").strip().upper(),
         pension_commission=(record_in.pension_commission or "").strip().upper(),
         cuspp=(record_in.cuspp or "").strip().upper(),
+        # Contract NISIRA assignment fields
+        cod_planilla=(record_in.cod_planilla or "ORP").strip().upper()[:3],
+        nro_contrato=(record_in.nro_contrato or "").strip(),
+        basico=record_in.basico if record_in.basico is not None else 1025.0,
+        inicio_contrato=(record_in.inicio_contrato or "").strip(),
+        duracion=(record_in.duracion or "3").strip(),
+        fin_contrato=(record_in.fin_contrato or "").strip(),
+        fecha_firma_contrato=(record_in.fecha_firma_contrato or "").strip(),
+        tipo_contrato=(record_in.tipo_contrato or "05").strip().zfill(2) if (record_in.tipo_contrato and record_in.tipo_contrato.strip().isdigit()) else (record_in.tipo_contrato or "05").strip()[:2],
+        nro_contrato_ref=(record_in.nro_contrato_ref or "").strip(),
+        # Personal NISIRA fields (Defaults para OBRERO DE PLANTA)
+        cod_cargo=(record_in.cod_cargo or "048").strip().zfill(3),
+        cod_tipo_trab=(record_in.cod_tipo_trab or "76").strip()[:2],
+        cat_ocupacional=(record_in.cat_ocupacional or "02").strip().zfill(2),
+        period_pago=(record_in.period_pago or "3").strip()[:1],
+        cod_sucursal=(record_in.cod_sucursal or "CA3").strip().upper()[:3],
+        grupo_trabajo=(record_in.grupo_trabajo or "013").strip().zfill(3),
+        tipo_personal=(record_in.tipo_personal or "05").strip().zfill(2),
+        reg_laboral=(record_in.reg_laboral or "26").strip()[:2],
+        niv_educativo=(record_in.niv_educativo or "007").strip().zfill(3),
+        tipo_comision=(record_in.tipo_comision or "0").strip()[:1],
+        asignacion_familiar=(record_in.asignacion_familiar or "NO").strip().upper(),
+        fec_ingreso=(record_in.fec_ingreso or "").strip(),
         observations=record_in.observations.strip(),
         front_image_orig=record_in.front_image_orig or "",
         front_image_enhanced=record_in.front_image_enhanced or "",
@@ -528,12 +1429,18 @@ def create_record(record_in: RecordCreate, db: Session = Depends(get_db)):
     except Exception as e:
         print(f"Warning: No se pudo generar copia de seguridad automática: {e}")
 
+    # Guardar en HistoricalWorker para que futuras consultas no consuman Factiliza
+    try:
+        HistoricalDataService.save_or_update_worker(db_record.doc_number, db_record.to_dict(), db)
+    except Exception as e:
+        logger.warning(f"Error actualizando HistoricalWorker al guardar record: {e}")
+
     return RecordResponse(**db_record.to_dict())
 
 
 
 @app.post("/api/scan-and-save")
-def scan_and_save_document(
+async def scan_and_save_document(
     front_image: UploadFile = File(...),
     back_image: Optional[UploadFile] = File(None),
     doc_type: str = Form("DNI"),
@@ -547,7 +1454,7 @@ def scan_and_save_document(
     4. Retorna el resultado escaneado y el registro persistido con su ID.
     """
     # 1. Ejecutar escaneo
-    scan_res = scan_document(
+    scan_res = await scan_document(
         front_image=front_image,
         back_image=back_image,
         doc_type=doc_type,
@@ -995,6 +1902,132 @@ def consolidate_worker_from_scan(payload: Dict[str, Any]):
     return profile
 
 
+OFFICIAL_TIPOS_CONTRATO = [
+    {"code": "01", "description": "OBREROS AGRARIO - MANDOS MEDIOS"},
+    {"code": "02", "description": "EMPLEADOS AGRARIO"},
+    {"code": "03", "description": "EMPLEADOS GENERAL"},
+    {"code": "04", "description": "OBREROS AGRARIO - MANDOS MEDIAS RENOVACION"},
+    {"code": "05", "description": "OBREROS AGRARIO PLANTA - DE EXPORTACIÓN NO TRADICIONAL D.LEY 22342"},
+    {"code": "06", "description": "RENOVACION OBREROS AGRARIO PLANTA - DE EXPORTACIÓN NO TRADICIONAL D.LEY 22342"},
+    {"code": "07", "description": "OBREROS AGR EXTRANJEROS - DE EXTRANJERO - D.LEG. 689"},
+    {"code": "08", "description": "RENOVACION DE CONTRATO AGR EXTRANJERO D.LEG.689"},
+    {"code": "09", "description": "CONTRATO OBREROS AGRARIO - CAMPO"},
+    {"code": "10", "description": "RENOVACION CONTRATO OBREROS AGRARIO - CAMPO"},
+    {"code": "11", "description": "OBREROS AGRARIO - INDETERMINADO"},
+    {"code": "12", "description": "EMPLEADOS GENERAL - RENOVACION DE CONTRATO"},
+    {"code": "13", "description": "CONTRATO ERG- ASISTENTE Y ANALISTA"},
+    {"code": "14", "description": "RENOVACION CONTRATO ERG- ASISTENTE Y ANALISTA"},
+    {"code": "15", "description": "1ER-CONTRATO ERA - SUPERVISORES"},
+    {"code": "16", "description": "RENOVACION DE CONTRATO ERA - SUPERVISORES"},
+    {"code": "17", "description": "EMPLEADO AGRARIO - INDETERMINADO"},
+    {"code": "18", "description": "EMPLEADO GENERAL - INDETERMINADO"},
+    {"code": "19", "description": "RENOVACION OBRERO_MANGO"},
+    {"code": "20", "description": "RENOVACION OBREROS_FRESA_A_MANGO"},
+    {"code": "21", "description": "CONTRATO OBRERO_MANGO"},
+    {"code": "22", "description": "RENOVACION OBREROS AGRARIO - PLANTA-PALTA"},
+]
+
+OFFICIAL_CODIGOS_PLANILLA = [
+    {"code": "ERA", "description": "EMPLEADOS REGIMEN AGRARIO"},
+    {"code": "ERG", "description": "EMPLEADOS REGIMEN GENERAL"},
+    {"code": "ORA", "description": "TEMPORAL"},
+    {"code": "ORC", "description": "OBREROS AGRARIO CAMPO"},
+    {"code": "ORP", "description": "OBREROS AGRARIO PLANTA"},
+    {"code": "PAR", "description": "PRACTICANTES"},
+]
+
+
+@app.get("/api/contracts/catalogs")
+def get_contract_catalogs():
+    """
+    Retorna los catálogos oficiales para asignación de contratos:
+    22 Tipos de Contrato (formato 2 dígitos) y 6 Códigos de Planilla (formato 3 caracteres).
+    """
+    return {
+        "tipos_contrato": OFFICIAL_TIPOS_CONTRATO,
+        "codigos_planilla": OFFICIAL_CODIGOS_PLANILLA,
+    }
+
+
+@app.post("/api/scanned-records/batch-contracts-update")
+def batch_update_contract_fields(req: ContractBatchUpdateRequest, db: Session = Depends(get_db)):
+    """
+    Actualización masiva de campos de contrato para una o varias filas seleccionadas.
+    REGLA ESTRICTA: Solo sobrescribe los campos que el usuario explícitamente marcó para actualizar.
+    Conserva los campos no seleccionados.
+    """
+    if not req.record_ids:
+        raise HTTPException(status_code=400, detail="No se proporcionaron IDs de registros a actualizar")
+
+    allowed_fields = {
+        # Contratos NISIRA
+        "cod_planilla", "nro_contrato", "basico", "inicio_contrato",
+        "duracion", "fin_contrato", "fecha_firma_contrato", "tipo_contrato", "nro_contrato_ref",
+        # Datos de Personal NISIRA
+        "cod_cargo", "cod_tipo_trab", "cat_ocupacional", "period_pago",
+        "cod_sucursal", "grupo_trabajo", "tipo_personal", "reg_laboral",
+        "niv_educativo", "tipo_comision", "asignacion_familiar", "fec_ingreso",
+        "pension_system", "cuspp", "civil_status", "nationality", "sex", "phone", "email", "address", "ubigeo"
+    }
+
+    clean_updates = {}
+    for k, v in req.updates.items():
+        if k in allowed_fields:
+            if k == "tipo_contrato":
+                s_v = str(v).strip()
+                if s_v.isdigit() and len(s_v) == 1:
+                    clean_updates[k] = f"0{s_v}"
+                elif s_v.isdigit() and len(s_v) == 2:
+                    clean_updates[k] = s_v
+                else:
+                    clean_updates[k] = s_v[:2]
+            elif k == "cod_planilla":
+                clean_updates[k] = str(v).strip().upper()[:3]
+            elif k == "cod_cargo":
+                s_v = str(v).strip()
+                clean_updates[k] = s_v.zfill(3) if s_v.isdigit() else s_v[:3]
+            elif k in ["cod_tipo_trab", "cat_ocupacional", "tipo_personal", "reg_laboral"]:
+                s_v = str(v).strip()
+                clean_updates[k] = s_v.zfill(2) if (s_v.isdigit() and len(s_v) == 1) else s_v[:2]
+            elif k in ["grupo_trabajo", "niv_educativo"]:
+                s_v = str(v).strip()
+                clean_updates[k] = s_v.zfill(3) if s_v.isdigit() else s_v[:3]
+            elif k in ["cod_sucursal", "nationality"]:
+                clean_updates[k] = str(v).strip().upper()[:3]
+            elif k in ["period_pago", "tipo_comision", "sex"]:
+                clean_updates[k] = str(v).strip()[:1]
+            elif k == "civil_status":
+                clean_updates[k] = str(v).strip().upper()[:2]
+            elif k == "asignacion_familiar":
+                clean_updates[k] = str(v).strip().upper()
+            elif k == "basico":
+                try:
+                    clean_updates[k] = float(v) if v is not None and str(v).strip() != "" else 1025.0
+                except (ValueError, TypeError):
+                    clean_updates[k] = 1025.0
+            else:
+                clean_updates[k] = str(v).strip() if v is not None else ""
+
+    if not clean_updates:
+        raise HTTPException(status_code=400, detail="No se seleccionó ningún campo válido para actualizar")
+
+    records = db.query(ScannedRecord).filter(ScannedRecord.id.in_(req.record_ids)).all()
+    updated_records = []
+    for rec in records:
+        for k, v in clean_updates.items():
+            setattr(rec, k, v)
+        updated_records.append(rec.to_dict())
+
+    db.commit()
+
+    return {
+        "success": True,
+        "updated_count": len(updated_records),
+        "fields_updated": list(clean_updates.keys()),
+        "records": updated_records
+    }
+
+
 @app.post("/api/contracts/calculate-dates")
 def calculate_contract_dates(req: CalculateDatesRequest):
     """
@@ -1264,7 +2297,14 @@ def generate_batch_excel(payload: dict, db: Session = Depends(get_db)):
     if record_ids:
         queried = db.query(ScannedRecord).filter(ScannedRecord.id.in_(record_ids)).all()
         id_map = {r.id: r.to_dict() for r in queried}
-        records = [id_map[rid] for rid in record_ids if rid in id_map]
+        records_override = {r["id"]: r for r in (payload.get("records_override") or payload.get("records") or []) if isinstance(r, dict) and "id" in r}
+        records = []
+        for rid in record_ids:
+            if rid in id_map:
+                item = dict(id_map[rid])
+                if rid in records_override:
+                    item.update(records_override[rid])
+                records.append(item)
     elif records_data:
         records = records_data
     else:
@@ -1640,7 +2680,14 @@ def generate_batch_excel_supabase(payload: dict, db: Session = Depends(get_db)):
     if record_ids:
         queried = db.query(ScannedRecord).filter(ScannedRecord.id.in_(record_ids)).all()
         id_map = {r.id: r.to_dict() for r in queried}
-        records = [id_map[rid] for rid in record_ids if rid in id_map]
+        records_override = {r["id"]: r for r in (payload.get("records_override") or payload.get("records") or []) if isinstance(r, dict) and "id" in r}
+        records = []
+        for rid in record_ids:
+            if rid in id_map:
+                item = dict(id_map[rid])
+                if rid in records_override:
+                    item.update(records_override[rid])
+                records.append(item)
     elif records_data:
         records = records_data
     else:

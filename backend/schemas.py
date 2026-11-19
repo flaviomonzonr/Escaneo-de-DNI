@@ -8,7 +8,8 @@ class FieldConfidence(BaseModel):
     confidence: float = 0.0  # 0 - 100
     is_valid: bool = True
     status: str = "CONFIRMADO"  # "CONFIRMADO" | "REVISAR" | "NO_DETECTADO"
-    origin_type: str = "LEIDO_OCR"  # "LEIDO_OCR" | "BASE_EXCEL" | "CORREGIDO_PROBABLE" | "CALCULADO" | "EDITADO_USUARIO"
+    origin_type: str = "LEIDO_OCR"  # "LEIDO_OCR" | "CONSULTA_API" | "COMPLEMENTADO_API" | "BASE_EXCEL" | "CORREGIDO_PROBABLE" | "CALCULADO" | "EDITADO_USUARIO"
+    source: str = "ocr"  # "ocr" | "api" | "manual"
     validation_message: Optional[str] = None
     anchor_matched: Optional[str] = None
     candidate_votes: Optional[str] = None
@@ -79,6 +80,10 @@ class ScanResponse(BaseModel):
     # Global quality & OCR warnings
     warnings: List[str] = Field(default_factory=list)
 
+    # API Complementation Status
+    api_complemented: bool = False
+    api_status: Optional[Dict[str, Any]] = None
+
 
 class RecordCreate(BaseModel):
     doc_type: str
@@ -107,6 +112,31 @@ class RecordCreate(BaseModel):
     pension_commission: Optional[str] = ""
     cuspp: Optional[str] = ""
     observations: str = ""
+    
+    # Contract NISIRA fields
+    cod_planilla: Optional[str] = "ORP"
+    nro_contrato: Optional[str] = ""
+    basico: Optional[float] = 1025.0
+    inicio_contrato: Optional[str] = ""
+    duracion: Optional[str] = "3"
+    fin_contrato: Optional[str] = ""
+    fecha_firma_contrato: Optional[str] = ""
+    tipo_contrato: Optional[str] = "05"
+    nro_contrato_ref: Optional[str] = ""
+    
+    # Personal NISIRA fields
+    cod_cargo: Optional[str] = "048"
+    cod_tipo_trab: Optional[str] = "76"
+    cat_ocupacional: Optional[str] = "02"
+    period_pago: Optional[str] = "3"
+    cod_sucursal: Optional[str] = "CA3"
+    grupo_trabajo: Optional[str] = "013"
+    tipo_personal: Optional[str] = "05"
+    reg_laboral: Optional[str] = "26"
+    niv_educativo: Optional[str] = "007"
+    tipo_comision: Optional[str] = "0"
+    asignacion_familiar: Optional[str] = "NO"
+    fec_ingreso: Optional[str] = ""
     
     front_image_orig: Optional[str] = ""
     front_image_enhanced: Optional[str] = ""
@@ -151,6 +181,31 @@ class RecordResponse(BaseModel):
     cuspp: str = ""
     observations: str = ""
     
+    # Contract NISIRA fields
+    cod_planilla: Optional[str] = "ORP"
+    nro_contrato: Optional[str] = ""
+    basico: Optional[float] = 1025.0
+    inicio_contrato: Optional[str] = ""
+    duracion: Optional[str] = "3"
+    fin_contrato: Optional[str] = ""
+    fecha_firma_contrato: Optional[str] = ""
+    tipo_contrato: Optional[str] = "05"
+    nro_contrato_ref: Optional[str] = ""
+    
+    # Personal NISIRA fields
+    cod_cargo: Optional[str] = "048"
+    cod_tipo_trab: Optional[str] = "76"
+    cat_ocupacional: Optional[str] = "02"
+    period_pago: Optional[str] = "3"
+    cod_sucursal: Optional[str] = "CA3"
+    grupo_trabajo: Optional[str] = "013"
+    tipo_personal: Optional[str] = "05"
+    reg_laboral: Optional[str] = "26"
+    niv_educativo: Optional[str] = "007"
+    tipo_comision: Optional[str] = "0"
+    asignacion_familiar: Optional[str] = "NO"
+    fec_ingreso: Optional[str] = ""
+    
     front_image_orig: str
     front_image_enhanced: str
     back_image_orig: str
@@ -165,6 +220,14 @@ class RecordResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+
+
+
+
+
+
 
 
 class PaginatedRecordsResponse(BaseModel):
@@ -251,3 +314,94 @@ class ContractLogResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+
+
+
+
+
+
+
+
+class ContractBatchUpdateRequest(BaseModel):
+    record_ids: List[int]
+    updates: Dict[str, Any]
+
+
+class ContractCatalogResponse(BaseModel):
+    tipos_contrato: List[Dict[str, str]]
+    codigos_planilla: List[Dict[str, str]]
+
+
+class StandardPeruDocData(BaseModel):
+    primer_apellido_o_apellidos: Optional[str] = None
+    segundo_apellido_o_prenombres: Optional[str] = None
+    prenombres_dni_azul: Optional[str] = None
+    sexo: Optional[str] = None
+    estado_civil: Optional[str] = None
+    fecha_nacimiento: Optional[str] = None
+    fecha_emision: Optional[str] = None
+    fecha_caducidad: Optional[str] = None
+    numero_documento: Optional[str] = None
+    nacionalidad: Optional[str] = None
+    direccion: Optional[str] = None
+    departamento: Optional[str] = None
+    provincia: Optional[str] = None
+    distrito: Optional[str] = None
+
+
+class StandardPeruDocResponse(BaseModel):
+    tipo_documento: str  # "DNI_AZUL" | "DNI_ELECTRONICO" | "CARNET_EXTRANJERIA"
+    datos: StandardPeruDocData
+    observaciones_ocr: List[str] = Field(default_factory=list)
+
+
+def format_to_standard_peru_doc(resp: "ScanResponse") -> Dict[str, Any]:
+    """
+    Transforms an internal ScanResponse into the standardized ocr-documentos-peru JSON schema.
+    """
+    doc_type_raw = (resp.doc_type or "").upper()
+    sub_type_raw = (resp.doc_subtype or "").upper()
+
+    if "CARNET" in doc_type_raw or "EXTRANJER" in doc_type_raw:
+        std_type = "CARNET_EXTRANJERIA"
+        apellidos = " ".join([p for p in [resp.paternal_surname, resp.maternal_surname] if p]).strip()
+        p1 = apellidos if apellidos else (resp.paternal_surname or None)
+        p2 = resp.first_names or None
+        prenombres_azul = None
+        nac = resp.nationality or None
+    elif "ELECTRONIC" in doc_type_raw or "ELECTRONIC" in sub_type_raw or "DNIE" in doc_type_raw:
+        std_type = "DNI_ELECTRONICO"
+        apellidos = " ".join([p for p in [resp.paternal_surname, resp.maternal_surname] if p]).strip()
+        p1 = apellidos if apellidos else (resp.paternal_surname or None)
+        p2 = resp.first_names or None
+        prenombres_azul = None
+        nac = resp.nationality or "PERUANA"
+    else:
+        std_type = "DNI_AZUL"
+        p1 = resp.paternal_surname or None
+        p2 = resp.maternal_surname or None
+        prenombres_azul = resp.first_names or None
+        nac = "PERU"
+
+    return {
+        "tipo_documento": std_type,
+        "datos": {
+            "primer_apellido_o_apellidos": p1,
+            "segundo_apellido_o_prenombres": p2,
+            "prenombres_dni_azul": prenombres_azul,
+            "sexo": resp.sex or None,
+            "estado_civil": resp.civil_status or None,
+            "fecha_nacimiento": resp.birth_date or None,
+            "fecha_emision": resp.issue_date or None,
+            "fecha_caducidad": resp.expiry_date or None,
+            "numero_documento": resp.doc_number or None,
+            "nacionalidad": nac,
+            "direccion": resp.address or None,
+            "departamento": resp.department or None,
+            "provincia": resp.province or None,
+            "distrito": resp.district or None,
+        },
+        "observaciones_ocr": list(resp.warnings) if resp.warnings else [],
+    }

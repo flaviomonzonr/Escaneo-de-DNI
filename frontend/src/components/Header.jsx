@@ -1,28 +1,27 @@
 import React, { useState } from 'react';
 import {
   Menu,
-  CheckCircle2,
-  AlertCircle,
   RefreshCw,
-  User,
-  ShieldCheck,
   Wifi,
-  Globe,
   Copy,
   Check,
   Smartphone,
+  Tablet,
+  Monitor,
   X,
-  ExternalLink,
+  Moon,
+  Sun,
 } from 'lucide-react';
-import { api } from '../services/api';
 
 export default function Header({
-  activeTab,
   setMobileOpen,
   healthInfo,
   onRetryConnection,
+  theme = 'dark',
+  setTheme,
+  deviceMode = 'desktop',
+  setDeviceMode,
 }) {
-  const [downloadingBackup, setDownloadingBackup] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [copiedUrl, setCopiedUrl] = useState('');
   const isOnline = healthInfo && (healthInfo.status === 'healthy' || healthInfo.status === 'degraded');
@@ -33,98 +32,156 @@ export default function Header({
     ? [window.location.origin]
     : [];
 
+  const publicTunnelUrl = healthInfo?.tunnel_url || 'https://ons-subjects-pizza-specialties.trycloudflare.com';
+
   const handleCopy = (url) => {
     navigator.clipboard.writeText(url);
     setCopiedUrl(url);
     setTimeout(() => setCopiedUrl(''), 2500);
   };
 
-  const handleDownloadBackup = () => {
-    try {
-      setDownloadingBackup(true);
-      const url = api.getDownloadFullBackupZipUrl();
-      window.open(url, '_blank');
-    } catch (e) {
-      console.error('Error downloading backup:', e);
-    } finally {
-      setTimeout(() => setDownloadingBackup(false), 2000);
-    }
-  };
-
   return (
-    <header className="sticky top-0 z-30 w-full bg-white border-b border-slate-200/90 shadow-2xs select-none">
-      <div className="px-3 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-14">
+    <header className="sticky top-0 z-30 w-full bg-[#060D1A]/95 backdrop-blur-md border-b border-[#1E3557] select-none shadow-md">
+      <div className="w-full max-w-[1920px] mx-auto px-3 sm:px-6 lg:px-8 xl:px-10">
+        <div className="flex items-center justify-between h-14 gap-2 sm:gap-4">
           
-          {/* Left: Mobile Menu Trigger & Context Title */}
-          <div className="flex items-center space-x-2.5 sm:space-x-3">
+          {/* Left: Mobile Navigation Button & Chavín Brand Emblem */}
+          <div className="flex items-center space-x-3 shrink-0">
             <button
               onClick={() => setMobileOpen(true)}
-              className="p-2 rounded-xl text-slate-700 hover:text-[#0A1E5C] hover:bg-slate-100 active:bg-slate-200 lg:hidden transition min-h-[44px] min-w-[44px] flex items-center justify-center"
+              className="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-[#101F3B] lg:hidden transition min-h-[40px] min-w-[40px] flex items-center justify-center btn-precision border border-transparent hover:border-[#1E3557]"
               title="Abrir menú"
             >
               <Menu className="w-5 h-5" />
             </button>
-            <div className="flex items-center space-x-2 text-xs font-bold text-[#0A1E5C]">
-              <span className={`w-2 h-2 rounded-full ${isOnline ? 'bg-[#10B981]' : 'bg-rose-500 animate-ping'}`} />
-              <span className="truncate max-w-[200px] sm:max-w-none">
-                Agroindustrias Chavín • EscanDNI
+
+            <div className="flex items-center space-x-2.5 font-mono text-xs">
+              {/* Chavín Stepped Monolith Glyph */}
+              <div className="w-6 h-6 rounded-md bg-gradient-to-br from-cyan-500 to-[#101F3B] p-0.5 shadow-glow-turquoise flex items-center justify-center">
+                <div className="w-full h-full bg-[#060D1A] rounded-[4px] flex items-center justify-center">
+                  <span className="text-[10px] font-black text-cyan-300">CH</span>
+                </div>
+              </div>
+
+              <span className="font-extrabold text-white tracking-wider flex items-center gap-1.5">
+                <span className="text-sm font-black tracking-widest text-white">ESCANDNI</span>
+                <span className="text-cyan-400 font-bold">//</span>
+                <span className="text-slate-300 font-semibold tracking-wide hidden sm:inline">CHAVÍN_OCR</span>
               </span>
             </div>
           </div>
 
-          {/* Right: User Profile, Backup & System Status */}
-          <div className="flex items-center space-x-2 sm:space-x-3">
+          {/* Center: Device Switcher Segmented Control (Solo visible en monitores/escritorio) */}
+          <div className="hidden lg:flex items-center justify-center">
+            <div className="flex items-center p-1 rounded-lg bg-[#040914] border border-[#1D334E] shadow-inner font-mono text-xs">
+              
+              {/* Celular Tab */}
+              <button
+                type="button"
+                onClick={() => setDeviceMode('mobile')}
+                className={`px-3 py-1.5 rounded-md flex items-center space-x-1.5 transition-all btn-precision ${
+                  deviceMode === 'mobile'
+                    ? 'bg-cyan-500 text-slate-950 font-black shadow-sm'
+                    : 'text-slate-300 hover:text-white font-semibold'
+                }`}
+                title="Modo Móvil (~390px) con obturador táctil"
+              >
+                <Smartphone className={`w-3.5 h-3.5 ${deviceMode === 'mobile' ? 'text-slate-950' : 'text-cyan-400'}`} />
+                <span className="hidden sm:inline">Móvil</span>
+              </button>
+
+              {/* Tablet Tab */}
+              <button
+                type="button"
+                onClick={() => setDeviceMode('tablet')}
+                className={`px-3 py-1.5 rounded-md flex items-center space-x-1.5 transition-all btn-precision ${
+                  deviceMode === 'tablet'
+                    ? 'bg-teal-500 text-slate-950 font-black shadow-sm'
+                    : 'text-slate-300 hover:text-white font-semibold'
+                }`}
+                title="Modo Tablet (~768px)"
+              >
+                <Tablet className={`w-3.5 h-3.5 ${deviceMode === 'tablet' ? 'text-slate-950' : 'text-teal-400'}`} />
+                <span className="hidden sm:inline">Tablet</span>
+              </button>
+
+              {/* Escritorio Tab */}
+              <button
+                type="button"
+                onClick={() => setDeviceMode('desktop')}
+                className={`px-3 py-1.5 rounded-md flex items-center space-x-1.5 transition-all btn-precision ${
+                  deviceMode === 'desktop'
+                    ? 'bg-gradient-to-r from-slate-200 to-slate-100 text-slate-950 font-black shadow-sm'
+                    : 'text-slate-300 hover:text-white font-semibold'
+                }`}
+                title="Modo Escritorio"
+              >
+                <Monitor className={`w-3.5 h-3.5 ${deviceMode === 'desktop' ? 'text-slate-950' : 'text-slate-400'}`} />
+                <span className="hidden sm:inline">Escritorio</span>
+              </button>
+
+            </div>
+          </div>
+
+          {/* Right: Discrete Backend LED, Theme Switch & Profile */}
+          <div className="flex items-center space-x-2 sm:space-x-2.5 shrink-0">
             
-            {/* Share Wi-Fi Button */}
-            <button
-              onClick={() => setShowShareModal(true)}
-              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 border border-blue-200 text-[11px] font-bold text-[#101BCB] transition shadow-2xs active:scale-95"
-              title="Compartir link con celular o tablet en la misma red Wi-Fi"
-            >
-              <Wifi className="w-3.5 h-3.5 text-[#101BCB]" />
-              <span className="hidden sm:inline">Compartir Wi-Fi</span>
-              <span className="sm:hidden">Wi-Fi</span>
-            </button>
-
-            {/* Quick Backup Download Button */}
-            <button
-              onClick={handleDownloadBackup}
-              disabled={downloadingBackup}
-              className="hidden md:flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-[11px] font-bold text-slate-700 hover:text-[#1D4ED8] transition shadow-2xs active:scale-95"
-              title="Descargar copia de seguridad (.ZIP)"
-            >
-              <ShieldCheck className="w-3.5 h-3.5 text-[#1D4ED8]" />
-              <span>{downloadingBackup ? 'Descargando...' : 'Backup (.ZIP)'}</span>
-            </button>
-
-            {/* Backend Status Pill */}
+            {/* Discrete Backend LED Indicator - Strict: No yellow/amber */}
             {isOnline ? (
               <div
-                className="flex items-center space-x-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-[11px] font-bold text-emerald-800 shadow-2xs"
-                title="Servidor conectado y listo"
+                className="flex items-center space-x-2 px-3 py-1.5 rounded-md bg-[#0A3D44]/80 border border-teal-400/50 text-teal-200 font-mono text-xs font-bold shadow-xs"
+                title="Backend FastAPI en línea (Puerto 8000)"
               >
-                <CheckCircle2 className="w-3.5 h-3.5 text-[#10B981] shrink-0" />
-                <span className="hidden sm:inline">Conectado</span>
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-teal-300 shadow-xs"></span>
+                </span>
+                <span className="hidden sm:inline">API_ONLINE</span>
               </div>
             ) : (
               <button
                 onClick={onRetryConnection}
-                className="flex items-center space-x-1 px-2.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 border border-rose-300 text-[11px] font-bold text-rose-700 shadow-2xs transition animate-pulse"
-                title="Reintentar conexión"
+                className="flex items-center space-x-2 px-3 py-1.5 rounded-md bg-[#101F3B] hover:bg-[#162A4F] border border-cyan-400/60 text-cyan-200 font-mono text-xs font-bold transition btn-precision"
+                title="Backend desconectado. Haz clic para reconectar."
               >
-                <AlertCircle className="w-3.5 h-3.5 text-rose-600 shrink-0" />
-                <span className="text-[10px] sm:text-[11px]">Reconectar</span>
-                <RefreshCw className="w-3 h-3 text-rose-600" />
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-400"></span>
+                </span>
+                <span className="hidden sm:inline">RECONECTAR</span>
+                <RefreshCw className="w-3.5 h-3.5 text-cyan-300 animate-spin" />
               </button>
             )}
 
-            {/* User Profile */}
-            <div className="flex items-center space-x-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-slate-100/80 border border-slate-200 text-slate-800">
-              <div className="w-5 h-5 rounded-full bg-[#1D4ED8] flex items-center justify-center text-white text-[10px] font-bold">
-                <User className="w-3 h-3" />
+            {/* Dark / Light Minimal Toggle - Strict: No yellow sun */}
+            <button
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              className="p-2 rounded-lg text-slate-300 hover:text-white bg-[#0B1528] hover:bg-[#101F3B] border border-[#1E3557] transition btn-precision"
+              title={theme === 'dark' ? 'Cambiar a modo Claro' : 'Cambiar a modo Oscuro'}
+            >
+              {theme === 'dark' ? (
+                <Sun className="w-4 h-4 text-cyan-300" />
+              ) : (
+                <Moon className="w-4 h-4 text-slate-300" />
+              )}
+            </button>
+
+            {/* Wi-Fi Share Link */}
+            <button
+              onClick={() => setShowShareModal(true)}
+              className="hidden md:flex items-center space-x-1.5 px-3 py-1.5 rounded-md bg-[#0B1528] hover:bg-[#101F3B] border border-[#1E3557] text-slate-200 hover:text-white font-mono text-xs font-bold transition btn-precision shadow-xs"
+              title="Compartir link en red local"
+            >
+              <Wifi className="w-3.5 h-3.5 text-cyan-400" />
+              <span>WI-FI</span>
+            </button>
+
+            {/* User Avatar */}
+            <div className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-md bg-[#0B1528] border border-[#1E3557] text-white font-mono text-xs font-bold">
+              <div className="w-4 h-4 rounded-xs bg-cyan-500/20 text-cyan-300 flex items-center justify-center font-black text-[10px] border border-cyan-400/50">
+                F
               </div>
-              <span className="text-xs font-bold hidden sm:inline">Flavio</span>
+              <span className="hidden xl:inline text-slate-200">ADMIN</span>
             </div>
 
           </div>
@@ -134,144 +191,77 @@ export default function Header({
 
       {/* Share Wi-Fi Modal */}
       {showShareModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
-          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-md w-full overflow-hidden">
-            {/* Header */}
-            <div className="bg-gradient-to-r from-[#080F72] to-[#101BCB] px-5 py-4 text-white flex items-center justify-between">
-              <div className="flex items-center space-x-2.5">
-                <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center">
-                  <Wifi className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-sm text-white">Compartir en Red Wi-Fi Local</h3>
-                  <p className="text-[11px] text-blue-200">Acceso desde Celular, Tablet u otra PC</p>
-                </div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 animate-in fade-in duration-150">
+          <div className="card-enterprise max-w-md w-full bg-[#0B1528] border border-[#274468] overflow-hidden shadow-2xl">
+            <div className="px-5 py-3.5 border-b border-[#1E3557] flex items-center justify-between">
+              <div className="flex items-center space-x-2 font-mono text-xs">
+                <Wifi className="w-4 h-4 text-cyan-400" />
+                <span className="font-bold text-white">RED_LOCAL_SHARED_LINK</span>
               </div>
               <button
                 onClick={() => setShowShareModal(false)}
-                className="p-1.5 rounded-lg text-blue-200 hover:text-white hover:bg-white/10 transition"
+                className="p-1 rounded-md text-slate-400 hover:text-white hover:bg-[#101F3B]"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            {/* Body */}
-            <div className="p-5 space-y-4">
-              <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 text-xs text-slate-700 flex items-start space-x-2.5">
-                <Smartphone className="w-5 h-5 text-[#101BCB] shrink-0 mt-0.5" />
-                <div>
-                  <span className="font-bold text-[#080F72] block">¿Cómo ingresar desde el celular?</span>
-                  <span className="text-[11px] text-slate-600 block mt-0.5">
-                    1. Conecta tu celular a la <strong>misma red Wi-Fi</strong> de esta computadora.
-                  </span>
-                  <span className="text-[11px] text-slate-600 block">
-                    2. Abre Chrome o Safari en tu celular y escribe el enlace de abajo.
-                  </span>
+            <div className="p-5 space-y-4 font-mono text-xs">
+              {/* Local Wi-Fi Link - Prioritario y Rápido */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-emerald-400 block text-[11px] font-bold">⚡ ENLACE WI-FI LOCAL (RECOMENDADO - INSTANTÁNEO):</span>
+                  <span className="text-[10px] bg-emerald-950 text-emerald-300 border border-emerald-500/40 px-1.5 py-0.5 rounded font-sans font-semibold">1 segundo</span>
                 </div>
-              </div>
-
-              {/* Opción 1: Misma red Wi-Fi */}
-              <div className="space-y-2">
-                <div className="flex items-center space-x-1.5 text-xs font-bold text-slate-800">
-                  <Wifi className="w-4 h-4 text-[#101BCB]" />
-                  <span>1. Celular conectado al mismo Wi-Fi:</span>
-                </div>
-
-                {wifiUrls.length > 0 ? (
-                  wifiUrls.map((url, idx) => (
-                    <div
-                      key={idx}
-                      className="flex items-center justify-between p-2.5 bg-slate-50 border border-slate-300 rounded-xl"
-                    >
-                      <span className="font-mono text-xs font-bold text-[#101BCB] select-all truncate pr-2">
-                        {url}
-                      </span>
-                      <button
-                        onClick={() => handleCopy(url)}
-                        className={`inline-flex items-center space-x-1 px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-xs ${
-                          copiedUrl === url
-                            ? 'bg-emerald-600 text-white'
-                            : 'bg-[#101BCB] hover:bg-[#080F72] text-white'
-                        }`}
-                      >
-                        {copiedUrl === url ? (
-                          <>
-                            <Check className="w-3.5 h-3.5" />
-                            <span>¡Copiado!</span>
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="w-3.5 h-3.5" />
-                            <span>Copiar</span>
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  ))
-                ) : (
-                  <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-600">
-                    <span className="font-mono text-xs font-bold text-[#101BCB] block">
-                      http://{window.location.hostname}:5173
-                    </span>
+                {wifiUrls.map((url, idx) => (
+                  <div key={idx} className="flex items-center justify-between p-2.5 rounded-md bg-[#040914] border border-emerald-500/50 shadow-sm">
+                    <span className="text-emerald-300 font-bold truncate pr-2 text-xs">{url}</span>
                     <button
-                      onClick={() => handleCopy(`http://${window.location.hostname}:5173`)}
-                      className="mt-2 inline-flex items-center space-x-1 px-3 py-1 rounded-lg bg-[#101BCB] text-white text-xs font-bold"
+                      onClick={() => handleCopy(url)}
+                      className="px-2.5 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-bold flex items-center space-x-1 transition shadow"
                     >
-                      <Copy className="w-3 h-3" />
-                      <span>Copiar Enlace</span>
+                      {copiedUrl === url ? <Check className="w-3 h-3 text-white" /> : <Copy className="w-3 h-3" />}
+                      <span>{copiedUrl === url ? 'COPIADO' : 'COPIAR'}</span>
                     </button>
                   </div>
-                )}
+                ))}
+                <span className="text-[10px] text-slate-400 font-sans block">
+                  Conecta tu celular al mismo Wi-Fi y abre este enlace. No depende de internet ni tiene demoras.
+                </span>
               </div>
 
-              {/* Opción 2: Diferente red Wi-Fi o Datos Móviles */}
-              <div className="space-y-2 pt-2 border-t border-slate-200">
-                <div className="flex items-center space-x-1.5 text-xs font-bold text-slate-800">
-                  <Globe className="w-4 h-4 text-[#0D9488]" />
-                  <span>2. Celular con diferente Wi-Fi o Datos 4G/5G:</span>
+              {/* Enlace Nube Temporal (Para Celular 4G/5G u otra laptop) */}
+              <div className="space-y-1.5 pt-2 border-t border-[#1E3557]">
+                <div className="flex items-center justify-between">
+                  <span className="text-cyan-400 block text-[11px] font-bold">🌐 ENLACE NUBE (CELULAR 4G/5G U OTRA LAPTOP):</span>
+                  <span className="text-[10px] bg-cyan-950 text-cyan-300 border border-cyan-500/40 px-1.5 py-0.5 rounded font-sans font-semibold">Túnel Activo</span>
                 </div>
-                <div className="flex items-center justify-between p-2.5 bg-slate-50 border border-slate-300 rounded-xl">
-                  <span className="font-mono text-xs font-bold text-[#0D9488] select-all truncate pr-2">
-                    https://obsessive-antiquity-synthesis.ngrok-free.dev
-                  </span>
+                <div className="flex items-center justify-between p-2 rounded-md bg-[#040914] border border-cyan-500/40">
+                  <span className="text-cyan-300 font-mono truncate pr-2 text-[11px]">{publicTunnelUrl}</span>
                   <button
-                    onClick={() => handleCopy('https://obsessive-antiquity-synthesis.ngrok-free.dev')}
-                    className={`inline-flex items-center space-x-1 px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-xs ${
-                      copiedUrl === 'https://obsessive-antiquity-synthesis.ngrok-free.dev'
-                        ? 'bg-emerald-600 text-white'
-                        : 'bg-[#0D9488] hover:bg-[#0F766E] text-white'
-                    }`}
+                    onClick={() => handleCopy(publicTunnelUrl)}
+                    className="px-2 py-1 rounded bg-cyan-700 hover:bg-cyan-600 text-white text-[10px] font-bold flex items-center space-x-1 border border-cyan-500/60"
                   >
-                    {copiedUrl === 'https://obsessive-antiquity-synthesis.ngrok-free.dev' ? (
-                      <>
-                        <Check className="w-3.5 h-3.5" />
-                        <span>¡Copiado!</span>
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="w-3.5 h-3.5" />
-                        <span>Copiar</span>
-                      </>
-                    )}
+                    {copiedUrl === publicTunnelUrl ? <Check className="w-3 h-3 text-white" /> : <Copy className="w-3 h-3" />}
+                    <span>{copiedUrl === publicTunnelUrl ? 'COPIADO' : 'COPIAR'}</span>
                   </button>
                 </div>
+                <span className="text-[10px] text-slate-400 font-sans block">
+                  Abre este enlace desde cualquier lugar (datos móviles 4G/5G o en otra laptop). 100% seguro con HTTPS sin pantallas en blanco.
+                </span>
               </div>
 
-              <div className="text-[11px] text-slate-500 bg-slate-50 rounded-xl p-3 border border-slate-200 space-y-1">
-                <span className="font-semibold text-slate-700 block">💡 Nota de funcionamiento:</span>
-                <span>
-                  El sistema funciona 100% en tu red local privada. Todos los escaneos y datos se guardan directamente en esta laptop.
-                </span>
+              <div className="text-[11px] text-slate-300 bg-[#060D1A] p-3 rounded-md border border-[#1E3557] font-sans leading-relaxed">
+                💡 <strong>Consejo:</strong> Usa el enlace verde Wi-Fi para que cargue en 1 segundo en tu celular o tablet.
               </div>
             </div>
 
-            {/* Footer */}
-            <div className="px-5 py-3 bg-slate-50 border-t border-slate-200 flex justify-end">
+            <div className="px-5 py-3 border-t border-[#1E3557] flex justify-end bg-[#040914]/40">
               <button
                 onClick={() => setShowShareModal(false)}
-                className="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-bold transition"
+                className="px-4 py-1.5 rounded-md bg-[#101F3B] hover:bg-[#162A4F] text-white font-mono text-xs font-bold btn-precision border border-[#1E3557]"
               >
-                Cerrar
+                CERRAR
               </button>
             </div>
           </div>

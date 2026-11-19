@@ -161,7 +161,7 @@ export default function OCRDiagnosticModal({
                 <div className="bg-white border border-[#E2E8F0] rounded-2xl p-3 space-y-2 shadow-corporate-sm">
                   <div className="flex items-center justify-between text-xs">
                     <span className="font-bold text-[#080F72]">4. Binarización Gaussian</span>
-                    <span className="text-[10px] bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full font-bold">Binarizado</span>
+                    <span className="text-[10px] bg-[#101F3B] text-cyan-300 border border-[#274468] px-2 py-0.5 rounded-full font-bold">Binarizado</span>
                   </div>
                   <div className="rounded-xl overflow-hidden bg-[#F8FAFC] border border-[#CBD5E1] aspect-[1.58/1] flex items-center justify-center p-4 text-center">
                     <span className="text-xs text-[#64748B] font-mono">Bloque Adaptativo 15, C=8</span>

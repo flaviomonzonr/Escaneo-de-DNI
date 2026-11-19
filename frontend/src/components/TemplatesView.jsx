@@ -469,10 +469,10 @@ export default function TemplatesView({ reconnectTrigger }) {
             ) : (
               <button
                 onClick={() => setShowConfigModal(true)}
-                className="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full bg-amber-50 border border-amber-300 text-amber-800 text-[11px] font-bold hover:bg-amber-100 transition animate-pulse"
+                className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-[#101F3B] border border-cyan-400/50 text-cyan-200 text-[11px] font-bold hover:bg-[#162A4F] transition animate-pulse"
                 title="Haga clic para conectar su cuenta de Supabase"
               >
-                <Settings className="w-3 h-3 text-amber-700" />
+                <Settings className="w-3 h-3 text-cyan-400" />
                 <span>⚙️ Configurar Supabase Cloud</span>
               </button>
             )}
@@ -899,9 +899,9 @@ export default function TemplatesView({ reconnectTrigger }) {
                   </span>
                 </div>
                 <div className="p-3 rounded-xl bg-[#F8FAFC] border border-[#CBD5E1]">
-                  <span className="text-[10px] text-[#64748B] uppercase font-bold block">Cols. Amarillas</span>
-                  <span className="text-xs font-bold text-amber-600 block">
-                    🟡 {activeSheet?.yellow_columns_count || 0} detectadas
+                  <span className="text-[10px] text-[#64748B] uppercase font-bold block">Cols. NISIRA</span>
+                  <span className="text-xs font-bold text-teal-600 block">
+                    🔷 {activeSheet?.yellow_columns_count || 0} detectadas
                   </span>
                 </div>
                 <div className="p-3 rounded-xl bg-[#F8FAFC] border border-[#CBD5E1]">
@@ -963,8 +963,8 @@ export default function TemplatesView({ reconnectTrigger }) {
                             <div className="min-w-0">
                               <span className="font-semibold text-[#1E293B] block truncate">{h}</span>
                               {isYellow && (
-                                <span className="text-[10px] text-amber-700 font-bold flex items-center space-x-1">
-                                  <span>🟡 Columna con celda amarilla detectada</span>
+                                <span className="text-[10px] text-teal-700 font-bold flex items-center space-x-1">
+                                  <span>🔷 Columna con celda NISIRA detectada</span>
                                 </span>
                               )}
                             </div>

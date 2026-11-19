@@ -18,11 +18,14 @@ class RapidOCREngine(BaseOCREngine):
         if self._ocr is not None:
             return
         try:
-            import os
-            os.environ.setdefault("OMP_NUM_THREADS", "1")
-            os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
             from rapidocr_onnxruntime import RapidOCR
             self._ocr = RapidOCR()
+            # High-performance configuration for rectified ID cards:
+            # 1. Skip redundant angle classifier on horizontally aligned cards
+            self._ocr.use_angle_cls = False
+            # 2. Increase text recognition batch size for vectorized SIMD inference on CPU
+            if hasattr(self._ocr, "text_recognizer"):
+                self._ocr.text_recognizer.rec_batch_num = 16
         except Exception as e:
             self._ocr = None
 
@@ -70,7 +73,7 @@ class RapidOCREngine(BaseOCREngine):
             img_input = image
 
         try:
-            results, elapse_list = self._ocr(img_input)
+            results, elapse_list = self._ocr(img_input, box_thresh=0.55)
         except Exception as e:
             return OCRResult(
                 full_text="",

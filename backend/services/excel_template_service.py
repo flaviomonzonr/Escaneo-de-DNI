@@ -15,16 +15,19 @@ EXPORTS_DIR.mkdir(parents=True, exist_ok=True)
 
 # Standard semantic mapping aliases from DNI fields to possible Excel column names
 COLUMN_MAPPINGS = {
+    "doc_number": [
+        "IDCODIGOGENERAL", "CODIGO_CONTROL", "COD.CONTROL", "CODIGO CONTROL", "COD.PERSONAL", "COD PERSONAL",
+        "NRODOCUMENTO", "NRO. DOCUMENTO", "NRO.DOCUMENTO", "NRO DOCUMENTO", "NUM_DOC", "NUMERO DOCUMENTO",
+        "DNI", "COD_TRABAJADOR", "CODIGO_EMPLEADO"
+    ],
     "full_name": [
         "APELLIDOS_Y_NOMBRES", "APELLIDOS Y NOMBRES", "APELLIDOS Y NOMBRE", "APELLIDOS_NOMBRE",
         "NOMBRES_Y_APELLIDOS", "NOMBRES Y APELLIDOS", "NOMBRE_COMPLETO", "NOMBRE COMPLETO",
-        "DATOS_PERSONALES", "TRABAJADOR", "EMPLEADO", "COLABORADOR"
+        "APELLIDOS Y NOMBRES COMPLETOS", "NOMBRES Y APELLIDOS COMPLETOS", "DATOS_PERSONALES",
+        "DATOS PERSONALES", "TRABAJADOR", "EMPLEADO", "COLABORADOR"
     ],
-    "doc_number": [
-        "DNI", "NUM_DOC", "NRO_DOCUMENTO", "NUMERO_DOCUMENTO", "DOCUMENTO", "DOC_IDENTIDAD",
-        "NUMERO DNI", "NRO DNI", "CODIGO", "COD_TRABAJADOR", "CODIGO_EMPLEADO", "NRO_DOC",
-        "COD.PERSONAL", "COD PERSONAL", "IDCODIGOGENERAL", "COD.CONTROL", "CODIGO_CONTROL",
-        "NRO.DOCUME", "NRO. DOCUMENTO", "NRODOCUMENTO"
+    "doc_type": [
+        "IDDOCIDENTIDAD", "TIP. DOCUMENTO", "TIP DOCUMENTO", "TIPO DOCUMENTO", "TIPO DOC", "DOC IDENTIDAD"
     ],
     "paternal_surname": [
         "APELLIDO_PATERNO", "APELLIDO PATERNO", "APE_PATERNO", "PATERNO", "PRIMER_APELLIDO",
@@ -47,19 +50,19 @@ COLUMN_MAPPINGS = {
         "SEXO", "GENERO", "GÉNERO", "SEX"
     ],
     "civil_status": [
-        "ESTADO_CIVIL", "ESTADO CIVIL", "EST_CIVIL", "EDO_CIVIL", "EST CIVIL", "CIVIL",
-        "EST. CIVIL", "EST.CIVIL", "IDESTADOCIVIL"
+        "IDESTADOCIVIL", "ESTADO_CIVIL", "ESTADO CIVIL", "EST_CIVIL", "EDO_CIVIL", "EST CIVIL", "CIVIL",
+        "EST. CIVIL", "EST.CIVIL"
     ],
     "address": [
-        "DIRECCION", "DIRECCIÓN", "DOMICILIO", "DIR_DOMICILIO", "DIRECCION_ACTUAL", "DOMICILIO_ACTUAL",
-        "DIRECCION REFERENCIA", "DIRECCIÓN REFERENCIA", "DIRECCION_REFERENCIA"
+        "DIRECCION REFERENCIA", "DIRECCIÓN REFERENCIA", "DIRECCION_REFERENCIA",
+        "DIRECCION ACTUAL", "DOMICILIO ACTUAL", "DIRECCION", "DIRECCIÓN", "DOMICILIO"
     ],
     "ubigeo": [
-        "UBIGEO", "COD_UBIGEO", "CODIGO_UBIGEO", "UBIGEO_RENIEC", "UBIGEO_DOMICILIO",
-        "COD.UBIGEO", "COD. UBIGEO", "IDUBIGEO"
+        "IDUBIGEO", "UBIGEO", "COD_UBIGEO", "CODIGO_UBIGEO", "UBIGEO_RENIEC", "UBIGEO_DOMICILIO",
+        "COD.UBIGEO", "COD. UBIGEO", "UBIGEO INEI"
     ],
     "ubigeo_inei": [
-        "IDUBIGEO", "UBIGEO_INEI", "COD_INEI", "CODIGO_INEI", "UBIGEO INEI", "ID_UBIGEO", "COD_UBIGEO_INEI"
+        "UBIGEO_INEI", "COD_INEI", "CODIGO_INEI", "UBIGEO INEI", "COD_UBIGEO_INEI"
     ],
     "ubigeo_reniec": [
         "UBIGEO_RENIEC", "RENIEC", "COD_RENIEC", "CODIGO_RENIEC", "UBIGEO RENIEC", "COD_UBIGEO_RENIEC"
@@ -68,10 +71,10 @@ COLUMN_MAPPINGS = {
         "DEPARTAMENTO", "DPTO", "REGION", "REGIÓN", "DEPARTAMENTO_DOMICILIO", "IDDEPARTAMENTO"
     ],
     "province": [
-        "PROVINCIA", "PROV", "PROVINCIA_DOMICILIO", "IDPROVINCIA"
+        "PROVINCIA", "PROVINCIA_DOMICILIO", "IDPROVINCIA"
     ],
     "district": [
-        "DISTRITO", "DIST", "DISTRITO_DOMICILIO", "DESCRIPCION"
+        "DISTRITO", "DISTRITO_DOMICILIO"
     ],
     "issue_date": [
         "FECHA_EMISION", "FECHA DE EMISION", "FECHA_EMISIÓN", "FECHA DE EMISIÓN", "FEC_EMISION",
@@ -83,30 +86,95 @@ COLUMN_MAPPINGS = {
         "FEC.VENCIMIENTO", "FEC. VENCIMIENTO"
     ],
     "nationality": [
-        "NACIONALIDAD", "PAIS_ORIGEN", "PAÍS", "PAIS", "IDNACIONALIDAD"
+        "IDNACIONALIDAD", "NACIONALIDAD", "PAIS_ORIGEN", "PAÍS", "PAIS"
     ],
     "blood_type": [
         "GRUPO_SANGUINEO", "GRUPO SANGUINEO", "GRUPO_SANGUÍNEO", "GRUPO SANGUÍNEO", "TIPO_SANGRE", "SANGRE"
     ],
     "phone": [
-        "CELULAR", "TELEFONO", "TELÉFONO", "TEL", "CEL", "MOVIL", "MÓVIL", "NUMERO_CELULAR",
-        "NRO_CELULAR", "TELEFONO_MOVIL", "TEL_MOVIL", "NUMERO CELULAR", "NRO CELULAR", "TELEFONO MOVIL"
+        "CELULAR", "NUMERO_CELULAR", "NRO_CELULAR", "TELEFONO_MOVIL", "NUMERO CELULAR", "NRO CELULAR", "CEL", "MOVIL"
     ],
     "email": [
-        "CORREO", "EMAIL", "CORREO_ELECTRONICO", "CORREO ELECTRÓNICO", "CORREO_ELECTRÓNICO",
-        "CORREO ELECTRONICO", "E-MAIL", "MAIL", "CORREO PERSONAL", "CORREO_PERSONAL"
+        "CORREO", "EMAIL", "CORREO_ELECTRONICO", "CORREO ELECTRÓNICO",
+        "CORREO ELECTRONICO", "E-MAIL", "MAIL", "CORREO PERSONAL"
+    ],
+    "cod_afp": [
+        "IDAFP", "COD. AFP", "COD.AFP", "COD AFP", "CODIGO AFP"
     ],
     "pension_system": [
         "SISTEMA_PENSIONARIO", "SISTEMA PENSIONARIO", "SISTEMA_PENSIONES", "SISTEMA PENSIONES",
-        "REGIMEN_PENSIONARIO", "REGIMEN PENSIONARIO", "AFP_ONP", "AFP / ONP", "AFP", "TIPO_SISTEMA_PENSIONARIO",
+        "REGIMEN_PENSIONARIO", "REGIMEN PENSIONARIO", "AFP_ONP", "AFP / ONP", "TIPO_SISTEMA_PENSIONARIO",
         "SIST. PENSIONARIO", "SIST PENSIONARIO", "IDREGIMENPENSIONARIO", "SISTEMA DE PENSIONES"
     ],
     "pension_commission": [
-        "COMISION", "COMISIÓN", "TIPO_COMISION", "TIPO DE COMISION", "TIPO_COMISIÓN", "TIPO DE COMISIÓN",
-        "COMISION_AFP", "COMISIÓN AFP", "COMISION AFP", "TIPO COMISION"
+        "TIPO DE COMISION", "TIPO DE COMISIÓN", "COMISION_AFP", "COMISIÓN AFP", "COMISION AFP", "TIPO COMISION"
     ],
     "cuspp": [
-        "CUSPP", "CODIGO_CUSPP", "CODIGO CUSPP", "NRO_CUSPP", "NUMERO_CUSPP", "CUSSP", "COD_CUSPP", "NRO CUSPP"
+        "AUTOGENERADOAFP", "AUTOGENERADO (CUSPP)", "CUSPP", "CODIGO_CUSPP", "CODIGO CUSPP", "NRO_CUSPP", "NUMERO_CUSPP", "CUSSP", "COD_CUSPP", "NRO CUSPP"
+    ],
+    "cod_planilla": [
+        "COD PLANILLA", "COD.PLANILLA", "COD. PLANILLA", "CODIGO PLANILLA", "CODIGO DE PLANILLA", "PLANILLA", "IDPLANILLA"
+    ],
+    "nro_contrato": [
+        "NRO CONTRATO", "NRO. CONTRATO", "NRO.CONTRATO", "NUMERO CONTRATO", "NUMERO DE CONTRATO", "IDCONTRATO"
+    ],
+    "basico": [
+        "BASICO", "BÁSICO", "SUELDO BASICO", "SUELDO BÁSICO", "REMUNERACION BASICA", "REMUNERACIÓN BÁSICA", "SALARIO", "REMUNERACION"
+    ],
+    "inicio_contrato": [
+        "INICIO CONTRATO", "INICIO DE CONTRATO", "FECHA INICIO CONTRATO", "FEC INICIO CONTRATO", "FECHA INICIO", "F INICIO", "FEC. INICIO", "F. INICIO"
+    ],
+    "duracion": [
+        "DURACION", "DURACIÓN", "DURACION CONTRATO", "DURACIÓN CONTRATO", "TIEMPO CONTRATO", "MESES", "DURACION MESES"
+    ],
+    "fin_contrato": [
+        "FIN CONTRATO", "FIN DE CONTRATO", "FECHA FIN CONTRATO", "FEC FIN CONTRATO", "FECHA FIN", "F FIN", "FEC. FIN", "F. FIN", "TERMINO CONTRATO", "TÉRMINO CONTRATO"
+    ],
+    "fecha_firma_contrato": [
+        "F FIRMA CONTRATO", "F. FIRMA CONTRATO", "F.FIRMA CONTRATO", "FECHA FIRMA CONTRATO", "FECHA DE FIRMA", "FEC FIRMA", "FIRMA CONTRATO", "FECHA SUSCRIPCION"
+    ],
+    "tipo_contrato": [
+        "TIPO DE CONTRATO", "TIPO CONTRATO", "COD TIPO CONTRATO", "COD. TIPO CONTRATO", "MODALIDAD CONTRATO", "IDTIPOCONTRATO"
+    ],
+    "nro_contrato_ref": [
+        "NRO CONTRATO REF", "NRO. CONTRATO REF", "NRO.CONTRATO REF", "CONTRATO REF", "CONTRATO DE REFERENCIA", "REFERENCIA CONTRATO"
+    ],
+    # Personal NISIRA (77 Columnas)
+    "cod_cargo": [
+        "IDCARGO", "COD.CARGO", "COD CARGO", "CODIGO CARGO", "CARGO", "PUESTO"
+    ],
+    "cod_tipo_trab": [
+        "IDTIPOTRABAJADOR", "COD.TIPO TRAB.", "COD TIPO TRAB", "TIPO TRABAJADOR", "TIPO DE TRABAJADOR"
+    ],
+    "cat_ocupacional": [
+        "CATEGORIA_OCUPACIONAL", "CATEGORIA OCUPACIONAL", "CAT.OCUPACIONAL", "CAT OCUPACIONAL", "IDCATOCUPACIONAL"
+    ],
+    "period_pago": [
+        "IDPERIODICIDAD", "PERIOD. PAGO", "PERIOD PAGO", "PERIODICIDAD", "PERIODO PAGO"
+    ],
+    "cod_sucursal": [
+        "IDSUCURSAL", "COD.SUCURSAL", "COD SUCURSAL", "SUCURSAL", "SEDE"
+    ],
+    "grupo_trabajo": [
+        "IDGRUPOTRABAJO", "GRUPO TRABAJO", "GRUPO DE TRABAJO"
+    ],
+    "tipo_personal": [
+        "IDTIPOPERSONAL", "TIPO PERS./SUBPLANILLA", "TIPO PERS / SUBPLANILLA", "TIPO PERSONAL", "SUBPLANILLA"
+    ],
+    "reg_laboral": [
+        "IDREGIMENLABORAL", "REG.LABORAL", "REG LABORAL", "REGIMEN LABORAL"
+    ],
+    "niv_educativo": [
+        "IDNIVELESTUDIO", "NIV. EDUCATIVO", "NIV EDUCATIVO", "NIVEL EDUCATIVO", "ESTUDIOS"
+    ],
+    "tipo_comision": [
+        "MIXTA", "TIPO DE COMISION", "TIPO DE COMISIÓN"
+    ],
+    "asignacion_familiar": [
+        "ASIGNACION", "ASIG. FAMILIAR", "ASIG FAMILIAR", "ASIGNACION FAMILIAR"
+    ],
+    "fec_ingreso": [
+        "FECHA_INGRESO", "FEC.INGRESO", "FEC INGRESO", "FECHA INGRESO", "INGRESO"
     ],
 }
 
@@ -122,15 +190,35 @@ def normalize_header(header: str) -> str:
     return h.strip()
 
 
+def best_field_for_header(header_raw: str) -> Optional[str]:
+    """Finds the best matching field key for a header using exact and boundary scoring."""
+    if not header_raw:
+        return None
+    norm_h = normalize_header(header_raw)
+    if not norm_h:
+        return None
+    best_field = None
+    best_score = 0
+    for field_key, aliases in COLUMN_MAPPINGS.items():
+        for alias in aliases:
+            norm_a = normalize_header(alias)
+            if not norm_a:
+                continue
+            if norm_h == norm_a:
+                score = 1000 + len(norm_a)
+            elif re.search(r'(?:\b|^)' + re.escape(norm_a) + r'(?:\b|$)', norm_h):
+                score = 100 + len(norm_a)
+            else:
+                score = 0
+            if score > best_score:
+                best_score = score
+                best_field = field_key
+    return best_field if best_score >= 100 else None
+
+
 def match_field_to_header(field_key: str, header_raw: str) -> bool:
     """Checks if a given column header matches a DNI field."""
-    norm_h = normalize_header(header_raw)
-    aliases = COLUMN_MAPPINGS.get(field_key, [])
-    for alias in aliases:
-        norm_alias = normalize_header(alias)
-        if norm_h == norm_alias or norm_h.startswith(norm_alias) or norm_alias in norm_h:
-            return True
-    return False
+    return best_field_for_header(header_raw) == field_key
 
 
 def is_yellow_color(color_obj) -> bool:
@@ -216,6 +304,7 @@ class ExcelTemplateService:
     def __init__(self, templates_dir: Path = EXCEL_TEMPLATES_DIR, exports_dir: Path = EXPORTS_DIR):
         self.templates_dir = templates_dir
         self.exports_dir = exports_dir
+        self._analysis_cache: Dict[str, Any] = {}
         self.ensure_initial_templates()
 
     def ensure_initial_templates(self):
@@ -325,6 +414,8 @@ class ExcelTemplateService:
             all_maps[filename] = {}
         all_maps[filename][sheet_name] = mappings
         self.save_custom_mappings_file(all_maps)
+        if hasattr(self, '_analysis_cache'):
+            self._analysis_cache.clear()
         return self.analyze_template(filename)
 
     def _find_template_file(self, filename: str) -> Optional[Path]:
@@ -361,6 +452,9 @@ class ExcelTemplateService:
             del all_maps[actual_name]
             self.save_custom_mappings_file(all_maps)
 
+        if hasattr(self, '_analysis_cache'):
+            self._analysis_cache.clear()
+
         return True
 
     def rename_template(self, old_filename: str, new_filename: str) -> Dict[str, Any]:
@@ -386,6 +480,9 @@ class ExcelTemplateService:
             all_maps[new_safe] = all_maps.pop(old_actual)
             self.save_custom_mappings_file(all_maps)
 
+        if hasattr(self, '_analysis_cache'):
+            self._analysis_cache.clear()
+
         return self.analyze_template(new_safe)
 
     def get_template_path(self, filename: str) -> Path:
@@ -398,6 +495,11 @@ class ExcelTemplateService:
     def analyze_template(self, filename: str) -> Dict[str, Any]:
         """Inspects an Excel file to extract all sheets, column headers, and detects YELLOW variable cells."""
         file_path = self.get_template_path(filename)
+        mtime = file_path.stat().st_mtime
+        cache_key = f"{file_path.name}:{mtime}"
+        if hasattr(self, '_analysis_cache') and cache_key in self._analysis_cache:
+            return self._analysis_cache[cache_key]
+
         all_custom_maps = self.load_custom_mappings()
         tpl_custom_maps = all_custom_maps.get(file_path.name, {})
 
@@ -495,11 +597,15 @@ class ExcelTemplateService:
         wb.close()
         default_sheet = sheets_info[0]["sheet_name"] if sheets_info else ""
 
-        return {
+        result = {
             "filename": file_path.name,
             "sheets": sheets_info,
             "default_sheet": default_sheet,
         }
+        if not hasattr(self, '_analysis_cache'):
+            self._analysis_cache = {}
+        self._analysis_cache[cache_key] = result
+        return result
 
     def save_uploaded_template(self, file_bytes: bytes, original_filename: str) -> Dict[str, Any]:
         """Saves a newly uploaded template and analyzes it."""
@@ -510,6 +616,9 @@ class ExcelTemplateService:
         dest_path = self.templates_dir / safe_name
         with open(dest_path, "wb") as f:
             f.write(file_bytes)
+
+        if hasattr(self, '_analysis_cache'):
+            self._analysis_cache.clear()
 
         return self.analyze_template(safe_name)
 
@@ -578,8 +687,10 @@ class ExcelTemplateService:
         # 3. Load Custom Mappings
         all_custom_maps = self.load_custom_mappings()
         sheet_custom = all_custom_maps.get(template_name, {}).get(target_sheet_name, {})
+        is_contract_template = "CONTRATO" in str(template_name).upper() or target_sheet_name == "CONTRATO"
+        is_nisira_template = "NISIRA" in str(template_name).upper() or "DATOS" in str(target_sheet_name).upper()
 
-        # Map each column to corresponding DNI field
+        # Map each column to corresponding DNI / Contract / NISIRA field
         col_to_field_map = {}
         for c_idx in range(1, total_cols + 1):
             col_key = str(c_idx)
@@ -593,12 +704,12 @@ class ExcelTemplateService:
                     yellow_cols.add(c_idx)
                 continue
 
-            # Auto-match DNI field (prioritizing yellow columns)
-            if c_idx in yellow_cols:
-                for field_key in COLUMN_MAPPINGS.keys():
-                    if match_field_to_header(field_key, header_name):
-                        col_to_field_map[c_idx] = field_key
-                        break
+            # Auto-match DNI / Contract / NISIRA field
+            if c_idx in yellow_cols or is_contract_template or is_nisira_template:
+                best_f = best_field_for_header(header_name)
+                if best_f:
+                    col_to_field_map[c_idx] = best_f
+                    yellow_cols.add(c_idx)
 
         # 4. Clone Template Baseline Row Properties
         baseline_row = start_data_row if ws.max_row >= start_data_row else last_header_row
@@ -661,6 +772,104 @@ class ExcelTemplateService:
             raw_doc_type = raw_rec.get("doc_type", "DNI") or "DNI"
             is_dni_type = "DNI" in str(raw_doc_type).upper()
 
+            # Normalización y formateo de campos contractuales
+            def fmt_date_pe(d_str):
+                if not d_str:
+                    return ""
+                s = str(d_str).strip()
+                if re.match(r"^\d{4}-\d{2}-\d{2}$", s):
+                    y, m, d = s.split("-")
+                    return f"{d}/{m}/{y}"
+                return s
+
+            raw_tc = str(raw_rec.get("tipo_contrato") or "05").strip()
+            if raw_tc.isdigit() and len(raw_tc) == 1:
+                tc_val = f"0{raw_tc}"
+            elif raw_tc.isdigit() and len(raw_tc) == 2:
+                tc_val = raw_tc
+            else:
+                tc_val = raw_tc[:2] if raw_tc else "05"
+
+            raw_cp = str(raw_rec.get("cod_planilla") or "ORP").strip().upper()[:3]
+
+            raw_basico = raw_rec.get("basico")
+            try:
+                basico_val = float(raw_basico) if raw_basico is not None and str(raw_basico).strip() != "" else 1025.0
+            except (ValueError, TypeError):
+                basico_val = 1025.0
+
+            # Normalización y formateo de datos personales NISIRA (Configuración inicial: Obrero de Planta)
+            raw_cargo = str(raw_rec.get("cod_cargo") or "048").strip()
+            cargo_val = raw_cargo.zfill(3) if raw_cargo.isdigit() else raw_cargo
+
+            raw_tt = str(raw_rec.get("cod_tipo_trab") or "76").strip()
+            tt_val = raw_tt.zfill(2) if raw_tt.isdigit() else raw_tt
+
+            raw_cat = str(raw_rec.get("cat_ocupacional") or "02").strip()
+            cat_val = raw_cat.zfill(2) if raw_cat.isdigit() else raw_cat
+
+            raw_pp = str(raw_rec.get("period_pago") or "3").strip()
+            pp_val = raw_pp[:1] if raw_pp else "3"
+
+            raw_suc = str(raw_rec.get("cod_sucursal") or "CA3").strip().upper()
+            suc_val = raw_suc[:3] if raw_suc else "CA3"
+
+            raw_gt = str(raw_rec.get("grupo_trabajo") or "013").strip()
+            gt_val = raw_gt.zfill(3) if raw_gt.isdigit() else raw_gt
+
+            raw_tp = str(raw_rec.get("tipo_personal") or "05").strip()
+            tp_val = raw_tp.zfill(2) if raw_tp.isdigit() else raw_tp
+
+            raw_rl = str(raw_rec.get("reg_laboral") or "26").strip()
+            rl_val = raw_rl.zfill(2) if raw_rl.isdigit() else raw_rl
+
+            raw_ne = str(raw_rec.get("niv_educativo") or "007").strip()
+            ne_val = raw_ne.zfill(3) if raw_ne.isdigit() else raw_ne
+
+            raw_tc_com = str(raw_rec.get("tipo_comision") or "0").strip()
+            tc_com_val = raw_tc_com[:1] if raw_tc_com in ["0", "1"] else ("" if "ONP" in raw_tc_com.upper() else "0")
+
+            raw_af = str(raw_rec.get("asignacion_familiar") or "NO").strip().upper()
+            af_val = "SI" if raw_af in ["SI", "S", "1", "TRUE"] else "NO"
+
+            raw_fi = raw_rec.get("fec_ingreso") or raw_rec.get("inicio_contrato") or (raw_rec.get("scan_date") or "").split("T")[0]
+            fi_val = fmt_date_pe(raw_fi)
+
+            # AFP vs ONP
+            raw_pension = str(raw_rec.get("pension_system") or raw_rec.get("cod_afp") or "").strip().upper()
+            is_onp = "ONP" in raw_pension or raw_pension in ["", "NONE", "NULL"]
+            afp_code = "" if is_onp else raw_pension[:3]
+            inicio_afp_val = "" if is_onp else fi_val
+            inicio_onp_val = fi_val if is_onp else ""
+
+            # Estado civil normalizado (2 caracteres NISIRA)
+            raw_ec = str(raw_rec.get("civil_status") or "SO").strip().upper()
+            ec_map = {
+                "SOLTERO": "SO", "SOLTERA": "SO", "SOLTERO(A)": "SO", "SO": "SO", "S": "SO",
+                "CASADO": "CA", "CASADA": "CA", "CASADO(A)": "CA", "CA": "CA", "C": "CA",
+                "CONVIVIENTE": "CO", "CO": "CO",
+                "DIVORCIADO": "DI", "DIVORCIADA": "DI", "DIVORCIADO(A)": "DI", "DI": "DI", "D": "DI",
+                "VIUDO": "VI", "VIUDA": "VI", "VIUDO(A)": "VI", "VI": "VI", "V": "VI"
+            }
+            ec_val = ec_map.get(raw_ec, "SO")
+
+            # Nacionalidad (3 caracteres NISIRA)
+            raw_nac = str(raw_rec.get("nationality") or "PER").strip().upper()
+            nac_map = {
+                "PERUANA": "PER", "PERUANO": "PER", "PERU": "PER", "PERÚ": "PER", "PER": "PER",
+                "VENEZOLANA": "VEN", "VENEZOLANO": "VEN", "VENEZUELA": "VEN", "VEN": "VEN",
+                "ARGENTINA": "ARG", "ARGENTINO": "ARG", "ARG": "ARG",
+                "BOLIVIANA": "BOL", "BOLIVIANO": "BOL", "BOL": "BOL",
+                "CHILENA": "CHI", "CHILENO": "CHI", "CHILE": "CHI", "CHI": "CHI",
+                "COLOMBIANA": "COL", "COLOMBIANO": "COL", "COLOMBIA": "COL", "COL": "COL",
+                "ECUATORIANA": "ECU", "ECUATORIANO": "ECU", "ECUADOR": "ECU", "ECU": "ECU",
+            }
+            nac_val = nac_map.get(raw_nac, "PER")
+
+            # Sexo (1 caracter NISIRA)
+            raw_sex = str(raw_rec.get("sex") or "M").strip().upper()
+            sex_val = "F" if raw_sex.startswith("F") or "FEM" in raw_sex else "M"
+
             worker_dni_data = {
                 "doc_number": (raw_rec.get("doc_number") or "").strip(),
                 "paternal_surname": pat,
@@ -668,8 +877,8 @@ class ExcelTemplateService:
                 "first_names": noms,
                 "full_name": full_name,
                 "birth_date": (raw_rec.get("birth_date") or "").strip(),
-                "sex": (raw_rec.get("sex") or "").strip(),
-                "civil_status": (raw_rec.get("civil_status") or "").strip(),
+                "sex": sex_val,
+                "civil_status": ec_val,
                 "address": (raw_rec.get("address") or "").strip(),
                 "department": dept,
                 "province": prov,
@@ -680,13 +889,42 @@ class ExcelTemplateService:
                 "ubigeo_reniec": ub_reniec,
                 "issue_date": (raw_rec.get("issue_date") or "").strip(),
                 "expiry_date": (raw_rec.get("expiry_date") or "").strip(),
-                "nationality": (raw_rec.get("nationality") or "PERUANA").strip(),
+                "nationality": nac_val,
                 "blood_type": (raw_rec.get("blood_type") or "").strip(),
                 "phone": (raw_rec.get("phone") or "999999999").strip(),
                 "email": (raw_rec.get("email") or "sincorreo@gmail.com").strip(),
                 "pension_system": (raw_rec.get("pension_system") or "").strip(),
                 "pension_commission": (raw_rec.get("pension_commission") or "").strip(),
-                "cuspp": (raw_rec.get("cuspp") or "").strip(),
+                "cuspp": "" if is_onp else (raw_rec.get("cuspp") or "").strip(),
+                # Contratos NISIRA
+                "cod_planilla": raw_cp or "ORP",
+                "nro_contrato": str(raw_rec.get("nro_contrato") or "").strip(),
+                "basico": basico_val,
+                "inicio_contrato": fmt_date_pe(raw_rec.get("inicio_contrato")),
+                # REGLA NISIRA: La duración en meses se usa en el sistema para calcular Fin Contrato,
+                # pero en el archivo Excel generado para Nisira debe salir estrictamente en BLANCO.
+                "duracion": "",
+                "fin_contrato": fmt_date_pe(raw_rec.get("fin_contrato")),
+                "fecha_firma_contrato": fmt_date_pe(raw_rec.get("fecha_firma_contrato")),
+                "tipo_contrato": tc_val or "05",
+                "nro_contrato_ref": str(raw_rec.get("nro_contrato_ref") or "").strip(),
+                # Personal NISIRA (77 columnas)
+                "cod_cargo": cargo_val,
+                "cod_tipo_trab": tt_val,
+                "cat_ocupacional": cat_val,
+                "period_pago": pp_val,
+                "cod_sucursal": suc_val,
+                "grupo_trabajo": gt_val,
+                "tipo_personal": tp_val,
+                "reg_laboral": rl_val,
+                "niv_educativo": ne_val,
+                "tipo_comision": tc_com_val,
+                "asignacion_familiar": af_val,
+                "fec_ingreso": fi_val,
+                "cod_afp": afp_code,
+                "inicio_afp": inicio_afp_val,
+                "inicio_onp": inicio_onp_val,
+                "doc_type": "01" if is_dni_type else "04",
             }
 
             for c_idx in range(1, total_cols + 1):
@@ -708,6 +946,7 @@ class ExcelTemplateService:
                     continue
 
                 if norm_h in ["TIPO DOC", "TIPO DOCUMENTO", "DOC", "TIP DOCUMENTO", "IDDOCIDENTIDAD"]:
+                    cell.number_format = "@"
                     if "NISIRA" in template_name.upper():
                         cell.value = "01" if is_dni_type else "04"
                     else:
@@ -715,14 +954,63 @@ class ExcelTemplateService:
                     cell.alignment = Alignment(horizontal="center", vertical="center")
                     continue
 
-                if c_idx in yellow_cols:
+                # REGLA NISIRA: La duración se usa en el frontend para calcular Fin Contrato,
+                # pero en el archivo Excel generado para Nisira la columna "Duración" DEBE SALIR SIEMPRE EN BLANCO.
+                if norm_h in ["DURACION", "DURACIÓN", "DURACION CONTRATO", "DURACIÓN CONTRATO", "MESES", "DURACION MESES"] or col_to_field_map.get(c_idx) == "duracion":
+                    cell.value = ""
+                    continue
+
+                # Specialized NISIRA Columns (AFP vs ONP)
+                if is_nisira_template:
+                    if "INICIO AFP" in norm_h:
+                        cell.value = inicio_afp_val
+                        cell.alignment = Alignment(horizontal="center", vertical="center")
+                        continue
+                    if "INICIO ONP" in norm_h:
+                        cell.value = inicio_onp_val
+                        cell.alignment = Alignment(horizontal="center", vertical="center")
+                        continue
+                    if "IDAFP" in norm_h or "COD AFP" in norm_h:
+                        cell.number_format = "@"
+                        cell.value = afp_code
+                        cell.alignment = Alignment(horizontal="center", vertical="center")
+                        continue
+                    if "AUTOGENERADO" in norm_h or "CUSPP" in norm_h:
+                        cell.number_format = "@"
+                        cell.value = "" if is_onp else str(worker_dni_data.get("cuspp") or "").strip()
+                        cell.alignment = Alignment(horizontal="center", vertical="center")
+                        continue
+                    if "MIXTA" in norm_h or "TIPO DE COMISION" in norm_h:
+                        cell.number_format = "@"
+                        cell.value = "" if is_onp else tc_com_val
+                        cell.alignment = Alignment(horizontal="center", vertical="center")
+                        continue
+
+                if c_idx in yellow_cols or is_nisira_template:
                     field_key = col_to_field_map.get(c_idx)
-                    if field_key and field_key in worker_dni_data and worker_dni_data[field_key]:
+                    if field_key and field_key in worker_dni_data and worker_dni_data[field_key] not in [None, ""]:
                         val = worker_dni_data[field_key]
-                        cell.value = str(val)
-                    else:
-                        # REGLA PRINCIPAL: Si un campo amarillo no tiene información disponible: DEJARLO EN BLANCO.
+                        if field_key in [
+                            "tipo_contrato", "cod_planilla", "cod_cargo", "cod_tipo_trab",
+                            "cat_ocupacional", "period_pago", "cod_sucursal", "grupo_trabajo",
+                            "tipo_personal", "reg_laboral", "niv_educativo", "tipo_comision",
+                            "doc_type", "civil_status", "nationality", "doc_number", "sex"
+                        ]:
+                            cell.number_format = "@"
+                            cell.value = str(val)
+                            cell.alignment = Alignment(horizontal="center", vertical="center")
+                        elif field_key == "basico":
+                            try:
+                                cell.value = float(val)
+                                cell.number_format = "#,##0.00"
+                            except Exception:
+                                cell.value = val
+                        else:
+                            cell.value = str(val)
+                    elif c_idx in yellow_cols:
                         cell.value = ""
+                    elif c_idx in baseline_values and baseline_values[c_idx] is not None:
+                        cell.value = baseline_values[c_idx]
                 else:
                     # Non-yellow column: keep baseline value / formula / fixed text from template
                     if c_idx in baseline_values and baseline_values[c_idx] is not None:
@@ -791,15 +1079,18 @@ class ExcelTemplateService:
             if c_is_yellow:
                 yellow_cols.add(c_idx)
 
-        # Mapeo semántico de campos DNI
+        is_contract_template = "CONTRATO" in str(template_display_name).upper() or target_sheet_name == "CONTRATO"
+        is_nisira_template = "NISIRA" in str(template_display_name).upper() or "DATOS" in str(target_sheet_name).upper()
+
+        # Mapeo semántico de campos DNI / Contratos / Personal NISIRA
         col_to_field_map = {}
         for c_idx in range(1, total_cols + 1):
             header_name = col_headers.get(c_idx, "")
-            if c_idx in yellow_cols:
-                for field_key in COLUMN_MAPPINGS.keys():
-                    if match_field_to_header(field_key, header_name):
-                        col_to_field_map[c_idx] = field_key
-                        break
+            if c_idx in yellow_cols or is_contract_template or is_nisira_template:
+                best_f = best_field_for_header(header_name)
+                if best_f:
+                    col_to_field_map[c_idx] = best_f
+                    yellow_cols.add(c_idx)
 
         # Baseline styles
         baseline_row = start_data_row if ws.max_row >= start_data_row else last_header_row
@@ -855,6 +1146,103 @@ class ExcelTemplateService:
             raw_doc_type = raw_rec.get("doc_type", "DNI") or "DNI"
             is_dni_type = "DNI" in str(raw_doc_type).upper()
 
+            def fmt_date_pe(d_str):
+                if not d_str:
+                    return ""
+                s = str(d_str).strip()
+                if re.match(r"^\d{4}-\d{2}-\d{2}$", s):
+                    y, m, d = s.split("-")
+                    return f"{d}/{m}/{y}"
+                return s
+
+            raw_tc = str(raw_rec.get("tipo_contrato") or "05").strip()
+            if raw_tc.isdigit() and len(raw_tc) == 1:
+                tc_val = f"0{raw_tc}"
+            elif raw_tc.isdigit() and len(raw_tc) == 2:
+                tc_val = raw_tc
+            else:
+                tc_val = raw_tc[:2] if raw_tc else "05"
+
+            raw_cp = str(raw_rec.get("cod_planilla") or "ORP").strip().upper()[:3]
+
+            raw_basico = raw_rec.get("basico")
+            try:
+                basico_val = float(raw_basico) if raw_basico is not None and str(raw_basico).strip() != "" else 1025.0
+            except (ValueError, TypeError):
+                basico_val = 1025.0
+
+            # Normalización y formateo de datos personales NISIRA (Configuración inicial: Obrero de Planta)
+            raw_cargo = str(raw_rec.get("cod_cargo") or "048").strip()
+            cargo_val = raw_cargo.zfill(3) if raw_cargo.isdigit() else raw_cargo
+
+            raw_tt = str(raw_rec.get("cod_tipo_trab") or "76").strip()
+            tt_val = raw_tt.zfill(2) if raw_tt.isdigit() else raw_tt
+
+            raw_cat = str(raw_rec.get("cat_ocupacional") or "02").strip()
+            cat_val = raw_cat.zfill(2) if raw_cat.isdigit() else raw_cat
+
+            raw_pp = str(raw_rec.get("period_pago") or "3").strip()
+            pp_val = raw_pp[:1] if raw_pp else "3"
+
+            raw_suc = str(raw_rec.get("cod_sucursal") or "CA3").strip().upper()
+            suc_val = raw_suc[:3] if raw_suc else "CA3"
+
+            raw_gt = str(raw_rec.get("grupo_trabajo") or "013").strip()
+            gt_val = raw_gt.zfill(3) if raw_gt.isdigit() else raw_gt
+
+            raw_tp = str(raw_rec.get("tipo_personal") or "05").strip()
+            tp_val = raw_tp.zfill(2) if raw_tp.isdigit() else raw_tp
+
+            raw_rl = str(raw_rec.get("reg_laboral") or "26").strip()
+            rl_val = raw_rl.zfill(2) if raw_rl.isdigit() else raw_rl
+
+            raw_ne = str(raw_rec.get("niv_educativo") or "007").strip()
+            ne_val = raw_ne.zfill(3) if raw_ne.isdigit() else raw_ne
+
+            raw_tc_com = str(raw_rec.get("tipo_comision") or "0").strip()
+            tc_com_val = raw_tc_com[:1] if raw_tc_com in ["0", "1"] else ("" if "ONP" in raw_tc_com.upper() else "0")
+
+            raw_af = str(raw_rec.get("asignacion_familiar") or "NO").strip().upper()
+            af_val = "SI" if raw_af in ["SI", "S", "1", "TRUE"] else "NO"
+
+            raw_fi = raw_rec.get("fec_ingreso") or raw_rec.get("inicio_contrato") or (raw_rec.get("scan_date") or "").split("T")[0]
+            fi_val = fmt_date_pe(raw_fi)
+
+            # AFP vs ONP
+            raw_pension = str(raw_rec.get("pension_system") or raw_rec.get("cod_afp") or "").strip().upper()
+            is_onp = "ONP" in raw_pension or raw_pension in ["", "NONE", "NULL"]
+            afp_code = "" if is_onp else raw_pension[:3]
+            inicio_afp_val = "" if is_onp else fi_val
+            inicio_onp_val = fi_val if is_onp else ""
+
+            # Estado civil normalizado (2 caracteres NISIRA)
+            raw_ec = str(raw_rec.get("civil_status") or "SO").strip().upper()
+            ec_map = {
+                "SOLTERO": "SO", "SOLTERA": "SO", "SOLTERO(A)": "SO", "SO": "SO", "S": "SO",
+                "CASADO": "CA", "CASADA": "CA", "CASADO(A)": "CA", "CA": "CA", "C": "CA",
+                "CONVIVIENTE": "CO", "CO": "CO",
+                "DIVORCIADO": "DI", "DIVORCIADA": "DI", "DIVORCIADO(A)": "DI", "DI": "DI", "D": "DI",
+                "VIUDO": "VI", "VIUDA": "VI", "VIUDO(A)": "VI", "VI": "VI", "V": "VI"
+            }
+            ec_val = ec_map.get(raw_ec, "SO")
+
+            # Nacionalidad (3 caracteres NISIRA)
+            raw_nac = str(raw_rec.get("nationality") or "PER").strip().upper()
+            nac_map = {
+                "PERUANA": "PER", "PERUANO": "PER", "PERU": "PER", "PERÚ": "PER", "PER": "PER",
+                "VENEZOLANA": "VEN", "VENEZOLANO": "VEN", "VENEZUELA": "VEN", "VEN": "VEN",
+                "ARGENTINA": "ARG", "ARGENTINO": "ARG", "ARG": "ARG",
+                "BOLIVIANA": "BOL", "BOLIVIANO": "BOL", "BOL": "BOL",
+                "CHILENA": "CHI", "CHILENO": "CHI", "CHILE": "CHI", "CHI": "CHI",
+                "COLOMBIANA": "COL", "COLOMBIANO": "COL", "COLOMBIA": "COL", "COL": "COL",
+                "ECUATORIANA": "ECU", "ECUATORIANO": "ECU", "ECUADOR": "ECU", "ECU": "ECU",
+            }
+            nac_val = nac_map.get(raw_nac, "PER")
+
+            # Sexo (1 caracter NISIRA)
+            raw_sex = str(raw_rec.get("sex") or "M").strip().upper()
+            sex_val = "F" if raw_sex.startswith("F") or "FEM" in raw_sex else "M"
+
             worker_dni_data = {
                 "doc_number": (raw_rec.get("doc_number") or "").strip(),
                 "paternal_surname": pat,
@@ -862,8 +1250,8 @@ class ExcelTemplateService:
                 "first_names": noms,
                 "full_name": full_name,
                 "birth_date": (raw_rec.get("birth_date") or "").strip(),
-                "sex": (raw_rec.get("sex") or "").strip(),
-                "civil_status": (raw_rec.get("civil_status") or "").strip(),
+                "sex": sex_val,
+                "civil_status": ec_val,
                 "address": (raw_rec.get("address") or "").strip(),
                 "department": dept,
                 "province": prov,
@@ -874,13 +1262,42 @@ class ExcelTemplateService:
                 "ubigeo_reniec": ub_reniec,
                 "issue_date": (raw_rec.get("issue_date") or "").strip(),
                 "expiry_date": (raw_rec.get("expiry_date") or "").strip(),
-                "nationality": (raw_rec.get("nationality") or "PERUANA").strip(),
+                "nationality": nac_val,
                 "blood_type": (raw_rec.get("blood_type") or "").strip(),
                 "phone": (raw_rec.get("phone") or "999999999").strip(),
                 "email": (raw_rec.get("email") or "sincorreo@gmail.com").strip(),
                 "pension_system": (raw_rec.get("pension_system") or "").strip(),
                 "pension_commission": (raw_rec.get("pension_commission") or "").strip(),
-                "cuspp": (raw_rec.get("cuspp") or "").strip(),
+                "cuspp": "" if is_onp else (raw_rec.get("cuspp") or "").strip(),
+                # Contratos NISIRA
+                "cod_planilla": raw_cp or "ORP",
+                "nro_contrato": str(raw_rec.get("nro_contrato") or "").strip(),
+                "basico": basico_val,
+                "inicio_contrato": fmt_date_pe(raw_rec.get("inicio_contrato")),
+                # REGLA NISIRA: La duración en meses se usa en el sistema para calcular Fin Contrato,
+                # pero en el archivo Excel generado para Nisira debe salir estrictamente en BLANCO.
+                "duracion": "",
+                "fin_contrato": fmt_date_pe(raw_rec.get("fin_contrato")),
+                "fecha_firma_contrato": fmt_date_pe(raw_rec.get("fecha_firma_contrato")),
+                "tipo_contrato": tc_val or "05",
+                "nro_contrato_ref": str(raw_rec.get("nro_contrato_ref") or "").strip(),
+                # Personal NISIRA (77 columnas)
+                "cod_cargo": cargo_val,
+                "cod_tipo_trab": tt_val,
+                "cat_ocupacional": cat_val,
+                "period_pago": pp_val,
+                "cod_sucursal": suc_val,
+                "grupo_trabajo": gt_val,
+                "tipo_personal": tp_val,
+                "reg_laboral": rl_val,
+                "niv_educativo": ne_val,
+                "tipo_comision": tc_com_val,
+                "asignacion_familiar": af_val,
+                "fec_ingreso": fi_val,
+                "cod_afp": afp_code,
+                "inicio_afp": inicio_afp_val,
+                "inicio_onp": inicio_onp_val,
+                "doc_type": "01" if is_dni_type else "04",
             }
 
             for c_idx in range(1, total_cols + 1):
@@ -898,6 +1315,7 @@ class ExcelTemplateService:
                     continue
 
                 if norm_h in ["TIPO DOC", "TIPO DOCUMENTO", "DOC", "TIP DOCUMENTO", "IDDOCIDENTIDAD"]:
+                    cell.number_format = "@"
                     if "NISIRA" in template_display_name.upper():
                         cell.value = "01" if is_dni_type else "04"
                     else:
@@ -905,12 +1323,63 @@ class ExcelTemplateService:
                     cell.alignment = Alignment(horizontal="center", vertical="center")
                     continue
 
-                if c_idx in yellow_cols:
+                # REGLA NISIRA: La duración se usa en el frontend para calcular Fin Contrato,
+                # pero en el archivo Excel generado para Nisira la columna "Duración" DEBE SALIR SIEMPRE EN BLANCO.
+                if norm_h in ["DURACION", "DURACIÓN", "DURACION CONTRATO", "DURACIÓN CONTRATO", "MESES", "DURACION MESES"] or col_to_field_map.get(c_idx) == "duracion":
+                    cell.value = ""
+                    continue
+
+                # Specialized NISIRA Columns (AFP vs ONP)
+                if is_nisira_template:
+                    if "INICIO AFP" in norm_h:
+                        cell.value = inicio_afp_val
+                        cell.alignment = Alignment(horizontal="center", vertical="center")
+                        continue
+                    if "INICIO ONP" in norm_h:
+                        cell.value = inicio_onp_val
+                        cell.alignment = Alignment(horizontal="center", vertical="center")
+                        continue
+                    if "IDAFP" in norm_h or "COD AFP" in norm_h:
+                        cell.number_format = "@"
+                        cell.value = afp_code
+                        cell.alignment = Alignment(horizontal="center", vertical="center")
+                        continue
+                    if "AUTOGENERADO" in norm_h or "CUSPP" in norm_h:
+                        cell.number_format = "@"
+                        cell.value = "" if is_onp else str(worker_dni_data.get("cuspp") or "").strip()
+                        cell.alignment = Alignment(horizontal="center", vertical="center")
+                        continue
+                    if "MIXTA" in norm_h or "TIPO DE COMISION" in norm_h:
+                        cell.number_format = "@"
+                        cell.value = "" if is_onp else tc_com_val
+                        cell.alignment = Alignment(horizontal="center", vertical="center")
+                        continue
+
+                if c_idx in yellow_cols or is_nisira_template:
                     field_key = col_to_field_map.get(c_idx)
-                    if field_key and field_key in worker_dni_data and worker_dni_data[field_key]:
-                        cell.value = str(worker_dni_data[field_key])
-                    else:
+                    if field_key and field_key in worker_dni_data and worker_dni_data[field_key] not in [None, ""]:
+                        val = worker_dni_data[field_key]
+                        if field_key in [
+                            "tipo_contrato", "cod_planilla", "cod_cargo", "cod_tipo_trab",
+                            "cat_ocupacional", "period_pago", "cod_sucursal", "grupo_trabajo",
+                            "tipo_personal", "reg_laboral", "niv_educativo", "tipo_comision",
+                            "doc_type", "civil_status", "nationality", "doc_number", "sex"
+                        ]:
+                            cell.number_format = "@"
+                            cell.value = str(val)
+                            cell.alignment = Alignment(horizontal="center", vertical="center")
+                        elif field_key == "basico":
+                            try:
+                                cell.value = float(val)
+                                cell.number_format = "#,##0.00"
+                            except Exception:
+                                cell.value = val
+                        else:
+                            cell.value = str(val)
+                    elif c_idx in yellow_cols:
                         cell.value = ""
+                    elif c_idx in baseline_values and baseline_values[c_idx] is not None:
+                        cell.value = baseline_values[c_idx]
                 else:
                     if c_idx in baseline_values and baseline_values[c_idx] is not None:
                         cell.value = baseline_values[c_idx]

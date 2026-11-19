@@ -71,3 +71,17 @@ desktop.ini
 .idea/
 *.swp
 *.swo
+
+# ==========================================
+# Tunnel, Mobile Link & Debug Artifacts
+# ==========================================
+tunnel.log
+ENLACE_CELULAR.txt
+ENLACE_CELULAR_QR.html
+debug_*.png
+screenshot_*.png
+scratch_edge_shot/
+
+
+data/factiliza_config.json
+data/tunnel_url.txt

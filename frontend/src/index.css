@@ -1,102 +1,323 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================================ */
+/* IDENTIDAD VISUAL CHAVÍN // SISTEMA EMPRESARIAL DE CAPTURA    */
+/* Paleta: Azul Marino, Azul Acero, Tonos Claros, Turquesa,      */
+/* Verde Petróleo. ESTRICTAMENTE SIN AMARILLO NI NARANJA.        */
+/* ============================================================ */
+
+:root,
+[data-theme="dark"] {
+  --color-scheme: dark;
+  --bg-canvas: #060d1a;
+  --bg-surface: #0b1528;
+  --bg-surface-elevated: #101f3b;
+  --bg-surface-alt: #162a4f;
+  --bg-viewfinder: #040914;
+  --border-subtle: #1e3557;
+  --border-medium: #2d4d79;
+  --border-strong: #416799;
+  --border-reticle: #06b6d4;
+  --text-primary: #ffffff;
+  --text-secondary: #e2e8f0;
+  --text-tertiary: #94a3b8;
+  --text-muted: #64748b;
+  --laser-beam: linear-gradient(90deg, transparent 0%, #00e5ff 25%, #06b6d4 50%, #00e5ff 75%, transparent 100%);
+  --laser-glow: 0 0 16px rgba(6, 182, 212, 0.85);
+  --grid-color: rgba(6, 182, 212, 0.08);
+}
+
+[data-theme="light"] {
+  --color-scheme: light;
+  --bg-canvas: #f4f7fb;
+  --bg-surface: #ffffff;
+  --bg-surface-elevated: #eaf1f8;
+  --bg-surface-alt: #dde8f4;
+  --bg-viewfinder: #f8fafc;
+  --border-subtle: #cbd8e8;
+  --border-medium: #8faec7;
+  --border-strong: #416799;
+  --border-reticle: #0891b2;
+  --text-primary: #070e1c;
+  --text-secondary: #132547;
+  --text-tertiary: #334e68;
+  --text-muted: #627d98;
+  --laser-beam: linear-gradient(90deg, transparent 0%, #0891b2 20%, #0d9488 50%, #0891b2 80%, transparent 100%);
+  --laser-glow: 0 0 14px rgba(8, 145, 178, 0.6);
+  --grid-color: rgba(8, 145, 178, 0.07);
+}
+
 @layer base {
+  html {
+    overflow-x: hidden;
+    scroll-behavior: smooth;
+  }
+  
   body {
-    background-color: #F4F7FB;
-    color: #1E293B;
-    font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     min-height: 100vh;
-    @apply antialiased selection:bg-[#101BCB] selection:text-white;
+    font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    color: var(--text-primary);
+    background-color: var(--bg-canvas);
+    transition: background-color 0.25s ease, color 0.25s ease;
+    overflow-x: hidden;
+    @apply antialiased selection:bg-cyan-500 selection:text-slate-950;
+  }
+  
+  :focus-visible {
+    outline: 2px solid #06b6d4;
+    outline-offset: 2px;
   }
 }
 
-/* Corporate clean scrollbar */
+/* ============================================================ */
+/* PATRONES Y RELIEVES LÍTICOS INSPIRADOS EN CHAVÍN             */
+/* ============================================================ */
+
+/* Micro-cuadrícula de calibración técnica */
+.technical-grid {
+  background-size: 24px 24px;
+  background-image: 
+    linear-gradient(to right, var(--grid-color) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid-color) 1px, transparent 1px);
+}
+
+/* Guardas geométricas escalonadas (Chacana / Relieve Chavín sutil) */
+.chavin-stepped-border {
+  position: relative;
+}
+.chavin-stepped-border::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #06b6d4 0%, #1e3865 30%, #0d9488 70%, #06b6d4 100%);
+  opacity: 0.9;
+}
+
+/* Brackets esquineros de precisión lítica */
+.reticle-corner {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  pointer-events: none;
+  z-index: 15;
+  transition: border-color 0.2s ease, transform 0.2s ease;
+  filter: drop-shadow(0 0 5px rgba(6, 182, 212, 0.7));
+}
+
+.reticle-tl {
+  top: 8px;
+  left: 8px;
+  border-top: 2.5px solid var(--border-reticle);
+  border-left: 2.5px solid var(--border-reticle);
+}
+
+.reticle-tr {
+  top: 8px;
+  right: 8px;
+  border-top: 2.5px solid var(--border-reticle);
+  border-right: 2.5px solid var(--border-reticle);
+}
+
+.reticle-bl {
+  bottom: 8px;
+  left: 8px;
+  border-bottom: 2.5px solid var(--border-reticle);
+  border-left: 2.5px solid var(--border-reticle);
+}
+
+.reticle-br {
+  bottom: 8px;
+  right: 8px;
+  border-bottom: 2.5px solid var(--border-reticle);
+  border-right: 2.5px solid var(--border-reticle);
+}
+
+/* Punto focal y cruceta central */
+.center-crosshair {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 20px;
+  height: 20px;
+  pointer-events: none;
+  opacity: 0.45;
+  z-index: 12;
+}
+
+.center-crosshair::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--border-reticle);
+}
+
+.center-crosshair::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--border-reticle);
+}
+
+/* ============================================================ */
+/* BARRIDO LÁSER TURQUESA / VERDE PETRÓLEO                      */
+/* ============================================================ */
+
+@keyframes laserScanSweep {
+  0% {
+    top: 6%;
+    opacity: 0.65;
+  }
+  48% {
+    opacity: 1;
+  }
+  50% {
+    top: 92%;
+    opacity: 0.9;
+  }
+  52% {
+    opacity: 1;
+  }
+  100% {
+    top: 6%;
+    opacity: 0.65;
+  }
+}
+
+@keyframes laserFastSweep {
+  0% {
+    top: 6%;
+    opacity: 0.85;
+  }
+  50% {
+    top: 92%;
+    opacity: 1;
+  }
+  100% {
+    top: 6%;
+    opacity: 0.85;
+  }
+}
+
+.laser-line-precision {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--laser-beam);
+  box-shadow: var(--laser-glow);
+  animation: laserScanSweep 3s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+  z-index: 14;
+  pointer-events: none;
+}
+
+.laser-line-precision.scanning {
+  height: 2.5px;
+  animation: laserFastSweep 1.1s ease-in-out infinite;
+}
+
+.laser-aura-beam {
+  position: absolute;
+  left: 5%;
+  right: 5%;
+  height: 28px;
+  top: -26px;
+  background: linear-gradient(to top, rgba(6, 182, 212, 0.16), transparent);
+  pointer-events: none;
+}
+
+/* ============================================================ */
+/* TARJETAS LÍTICAS Y SUPERFICIES CHAVÍN                        */
+/* ============================================================ */
+
+.card-enterprise,
+.chavin-card {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(4, 9, 20, 0.35);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.card-enterprise:hover,
+.chavin-card:hover {
+  border-color: var(--border-medium);
+}
+
+.viewfinder-viewport {
+  background-color: var(--bg-viewfinder);
+  border: 1.5px solid var(--border-subtle);
+  border-radius: 12px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: inset 0 0 30px rgba(4, 9, 20, 0.8);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.viewfinder-viewport:hover {
+  border-color: var(--border-reticle);
+  box-shadow: inset 0 0 35px rgba(4, 9, 20, 0.7), 0 0 16px rgba(6, 182, 212, 0.2);
+}
+
+/* Botones de precisión ergonómica */
+.btn-precision {
+  transition: transform 0.14s ease, border-color 0.14s ease, background-color 0.14s ease, box-shadow 0.14s ease;
+}
+
+.btn-precision:hover {
+  transform: translateY(-1px);
+}
+
+.btn-precision:active {
+  transform: translateY(0.5px) scale(0.985);
+}
+
+/* Scrollbar Lítica Fina */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #F1F5F9;
+  background: rgba(6, 13, 26, 0.4);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #CBD5E1;
-  border-radius: 4px;
+  background: #274468;
+  border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #94A3B8;
+  background: #416799;
 }
 
-/* Chavin Corporate Card Styles */
-.chavin-card {
-  background: #FFFFFF;
-  border: 1px solid #E2E8F0;
-  border-radius: 1rem;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
+/* Objetivos táctiles mínimos para móvil y tablet (WCAG 44px) */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
 }
 
-.chavin-card-hover {
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.chavin-card-hover:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 25px -5px rgba(8, 15, 114, 0.08), 0 8px 10px -6px rgba(8, 15, 114, 0.04);
-  border-color: #CBD5E1;
-}
-
-/* Glass & Dark Theme Compatibility */
-.glass-panel {
-  background: #FFFFFF;
-  border: 1px solid #E2E8F0;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
-}
-
-.glass-card {
-  background: #FFFFFF;
-  border: 1px solid #E2E8F0;
-}
-
-/* Animated scanner line effect */
-@keyframes scan-line {
-  0% {
-    top: 0%;
-    opacity: 0.8;
+/* Accesibilidad */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
-  50% {
-    opacity: 1;
-  }
-  100% {
-    top: 100%;
-    opacity: 0.8;
-  }
-}
-
-.animate-scan {
-  animation: scan-line 2.5s ease-in-out infinite alternate;
-}
-
-/* Smooth fade and scale animations */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.animate-fade-in {
-  animation: fadeIn 0.25s ease-out forwards;
-}
-
-@keyframes scaleIn {
-  from { opacity: 0; transform: scale(0.96); }
-  to { opacity: 1; transform: scale(1); }
-}
-
-.animate-scale-in {
-  animation: scaleIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }

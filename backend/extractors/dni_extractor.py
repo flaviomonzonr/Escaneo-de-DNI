@@ -18,6 +18,9 @@ from backend.extractors.validators import (
     normalize_civil_status,
     PERU_DEPARTMENTS,
     separate_concatenated_names,
+    separate_concatenated_surnames,
+    correct_ocr_name_typos,
+    correct_ocr_surname_typos,
     is_invalid_address_candidate,
 )
 
@@ -67,6 +70,7 @@ def extract_dni_data(
         is_valid=dni_res.is_valid,
         status=dni_res.status,
         origin_type=dni_res.origin_type,
+        source="ocr",
         validation_message=dni_res.validation_message,
         anchor_matched=dni_res.anchor_matched,
     )
@@ -133,10 +137,11 @@ def extract_dni_data(
         t = line.text.upper().replace(".", " ").strip()
         t_nospaces = re.sub(r"\s+", "", t)
         
-        # Primer Apellido / 1er Apellido
+        # Primer Apellido / 1er Apellido (with OCR typo tolerance: PrimerApelido, Primer Aplido, etc.)
         is_paternal_anchor = (
             any(k in t for k in ["1ER APELLIDO", "1ER. APELLIDO", "PRIMER APELLIDO", "APELLIDO PATERNO", "PATERNO"])
             or any(k in t_nospaces for k in ["1ERAPELLIDO", "PRIMERAPELLIDO", "APELLIDOPATERNO", "1ER.APELLIDO"])
+            or bool(re.search(r"1ER[\s.]*APEL+I?DO|PRIMER[\s.]*APEL+I?DO|APEL+I?DO\s*PATERNO|PRIMERAPEL+I?DO", t_nospaces))
         )
         if is_paternal_anchor and not paternal_surname:
             paternal_line_idx = i
@@ -147,11 +152,11 @@ def extract_dni_data(
                 paternal_conf = max(85.0, line.confidence)
                 paternal_anchor = line.text
             else:
-                for off in range(1, 4):
-                    if i + off < len(front_lines_list):
+                for off in [1, 2, 3, -1, -2]:
+                    if 0 <= i + off < len(front_lines_list):
                         cand_l = front_lines_list[i + off]
                         cand_text = cand_l.text.upper()
-                        if normalize_and_validate_date(cand_text)[0] or any(sk in cand_text for sk in ["2DO", "SEGUNDO", "MATERNO", "INSCRIPCION", "EMISION", "CADUCIDAD"] + name_stop_keywords):
+                        if normalize_and_validate_date(cand_text)[0] or any(sk in cand_text for sk in ["2DO", "SEGUNDO", "MATERNO", "INSCRIPCION", "EMISION", "CADUCIDAD", "PRENOMBRES", "NOMBRES"] + name_stop_keywords):
                             continue
                         next_tokens = [w for w in cand_text.split() if is_valid_name_token(w) and not any(sk in w for sk in name_stop_keywords)]
                         if next_tokens:
@@ -161,10 +166,11 @@ def extract_dni_data(
                             paternal_line_idx = i + off
                             break
 
-        # Segundo Apellido / 2do Apellido
+        # Segundo Apellido / 2do Apellido (with OCR typo tolerance: BogurdoAppllido, SegundoApelido, etc.)
         is_maternal_anchor = (
             any(k in t for k in ["2DO APELLIDO", "2DO. APELLIDO", "2D0 APELLIDO", "SEGUNDO APELLIDO", "APELLIDO MATERNO", "MATERNO"])
             or any(k in t_nospaces for k in ["2DOAPELLIDO", "2DO.APELLIDO", "2D0APELLIDO", "SEGUNDOAPELLIDO", "APELLIDOMATERNO"])
+            or bool(re.search(r"[2Z][DO0][\s.]*APEL+I?DO|S[E3]GUND[O0][\s.]*APEL+I?DO|BOGURDO[\s.]*AP+L+I?DO|APEL+I?DO\s*MATERNO|SEGUNDOAPEL+I?DO", t_nospaces))
         )
         if is_maternal_anchor and not maternal_surname:
             clean_val = re.sub(r"^.*?(2DO\s*APELLIDO|2DO\.?\s*APELLIDO|2D0\s*APELLIDO|SEGUNDO\s*APELLIDO|APELLIDO\s*MATERNO|2DOAPELLIDO|SEGUNDOAPELLIDO|APELLIDOMATERNO|MATERNO)[:\s\-]*", "", t, flags=re.IGNORECASE).strip()
@@ -174,11 +180,11 @@ def extract_dni_data(
                 maternal_conf = max(85.0, line.confidence)
                 maternal_anchor = line.text
             else:
-                for off in range(1, 4):
-                    if i + off < len(front_lines_list):
+                for off in [1, 2, 3, -1, -2]:
+                    if 0 <= i + off < len(front_lines_list):
                         cand_l = front_lines_list[i + off]
                         cand_text = cand_l.text.upper()
-                        if normalize_and_validate_date(cand_text)[0] or any(sk in cand_text for sk in ["PRENOMBRES", "NOMBRES", "INSCRIPCION", "EMISION", "CADUCIDAD"] + name_stop_keywords):
+                        if normalize_and_validate_date(cand_text)[0] or any(sk in cand_text for sk in ["PRENOMBRES", "NOMBRES", "INSCRIPCION", "EMISION", "CADUCIDAD", "1ER", "PRIMER", "PATERNO"] + name_stop_keywords):
                             continue
                         next_tokens = [w for w in cand_text.split() if is_valid_name_token(w) and not any(sk in w for sk in name_stop_keywords)]
                         if next_tokens:
@@ -187,7 +193,7 @@ def extract_dni_data(
                             maternal_anchor = line.text
                             break
 
-        # Generic "APELLIDOS" Anchor (DNI Azul Clásico)
+        # Generic "APELLIDOS" Anchor (DNI Azul Clásico o DNIe)
         if "APELLIDOS" in t_nospaces and not any(k in t_nospaces for k in ["1ER", "2DO", "2D0", "PRIMER", "SEGUNDO"]) and not paternal_surname:
             paternal_line_idx = i
             clean_val = re.sub(r"^.*?APELLIDOS[:\s\-]*", "", t, flags=re.IGNORECASE).strip()
@@ -203,43 +209,40 @@ def extract_dni_data(
                 paternal_conf = max(82.0, line.confidence)
                 paternal_anchor = line.text
                 # Look at next lines for maternal surname
-                for off in range(1, 3):
-                    if i + off < len(front_lines_list):
+                for off in [1, 2, -1]:
+                    if 0 <= i + off < len(front_lines_list):
                         cand_l = front_lines_list[i + off]
                         cand_t = cand_l.text.upper()
                         if any(sk in cand_t for sk in name_stop_keywords) or normalize_and_validate_date(cand_t)[0]:
-                            break
+                            continue
                         next_tokens = [w for w in cand_t.split() if is_valid_name_token(w) and not any(sk in w for sk in name_stop_keywords)]
-                        if next_tokens:
+                        if next_tokens and " ".join(next_tokens) != paternal_surname:
                             maternal_surname = " ".join(next_tokens)
                             maternal_conf = max(82.0, cand_l.confidence)
                             maternal_anchor = line.text
                             break
-            elif i + 1 < len(front_lines_list):
-                cand_l1 = front_lines_list[i+1]
-                cand_t1 = cand_l1.text.upper()
-                if not any(sk in cand_t1 for sk in name_stop_keywords) and not normalize_and_validate_date(cand_t1)[0]:
-                    next_tokens1 = [w for w in cand_t1.split() if is_valid_name_token(w) and not any(sk in w for sk in name_stop_keywords)]
-                    if len(next_tokens1) >= 2:
-                        paternal_surname, maternal_surname = split_two_surnames(next_tokens1)
-                        paternal_conf = max(82.0, cand_l1.confidence)
-                        maternal_conf = max(82.0, cand_l1.confidence)
-                        paternal_anchor = line.text
-                        maternal_anchor = line.text
-                    elif len(next_tokens1) == 1:
-                        paternal_surname = next_tokens1[0]
-                        paternal_conf = max(80.0, cand_l1.confidence)
-                        paternal_anchor = line.text
-                        paternal_line_idx = i + 1
-                        if i + 2 < len(front_lines_list):
-                            cand_l2 = front_lines_list[i+2]
-                            cand_t2 = cand_l2.text.upper()
-                            if not any(sk in cand_t2 for sk in name_stop_keywords) and not normalize_and_validate_date(cand_t2)[0]:
-                                next_tokens2 = [w for w in cand_t2.split() if is_valid_name_token(w) and not any(sk in w for sk in name_stop_keywords)]
-                                if next_tokens2:
-                                    maternal_surname = " ".join(next_tokens2)
-                                    maternal_conf = max(80.0, cand_l2.confidence)
-                                    maternal_anchor = line.text
+            else:
+                # Check adjacent lines forward and backward
+                for off in [1, 2, -1, -2]:
+                    if 0 <= i + off < len(front_lines_list):
+                        cand_l = front_lines_list[i + off]
+                        cand_t = cand_l.text.upper()
+                        if normalize_and_validate_date(cand_t)[0] or any(sk in cand_t for sk in name_stop_keywords):
+                            continue
+                        next_tokens = [w for w in cand_t.split() if is_valid_name_token(w) and not any(sk in w for sk in name_stop_keywords)]
+                        if len(next_tokens) >= 2 and not paternal_surname:
+                            paternal_surname, maternal_surname = split_two_surnames(next_tokens)
+                            paternal_conf = max(82.0, cand_l.confidence)
+                            maternal_conf = max(82.0, cand_l.confidence)
+                            paternal_anchor = line.text
+                            maternal_anchor = line.text
+                            break
+                        elif len(next_tokens) == 1 and not paternal_surname:
+                            paternal_surname = next_tokens[0]
+                            paternal_conf = max(80.0, cand_l.confidence)
+                            paternal_anchor = line.text
+                            paternal_line_idx = i + off
+                            break
 
     # 3. FIRST NAMES / PRENOMBRES
     first_names = ""
@@ -251,7 +254,7 @@ def extract_dni_data(
         names_conf = 99.0
         names_anchor = "MRZ ICAO TD1"
 
-    # Also scan visual OCR for prenombres
+    # Also scan visual OCR for prenombres (with OCR noise tolerance like Pro Nombro)
     visual_first_names = ""
     visual_names_conf = 0.0
     visual_names_anchor = None
@@ -262,11 +265,12 @@ def extract_dni_data(
         is_prenombres_anchor = (
             any(k in t for k in ["PRENOMBRES", "PRE NOMBRE", "PRE NOMBRES", "NOMBRES"])
             or any(k in t_nospaces for k in ["PRENOMBRES", "PRENOMBRE", "PRENOMBRES", "NOMBRES"])
+            or bool(re.search(r"PR[EO]\s*NOMBR[EOS]+|PRENOMBR[EOS]+", t_nospaces))
         ) and not any(k in t_nospaces for k in ["PRIMER", "SEGUNDO", "APELLIDO", "APELLIDOS", "PATERNO", "MATERNO"])
         
         if is_prenombres_anchor:
             prenombres_line_idx = i
-            clean_val = re.sub(r"^.*?(PRE\s*NOMBRES?|PRENOMBRES?|NOMBRES?)[:\s\-]*", "", t, flags=re.IGNORECASE).strip()
+            clean_val = re.sub(r"^.*?(PRE\s*NOMBRES?|PRENOMBRES?|NOMBRES?|PR[EO]\s*NOMBR[EOS]?)[:\s\-]*", "", t, flags=re.IGNORECASE).strip()
             tokens = [w for w in clean_val.split() if is_valid_name_token(w) and not any(sk in w for sk in ["SEXO", "FECHA", "NACIMIENTO", "DNI", "EMISION", "CADUCIDAD"])]
             if tokens:
                 visual_first_names = separate_concatenated_names(" ".join(tokens))
@@ -274,15 +278,18 @@ def extract_dni_data(
                 visual_names_anchor = line.text
                 break
             else:
-                for off in range(1, 5):
-                    if i + off < len(front_lines_list):
+                for off in [1, 2, 3, 4, -1, -2, -3]:
+                    if 0 <= i + off < len(front_lines_list):
                         cand_l = front_lines_list[i + off]
                         cand_text = cand_l.text.upper()
-                        if normalize_and_validate_date(cand_text)[0] or any(sk in cand_text for sk in ["SEXO", "FECHA", "NACIMIENTO", "DNI", "EMISION", "CADUCIDAD"]):
+                        if normalize_and_validate_date(cand_text)[0] or any(sk in cand_text for sk in ["SEXO", "FECHA", "NACIMIENTO", "DNI", "EMISION", "CADUCIDAD", "1ER", "2DO", "APELLIDO"]):
                             continue
                         next_tokens = [w for w in cand_text.split() if is_valid_name_token(w)]
                         if next_tokens:
-                            visual_first_names = separate_concatenated_names(" ".join(next_tokens))
+                            cand_cand = " ".join(next_tokens)
+                            if cand_cand in [paternal_surname, maternal_surname] or cand_cand == f"{paternal_surname} {maternal_surname}".strip():
+                                continue
+                            visual_first_names = separate_concatenated_names(cand_cand)
                             visual_names_conf = max(85.0, cand_l.confidence)
                             visual_names_anchor = line.text
                             prenombres_line_idx = i + off
@@ -322,6 +329,56 @@ def extract_dni_data(
         if len(pat_tokens) >= 2:
             paternal_surname, maternal_surname = split_two_surnames(pat_tokens)
             maternal_conf = paternal_conf
+
+    # If paternal_surname is a single concatenated word (e.g. ESTRADACHAYCHA) and maternal is empty:
+    if paternal_surname and not maternal_surname and len(paternal_surname) >= 7:
+        p_split, m_split = separate_concatenated_surnames(paternal_surname)
+        if m_split:
+            paternal_surname = p_split
+            maternal_surname = m_split
+            maternal_conf = paternal_conf
+            maternal_anchor = paternal_anchor or "Separación automática OCR"
+
+    # Positional / candidate fallback for DNI: if any name is still missing, find valid name tokens in front lines
+    if not paternal_surname or not maternal_surname or not first_names:
+        dni_name_cands: List[Tuple[int, OCRLine, List[str]]] = []
+        for idx, l in enumerate(front_lines_list):
+            txt = l.text.upper().strip()
+            if any(sk in txt for sk in ["REPUBLICA", "DOCUMENTO", "IDENTIDAD", "REGISTRO", "RENIEC", "NACIONAL", "PERU", "PER"]):
+                continue
+            if any(sk in txt for sk in ["FECHA", "INSCRIPCION", "EMISION", "CADUCIDAD", "NACIMIENTO", "SEXO", "ESTADO", "CIVIL", "VOTACION", "CUI", "TARJETA", "CHIP"]):
+                continue
+            if normalize_and_validate_date(txt)[0] or re.search(r"\b\d{6,}\b", txt):
+                continue
+            toks = [w for w in txt.split() if is_valid_name_token(w) and not any(sk in w for sk in name_stop_keywords)]
+            if toks and 1 <= len(toks) <= 4:
+                dni_name_cands.append((idx, l, toks))
+
+        # Fill missing fields using available candidate lines
+        for _, cand_l, cand_toks in dni_name_cands:
+            cand_str = " ".join(cand_toks)
+            if cand_str in [paternal_surname, maternal_surname, first_names]:
+                continue
+            if not paternal_surname:
+                paternal_surname = cand_str
+                paternal_conf = max(78.0, cand_l.confidence)
+                paternal_anchor = paternal_anchor or "Posición DNI"
+            elif not maternal_surname and cand_str != paternal_surname:
+                maternal_surname = cand_str
+                maternal_conf = max(78.0, cand_l.confidence)
+                maternal_anchor = maternal_anchor or "Posición DNI"
+            elif not first_names and cand_str not in [paternal_surname, maternal_surname]:
+                first_names = separate_concatenated_names(cand_str)
+                names_conf = max(78.0, cand_l.confidence)
+                names_anchor = names_anchor or "Posición DNI"
+
+    # Apply dictionary typo correction for common OCR letter confusions
+    if paternal_surname:
+        paternal_surname = correct_ocr_surname_typos(paternal_surname)
+    if maternal_surname:
+        maternal_surname = correct_ocr_surname_typos(maternal_surname)
+    if first_names:
+        first_names = correct_ocr_name_typos(first_names)
 
     # Populate Surnames & Names fields
     pat_status = SemanticExtractor.determine_field_status(paternal_conf, bool(paternal_surname))
@@ -372,7 +429,7 @@ def extract_dni_data(
             if any(k in t for k in birth_anchors):
                 # Check if the line itself contains the date (e.g. "11 05 1963 190109")
                 clean_t = re.sub(r"^.*?(NACIMIENTO|FECHA\s*Y\s*UBIGEO|FECHA\s*DE\s*NACIMIENTO|F\.?\s*NAC)[\:\s\-]*", "", t).strip()
-                valid, formatted, _ = normalize_and_validate_date(clean_t or t)
+                valid, formatted, _ = normalize_and_validate_date(clean_t or t, field_type="birth_date")
                 if valid and formatted != "NO CADUCA":
                     birth_date = formatted
                     birth_conf = max(88.0, line.confidence)
@@ -384,9 +441,9 @@ def extract_dni_data(
                         if i + offset < len(combined_lines):
                             next_t = combined_lines[i + offset].text.upper()
                             # Skip if line is another field label
-                            if any(sk in next_t for sk in ["SEXO", "ESTADO", "CIVIL", "EMISION", "CADUCIDAD"]):
+                            if any(sk in next_t for sk in ["SEXO", "ESTADO", "CIVIL", "EMISION", "CADUCIDAD", "INSCRIPCION"]):
                                 continue
-                            val_ok, fmt_d, _ = normalize_and_validate_date(next_t)
+                            val_ok, fmt_d, _ = normalize_and_validate_date(next_t, field_type="birth_date")
                             if val_ok and fmt_d != "NO CADUCA":
                                 birth_date = fmt_d
                                 birth_conf = max(86.0, combined_lines[i + offset].confidence)
@@ -398,7 +455,7 @@ def extract_dni_data(
         # Fallback to date candidates pool if visual anchors didn't match
         if not birth_date and candidate_pools and candidate_pools.get("dates_candidates"):
             for cand_val, cand_conf, _ in candidate_pools["dates_candidates"]:
-                v_ok, fmt_d, _ = normalize_and_validate_date(cand_val)
+                v_ok, fmt_d, _ = normalize_and_validate_date(cand_val, field_type="birth_date")
                 if v_ok and fmt_d != "NO CADUCA":
                     # Birth date year is typically in the past (e.g. 1930 to current_year - 15)
                     try:
@@ -411,14 +468,15 @@ def extract_dni_data(
                     except ValueError:
                         pass
 
-    val_birth_ok, val_birth_fmt, birth_err = normalize_and_validate_date(birth_date) if birth_date else (False, "", "No detectada")
+    val_birth_ok, val_birth_fmt, birth_err = normalize_and_validate_date(birth_date, field_type="birth_date") if birth_date else (False, "", "No detectada")
     birth_status = SemanticExtractor.determine_field_status(birth_conf, val_birth_ok)
     fields["birth_date"] = FieldConfidence(
-        value=val_birth_fmt if val_birth_ok else birth_date,
+        value=val_birth_fmt if val_birth_ok else (birth_date if val_birth_ok else ""),
         confidence=birth_conf if val_birth_ok else 0.0,
         is_valid=val_birth_ok,
         status=birth_status,
         origin_type="LEIDO_OCR",
+        source="ocr",
         validation_message=birth_err,
         anchor_matched=birth_anchor,
     )
@@ -453,6 +511,21 @@ def extract_dni_data(
                         sex_conf = 88.0
                         sex_anchor = line.text
 
+        # Fallback demographic inference from civil status if sex anchor was inconclusive
+        if not sex:
+            for l in combined_lines:
+                t_l = l.text.upper()
+                if any(w in t_l for w in ["SOLTERA", "CASADA", "VIUDA", "DIVORCIADA"]):
+                    sex = "F"
+                    sex_conf = 85.0
+                    sex_anchor = "Estado civil (femenino)"
+                    break
+                elif any(w in t_l for w in ["SOLTERO", "CASADO", "VIUDO", "DIVORCIADO"]):
+                    sex = "M"
+                    sex_conf = 85.0
+                    sex_anchor = "Estado civil (masculino)"
+                    break
+
     val_sex_ok, val_sex_fmt, sex_err = normalize_sex(sex) if sex else (False, "", "No detectado")
     sex_status = SemanticExtractor.determine_field_status(sex_conf, val_sex_ok)
     fields["sex"] = FieldConfidence(
@@ -485,7 +558,7 @@ def extract_dni_data(
 
         # FECHA DE EMISIÓN
         if any(k in t for k in ["EMISION", "EMISIÓN", "FECHA EMISION", "FECHA DE EMISION", "FECHA EMISIÓN", "F. EMISION", "F. EMIS", "FECHAEMISION"]) and not issue_date:
-            valid, formatted, _ = normalize_and_validate_date(t)
+            valid, formatted, _ = normalize_and_validate_date(t, field_type="issue_date")
             if valid and formatted != "NO CADUCA":
                 issue_date = formatted
                 issue_conf = max(88.0, line.confidence)
@@ -496,7 +569,7 @@ def extract_dni_data(
                         # Avoid taking other known field headers
                         if any(h in candidate_t for h in ["CADUCIDAD", "INSCRIPCION", "NACIMIENTO"]):
                             continue
-                        val_ok, fmt_d, _ = normalize_and_validate_date(candidate_t)
+                        val_ok, fmt_d, _ = normalize_and_validate_date(candidate_t, field_type="issue_date")
                         if val_ok and fmt_d != "NO CADUCA":
                             issue_date = fmt_d
                             issue_conf = max(85.0, (front_lines_list + back_lines_list)[i + off].confidence)
@@ -508,7 +581,7 @@ def extract_dni_data(
                 expiry_date = "NO CADUCA"
                 expiry_conf = 99.0
             else:
-                valid, formatted, _ = normalize_and_validate_date(t)
+                valid, formatted, _ = normalize_and_validate_date(t, field_type="expiry_date")
                 if valid:
                     expiry_date = formatted
                     expiry_conf = max(88.0, line.confidence)
@@ -520,7 +593,7 @@ def extract_dni_data(
                                 expiry_date = "NO CADUCA"
                                 expiry_conf = 99.0
                                 break
-                            val_ok, fmt_d, _ = normalize_and_validate_date(candidate_t)
+                            val_ok, fmt_d, _ = normalize_and_validate_date(candidate_t, field_type="expiry_date")
                             if val_ok:
                                 expiry_date = fmt_d
                                 expiry_conf = max(85.0, (front_lines_list + back_lines_list)[i + off].confidence)
@@ -542,48 +615,53 @@ def extract_dni_data(
 
         # Sort dates chronologically
         all_front_dates.sort(key=lambda x: x[0])
+        now_dt = datetime.now()
         if len(all_front_dates) >= 3:
             # Format on DNI Azul: Inscription < Emission < Expiry
-            if not issue_date:
+            if not issue_date and all_front_dates[-2][0] <= now_dt:
                 issue_date = all_front_dates[-2][1]
                 issue_conf = max(82.0, all_front_dates[-2][2])
             if not expiry_date:
                 expiry_date = all_front_dates[-1][1]
                 expiry_conf = max(82.0, all_front_dates[-1][2])
         elif len(all_front_dates) == 2:
-            if not issue_date:
-                issue_date = all_front_dates[0][1]
-                issue_conf = max(80.0, all_front_dates[0][2])
-            if not expiry_date:
-                expiry_date = all_front_dates[1][1]
-                expiry_conf = max(80.0, all_front_dates[1][2])
+            cand_iss = all_front_dates[0]
+            cand_exp = all_front_dates[1]
+            if not issue_date and cand_iss[0] <= now_dt:
+                issue_date = cand_iss[1]
+                issue_conf = max(80.0, cand_iss[2])
+            if not expiry_date and cand_exp[0] >= cand_iss[0]:
+                expiry_date = cand_exp[1]
+                expiry_conf = max(80.0, cand_exp[2])
         elif len(all_front_dates) == 1:
             # If date is in future -> Expiry, if past -> Issue
             d_obj, d_str, d_c = all_front_dates[0]
-            if d_obj.year > datetime.now().year and not expiry_date:
+            if d_obj > now_dt and not expiry_date:
                 expiry_date = d_str
                 expiry_conf = max(80.0, d_c)
-            elif d_obj.year <= datetime.now().year and not issue_date:
+            elif d_obj <= now_dt and not issue_date:
                 issue_date = d_str
                 issue_conf = max(80.0, d_c)
 
-    val_iss_ok, val_iss_fmt, iss_err = normalize_and_validate_date(issue_date) if issue_date else (False, "", "No detectada")
+    val_iss_ok, val_iss_fmt, iss_err = normalize_and_validate_date(issue_date, field_type="issue_date") if issue_date else (False, "", "No detectada")
     fields["issue_date"] = FieldConfidence(
-        value=val_iss_fmt if val_iss_ok else issue_date,
+        value=val_iss_fmt if val_iss_ok else (issue_date if val_iss_ok else ""),
         confidence=issue_conf if val_iss_ok else 0.0,
         is_valid=val_iss_ok,
         status=SemanticExtractor.determine_field_status(issue_conf, val_iss_ok),
         origin_type="LEIDO_OCR",
+        source="ocr",
         validation_message=iss_err,
     )
 
-    val_exp_ok = (expiry_date == "NO CADUCA") or bool(expiry_date and normalize_and_validate_date(expiry_date)[0])
+    val_exp_ok = (expiry_date == "NO CADUCA") or bool(expiry_date and normalize_and_validate_date(expiry_date, field_type="expiry_date")[0])
     fields["expiry_date"] = FieldConfidence(
-        value=expiry_date,
+        value=expiry_date if val_exp_ok else "",
         confidence=expiry_conf if val_exp_ok else 0.0,
         is_valid=val_exp_ok,
         status=SemanticExtractor.determine_field_status(expiry_conf, val_exp_ok),
         origin_type="LEIDO_OCR",
+        source="ocr",
     )
 
     # 7. UBIGEO, DEPARTAMENTO, PROVINCIA, DISTRITO & DIRECCIÓN
@@ -643,6 +721,8 @@ def extract_dni_data(
     # Check for slash-separated Ubigeo format (e.g. "ANCASH / HUARI / CHAVIN DE HUANTAR" or "LIMA / LIMA / MIRAFLORES")
     for line in back_lines_list:
         t = line.text.upper().strip()
+        if any(k in t for k in ["DOMICILIO", "DIRECCION", "DIR.", "AV.", "JR.", "CALLE", "PSJE", "MZ", "LT"]):
+            continue
         if "/" in t or " - " in t:
             parts = [p.strip() for p in re.split(r"[/\-]", t) if p.strip()]
             if len(parts) >= 2:
@@ -748,6 +828,8 @@ def extract_dni_data(
         prov_val = re.sub(r"^OUE", "QUE", prov_val)
         prov_val = re.sub(r"^OUA", "QUA", prov_val)
 
+    has_explicit_hierarchy = bool(dept_val or prov_val or dist_val)
+
     # 7B.2. Resolve with Ubigeo Database
     ub_match = None
     ub_inei = ""
@@ -784,7 +866,17 @@ def extract_dni_data(
                 seen_parts.add(p_clean)
                 synthesized_parts.append(p_clean)
 
-    if ub_match and ub_match.get("full_text"):
+    if ubigeo_code and not has_explicit_hierarchy:
+        # If only 6-digit code was read on card without explicit text lines, keep the authentic code
+        ubigeo_str = ubigeo_code
+        ubigeo_conf = max(92.0 if ub_match else 85.0, ubigeo_conf)
+    elif synthesized_parts and ubigeo_code:
+        # If card had department/prov/dist lines and a code, combine them preserving the card's code
+        ubigeo_str = " / ".join(synthesized_parts)
+        if ubigeo_code not in ubigeo_str:
+            ubigeo_str = f"{ubigeo_str} ({ubigeo_code})"
+        ubigeo_conf = max(92.0, ubigeo_conf)
+    elif ub_match and ub_match.get("full_text"):
         ubigeo_str = ub_match["full_text"]
         ubigeo_conf = max(92.0, ubigeo_conf)
     elif synthesized_parts:

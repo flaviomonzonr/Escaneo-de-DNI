@@ -283,25 +283,25 @@ export default function BatchScanZone({ onNavigateToExcelGenerator }) {
   const progressPercent = totalCount > 0 ? Math.round(((doneCount + errorCount) / totalCount) * 100) : 0;
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6 animate-fade-in text-white">
       
       {/* 1. Top Upload & Configuration Card */}
-      <div className="bg-white border border-[#E2E8F0] rounded-2xl p-6 shadow-corporate-md space-y-6">
+      <div className="card-enterprise bg-[#0B1528] border border-[#1E3557] rounded-2xl p-5 sm:p-6 shadow-xl space-y-6">
         
         {/* Title and Badge */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center space-x-3.5">
-            <div className="p-3 bg-blue-50 text-[#101BCB] border border-blue-100 rounded-xl shadow-sm">
-              <Files className="w-6 h-6" />
+            <div className="p-3 bg-[#101F3B] text-cyan-400 border border-[#274468] rounded-xl shadow-sm">
+              <Files className="w-6 h-6 stroke-[2.2]" />
             </div>
             <div>
               <div className="flex items-center space-x-2">
-                <h3 className="text-lg font-bold text-[#1E293B]">Carga y Escaneo por Lotes de DNI</h3>
-                <span className="bg-emerald-50 text-[#00A88F] text-[11px] font-bold px-2.5 py-0.5 rounded-full border border-emerald-200">
+                <h3 className="text-base sm:text-lg font-black text-white tracking-wide">Carga y Escaneo por Lotes de DNI</h3>
+                <span className="bg-[#0A3D44]/90 text-teal-200 text-[11px] font-bold px-2.5 py-0.5 rounded-full border border-teal-400/50">
                   Emparejamiento A / R Automático
                 </span>
               </div>
-              <p className="text-xs text-[#64748B] mt-0.5">
+              <p className="text-xs text-slate-300 mt-0.5">
                 Suba múltiples imágenes. El sistema empareja automáticamente Anverso y Reverso por nombre de archivo y registra cada DNI en la base de datos y Excel.
               </p>
             </div>
@@ -312,10 +312,10 @@ export default function BatchScanZone({ onNavigateToExcelGenerator }) {
               type="button"
               onClick={loadDemoBatch}
               disabled={isProcessingBatch}
-              className="py-2 px-3.5 rounded-xl bg-slate-50 hover:bg-slate-100 text-[#080F72] text-xs font-bold border border-[#E2E8F0] transition flex items-center space-x-2 shadow-sm disabled:opacity-50"
+              className="py-2.5 px-3.5 rounded-xl bg-[#101F3B] hover:bg-[#162A4F] text-cyan-200 text-xs font-bold border border-[#274468] transition flex items-center space-x-2 shadow-sm disabled:opacity-50 btn-precision"
               title="Genera un lote de 5 pares (1.A/1.R ... 5.A/5.R) para probar el flujo de inmediato"
             >
-              <Sparkles className="w-4 h-4 text-[#101BCB]" />
+              <Sparkles className="w-4 h-4 text-cyan-400" />
               <span>Cargar Lote de Prueba (5 Pares)</span>
             </button>
 
@@ -324,7 +324,7 @@ export default function BatchScanZone({ onNavigateToExcelGenerator }) {
                 type="button"
                 onClick={clearAll}
                 disabled={isProcessingBatch}
-                className="py-2 px-3 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold border border-rose-200 transition flex items-center space-x-1.5 shadow-sm disabled:opacity-50"
+                className="py-2.5 px-3 rounded-xl bg-rose-950/60 hover:bg-rose-900/80 text-rose-300 text-xs font-bold border border-rose-500/40 transition flex items-center space-x-1.5 shadow-sm disabled:opacity-50 btn-precision"
               >
                 <Trash2 className="w-3.5 h-3.5" />
                 <span>Limpiar</span>
@@ -340,8 +340,8 @@ export default function BatchScanZone({ onNavigateToExcelGenerator }) {
           onClick={() => !isProcessingBatch && fileInputRef.current?.click()}
           className={`border-2 border-dashed rounded-2xl p-8 text-center transition cursor-pointer ${
             pairs.length > 0
-              ? 'border-blue-300 bg-blue-50/20 hover:bg-blue-50/40'
-              : 'border-slate-300 bg-slate-50 hover:bg-blue-50/30 hover:border-[#101BCB]'
+              ? 'border-cyan-500/60 bg-[#060D1A]/90 hover:bg-[#060D1A]'
+              : 'border-[#1E3557] bg-[#060D1A]/60 hover:bg-[#060D1A] hover:border-cyan-400'
           } ${isProcessingBatch ? 'opacity-60 cursor-not-allowed' : ''}`}
         >
           <input
@@ -355,24 +355,24 @@ export default function BatchScanZone({ onNavigateToExcelGenerator }) {
           />
 
           <div className="max-w-md mx-auto flex flex-col items-center space-y-3">
-            <div className="w-14 h-14 rounded-2xl bg-[#101BCB]/10 flex items-center justify-center text-[#101BCB]">
-              <Upload className="w-7 h-7" />
+            <div className="w-14 h-14 rounded-2xl bg-[#101F3B] border border-[#274468] flex items-center justify-center text-cyan-400 shadow-glow-turquoise">
+              <Upload className="w-7 h-7 stroke-[2.2]" />
             </div>
             <div>
-              <p className="text-sm font-bold text-[#1E293B]">
+              <p className="text-sm font-black text-white">
                 Arrastre aquí múltiples imágenes o haga clic para seleccionar
               </p>
-              <p className="text-xs text-[#64748B] mt-1">
+              <p className="text-xs text-slate-300 mt-1">
                 Formatos compatibles: JPG, PNG, WEBP. Permite seleccionar cientos de fotos a la vez.
               </p>
             </div>
 
-            <div className="bg-white px-4 py-2.5 rounded-xl border border-[#E2E8F0] shadow-sm text-left text-[11px] text-[#475569] space-y-1 w-full mt-2">
-              <p className="font-bold text-[#080F72] flex items-center space-x-1">
-                <HelpCircle className="w-3.5 h-3.5 text-[#101BCB]" />
+            <div className="bg-[#0B1528] px-4 py-2.5 rounded-xl border border-[#1E3557] shadow-sm text-left text-[11px] text-slate-300 space-y-1 w-full mt-2">
+              <p className="font-bold text-white flex items-center space-x-1.5">
+                <HelpCircle className="w-3.5 h-3.5 text-cyan-400" />
                 <span>Nomenclaturas soportadas para Anverso (A) y Reverso (R):</span>
               </p>
-              <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-0.5 text-[11px] text-slate-600 font-mono">
+              <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-0.5 text-[11px] text-slate-300 font-mono">
                 <li>• 1.A.jpg / 1.R.jpg</li>
                 <li>• DNI_44889922_A / DNI_44889922_R</li>
                 <li>• 1_A.png / 1_R.png</li>
@@ -386,17 +386,17 @@ export default function BatchScanZone({ onNavigateToExcelGenerator }) {
 
         {/* Action Controls & Stats */}
         {pairs.length > 0 && (
-          <div className="pt-2 flex flex-col md:flex-row items-center justify-between gap-4 border-t border-[#E2E8F0]">
+          <div className="pt-2 flex flex-col md:flex-row items-center justify-between gap-4 border-t border-[#1E3557]">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs font-bold text-[#475569]">Resumen del Lote:</span>
-              <span className="bg-slate-100 text-[#1E293B] text-xs font-bold px-3 py-1 rounded-lg border border-slate-200">
-                Total Pares: <span className="font-mono text-[#101BCB]">{totalCount}</span>
+              <span className="text-xs font-bold text-slate-300">Resumen del Lote:</span>
+              <span className="bg-[#101F3B] text-slate-200 text-xs font-bold px-3 py-1 rounded-lg border border-[#274468]">
+                Total Pares: <span className="font-mono text-cyan-300 font-black">{totalCount}</span>
               </span>
-              <span className="bg-emerald-50 text-[#00A88F] text-xs font-bold px-3 py-1 rounded-lg border border-emerald-200">
-                Completados: <span className="font-mono">{doneCount}</span>
+              <span className="bg-[#0A3D44]/90 text-teal-200 text-xs font-bold px-3 py-1 rounded-lg border border-teal-400/50">
+                Completados: <span className="font-mono font-black">{doneCount}</span>
               </span>
               {errorCount > 0 && (
-                <span className="bg-rose-50 text-rose-700 text-xs font-bold px-3 py-1 rounded-lg border border-rose-200">
+                <span className="bg-rose-950/80 text-rose-300 text-xs font-bold px-3 py-1 rounded-lg border border-rose-500/50">
                   Errores: <span className="font-mono">{errorCount}</span>
                 </span>
               )}
@@ -407,16 +407,16 @@ export default function BatchScanZone({ onNavigateToExcelGenerator }) {
                 type="button"
                 onClick={startBatchProcessing}
                 disabled={isProcessingBatch || pairs.length === 0}
-                className="flex-1 md:flex-initial py-2.5 px-6 rounded-xl bg-gradient-to-r from-[#00A88F] to-[#008f7a] hover:from-[#008f7a] hover:to-[#007664] text-white font-bold text-xs uppercase tracking-wider shadow-md shadow-emerald-700/20 flex items-center justify-center space-x-2 transition active:scale-95 disabled:opacity-50"
+                className="flex-1 md:flex-initial py-2.5 px-6 rounded-xl bg-gradient-to-r from-teal-500 via-teal-600 to-emerald-600 hover:from-teal-400 hover:to-emerald-500 text-slate-950 font-black text-xs uppercase tracking-wider shadow-lg shadow-teal-500/20 flex items-center justify-center space-x-2 transition active:scale-95 disabled:opacity-50 border border-teal-300/40 btn-precision"
               >
                 {isProcessingBatch ? (
                   <>
-                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <RefreshCw className="w-4 h-4 animate-spin text-slate-950" />
                     <span>Procesando Lote ({progressPercent}%)...</span>
                   </>
                 ) : (
                   <>
-                    <Play className="w-4 h-4 fill-current" />
+                    <Play className="w-4 h-4 fill-current text-slate-950" />
                     <span>Iniciar Escaneo por Lote ({totalCount} Pares)</span>
                   </>
                 )}
@@ -427,22 +427,22 @@ export default function BatchScanZone({ onNavigateToExcelGenerator }) {
 
         {/* Progress Bar */}
         {(isProcessingBatch || batchCompleted) && (
-          <div className="space-y-2 bg-slate-50 p-4 rounded-xl border border-[#E2E8F0]">
-            <div className="flex items-center justify-between text-xs font-bold text-[#1E293B]">
+          <div className="space-y-2 bg-[#060D1A] p-4 rounded-xl border border-[#1E3557]">
+            <div className="flex items-center justify-between text-xs font-bold text-white">
               <div className="flex items-center space-x-2">
                 {isProcessingBatch ? (
-                  <RefreshCw className="w-4 h-4 text-[#101BCB] animate-spin" />
+                  <RefreshCw className="w-4 h-4 text-cyan-400 animate-spin" />
                 ) : (
-                  <CheckCircle2 className="w-4 h-4 text-[#00A88F]" />
+                  <CheckCircle2 className="w-4 h-4 text-teal-400" />
                 )}
                 <span>{statusMessage}</span>
               </div>
-              <span className="font-mono text-[#101BCB]">{progressPercent}%</span>
+              <span className="font-mono text-cyan-300 font-black">{progressPercent}%</span>
             </div>
-            <div className="w-full h-3 bg-slate-200 rounded-full overflow-hidden">
+            <div className="w-full h-3 bg-[#101F3B] rounded-full overflow-hidden border border-[#274468]">
               <div
                 className={`h-full transition-all duration-300 ${
-                  batchCompleted ? 'bg-[#00A88F]' : 'bg-[#101BCB]'
+                  batchCompleted ? 'bg-gradient-to-r from-teal-400 to-emerald-400' : 'bg-gradient-to-r from-cyan-500 to-teal-500'
                 }`}
                 style={{ width: `${progressPercent}%` }}
               ></div>
@@ -452,16 +452,16 @@ export default function BatchScanZone({ onNavigateToExcelGenerator }) {
 
         {/* Batch Completed Success Callout */}
         {batchCompleted && doneCount > 0 && (
-          <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="bg-[#0A3D44]/90 border border-teal-400/50 rounded-2xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center space-x-3.5">
-              <div className="p-3 bg-emerald-600 text-white rounded-xl shadow-sm">
-                <FileCheck className="w-6 h-6" />
+              <div className="p-3 bg-teal-500 text-slate-950 rounded-xl shadow-sm">
+                <FileCheck className="w-6 h-6 stroke-[2.5]" />
               </div>
               <div>
-                <h4 className="text-sm font-bold text-emerald-950">
+                <h4 className="text-sm font-black text-white">
                   ¡{doneCount} DNIs escaneados y guardados con éxito!
                 </h4>
-                <p className="text-xs text-emerald-800 mt-0.5">
+                <p className="text-xs text-teal-100 mt-0.5">
                   Los registros ya están almacenados con su fecha y hora en el sistema. Puede seleccionarlos en "Generar Excel por Lote" para completar sus plantillas.
                 </p>
               </div>
@@ -471,7 +471,7 @@ export default function BatchScanZone({ onNavigateToExcelGenerator }) {
               <button
                 type="button"
                 onClick={onNavigateToExcelGenerator}
-                className="py-2.5 px-5 rounded-xl bg-[#080F72] hover:bg-[#101BCB] text-white font-bold text-xs flex items-center space-x-2 transition shadow-md whitespace-nowrap"
+                className="py-2.5 px-5 rounded-xl bg-gradient-to-r from-cyan-400 to-teal-400 hover:from-cyan-300 hover:to-teal-300 text-slate-950 font-black text-xs flex items-center space-x-2 transition shadow-md whitespace-nowrap btn-precision border border-cyan-200/50"
               >
                 <span>Generar Excel con estos registros</span>
                 <ArrowRight className="w-4 h-4" />
@@ -482,26 +482,26 @@ export default function BatchScanZone({ onNavigateToExcelGenerator }) {
 
       </div>
 
-      {/* 2. Structured Pairs Table */}
+      {/* 2. Structured Pairs Table - Full width widescreen optimized */}
       {pairs.length > 0 && (
-        <div className="bg-white border border-[#E2E8F0] rounded-2xl shadow-corporate-md overflow-hidden">
+        <div className="card-enterprise bg-[#0B1528] border border-[#1E3557] rounded-2xl shadow-xl overflow-hidden">
           
-          <div className="px-6 py-4 border-b border-[#E2E8F0] bg-slate-50 flex items-center justify-between">
+          <div className="px-6 py-4 border-b border-[#1E3557] bg-[#060D1A] flex items-center justify-between">
             <div className="flex items-center space-x-2.5">
-              <FileSpreadsheet className="w-5 h-5 text-[#101BCB]" />
-              <h4 className="text-sm font-bold text-[#1E293B]">
+              <FileSpreadsheet className="w-5 h-5 text-cyan-400" />
+              <h4 className="text-sm font-black text-white">
                 Listado de Pares Detectados ({pairs.length})
               </h4>
             </div>
-            <span className="text-xs text-[#64748B]">
-              Los datos se extraen con recorte automático OpenCV y RapidOCR AI
+            <span className="text-xs text-slate-400 font-mono">
+              Recorte automático OpenCV y RapidOCR AI
             </span>
           </div>
 
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="border-b border-[#E2E8F0] text-[11px] font-bold text-[#64748B] uppercase tracking-wider bg-white">
+                <tr className="border-b border-[#1E3557] text-[11px] font-black text-slate-300 uppercase tracking-wider bg-[#060D1A]">
                   <th className="py-3 px-4 w-12 text-center">#</th>
                   <th className="py-3 px-4">Identificador / Par</th>
                   <th className="py-3 px-4">Anverso (A)</th>
@@ -511,7 +511,7 @@ export default function BatchScanZone({ onNavigateToExcelGenerator }) {
                   <th className="py-3 px-4 text-center w-16">Acción</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#E2E8F0] text-xs">
+              <tbody className="divide-y divide-[#1E3557] text-xs">
                 {pairs.map((pair, idx) => {
                   const isCurrent = currentIndex === idx;
                   return (
@@ -519,22 +519,22 @@ export default function BatchScanZone({ onNavigateToExcelGenerator }) {
                       key={pair.id}
                       className={`transition ${
                         isCurrent
-                          ? 'bg-blue-50/60 font-semibold'
+                          ? 'bg-[#101F3B] font-semibold'
                           : pair.status === 'done'
-                          ? 'bg-emerald-50/20 hover:bg-slate-50'
+                          ? 'bg-[#0A3D44]/20 hover:bg-[#101F3B]/50'
                           : pair.status === 'error'
-                          ? 'bg-rose-50/30 hover:bg-slate-50'
-                          : 'hover:bg-slate-50'
+                          ? 'bg-rose-950/20 hover:bg-[#101F3B]/50'
+                          : 'hover:bg-[#101F3B]/40'
                       }`}
                     >
                       {/* Index */}
-                      <td className="py-3 px-4 text-center font-mono font-bold text-[#64748B]">
+                      <td className="py-3 px-4 text-center font-mono font-bold text-slate-400">
                         {idx + 1}
                       </td>
 
                       {/* Label */}
                       <td className="py-3 px-4">
-                        <span className="font-bold text-[#080F72] bg-blue-50 px-2.5 py-1 rounded-md border border-blue-100 font-mono">
+                        <span className="font-bold text-cyan-300 bg-[#101F3B] px-2.5 py-1 rounded-md border border-[#274468] font-mono">
                           {pair.label}
                         </span>
                       </td>
@@ -542,8 +542,8 @@ export default function BatchScanZone({ onNavigateToExcelGenerator }) {
                       {/* Front File */}
                       <td className="py-3 px-4">
                         {pair.frontFile ? (
-                          <div className="flex items-center space-x-1.5 text-slate-800">
-                            <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                          <div className="flex items-center space-x-1.5 text-slate-200">
+                            <span className="w-2 h-2 rounded-full bg-teal-400"></span>
                             <span className="truncate max-w-[140px]" title={pair.frontName}>
                               {pair.frontName}
                             </span>
@@ -552,7 +552,7 @@ export default function BatchScanZone({ onNavigateToExcelGenerator }) {
                             </span>
                           </div>
                         ) : (
-                          <span className="text-rose-600 font-bold text-[11px] flex items-center space-x-1">
+                          <span className="text-rose-400 font-bold text-[11px] flex items-center space-x-1">
                             <AlertCircle className="w-3 h-3" />
                             <span>Falta Anverso</span>
                           </span>
@@ -562,8 +562,8 @@ export default function BatchScanZone({ onNavigateToExcelGenerator }) {
                       {/* Back File */}
                       <td className="py-3 px-4">
                         {pair.backFile ? (
-                          <div className="flex items-center space-x-1.5 text-slate-800">
-                            <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                          <div className="flex items-center space-x-1.5 text-slate-200">
+                            <span className="w-2 h-2 rounded-full bg-cyan-400"></span>
                             <span className="truncate max-w-[140px]" title={pair.backName}>
                               {pair.backName}
                             </span>
@@ -581,26 +581,26 @@ export default function BatchScanZone({ onNavigateToExcelGenerator }) {
                       {/* Status */}
                       <td className="py-3 px-4">
                         {pair.status === 'pending' && (
-                          <span className="inline-flex items-center space-x-1.5 bg-slate-100 text-slate-600 px-2.5 py-0.5 rounded-full text-[11px] font-bold">
+                          <span className="inline-flex items-center space-x-1.5 bg-[#101F3B] text-slate-300 px-2.5 py-0.5 rounded-full text-[11px] font-bold border border-[#274468]">
                             <Clock className="w-3 h-3" />
                             <span>Pendiente</span>
                           </span>
                         )}
                         {pair.status === 'processing' && (
-                          <span className="inline-flex items-center space-x-1.5 bg-blue-100 text-[#101BCB] px-2.5 py-0.5 rounded-full text-[11px] font-bold animate-pulse">
+                          <span className="inline-flex items-center space-x-1.5 bg-cyan-950/80 text-cyan-300 px-2.5 py-0.5 rounded-full text-[11px] font-bold animate-pulse border border-cyan-500/50">
                             <RefreshCw className="w-3 h-3 animate-spin" />
                             <span>Escaneando...</span>
                           </span>
                         )}
                         {pair.status === 'done' && (
-                          <span className="inline-flex items-center space-x-1.5 bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full text-[11px] font-bold">
-                            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                          <span className="inline-flex items-center space-x-1.5 bg-[#0A3D44] text-teal-200 px-2.5 py-0.5 rounded-full text-[11px] font-bold border border-teal-400/50">
+                            <CheckCircle2 className="w-3 h-3 text-teal-300" />
                             <span>Completado</span>
                           </span>
                         )}
                         {pair.status === 'error' && (
-                          <span className="inline-flex items-center space-x-1.5 bg-rose-100 text-rose-800 px-2.5 py-0.5 rounded-full text-[11px] font-bold" title={pair.error}>
-                            <AlertCircle className="w-3 h-3 text-rose-600" />
+                          <span className="inline-flex items-center space-x-1.5 bg-rose-950/80 text-rose-300 px-2.5 py-0.5 rounded-full text-[11px] font-bold border border-rose-500/50" title={pair.error}>
+                            <AlertCircle className="w-3 h-3 text-rose-400" />
                             <span>Error</span>
                           </span>
                         )}
@@ -610,15 +610,15 @@ export default function BatchScanZone({ onNavigateToExcelGenerator }) {
                       <td className="py-3 px-4">
                         {pair.extractedData ? (
                           <div className="space-y-0.5">
-                            <div className="font-mono font-bold text-[#101BCB]">
+                            <div className="font-mono font-bold text-cyan-300">
                               DNI: {pair.extractedData.doc_number || '---'}
                             </div>
-                            <div className="text-[11px] text-slate-700 truncate max-w-[220px]">
+                            <div className="text-[11px] text-slate-200 truncate max-w-[220px]">
                               {pair.extractedData.first_names} {pair.extractedData.paternal_surname} {pair.extractedData.maternal_surname}
                             </div>
                           </div>
                         ) : pair.error ? (
-                          <span className="text-rose-600 text-[11px] italic">
+                          <span className="text-rose-400 text-[11px] italic">
                             {pair.error}
                           </span>
                         ) : (
@@ -634,7 +634,7 @@ export default function BatchScanZone({ onNavigateToExcelGenerator }) {
                           type="button"
                           onClick={() => removePair(pair.id)}
                           disabled={isProcessingBatch}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition disabled:opacity-30"
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-950/50 transition disabled:opacity-30"
                           title="Eliminar este par"
                         >
                           <Trash2 className="w-4 h-4" />

@@ -28,6 +28,40 @@ class MultiVariantResult:
     quality_message: str = ""
 
 
+class LazyVariantsDict(dict):
+    """
+    On-demand variant generator dictionary.
+    Guarantees immediate zero-cost evaluation for primary variant (clahe_enhanced),
+    and only generates secondary expensive variants (such as illumination flattening
+    or deskewing) when explicitly accessed.
+    """
+    def __init__(self, initial_dict: Dict[str, ImageVariant], generators: Dict[str, Any]):
+        super().__init__(initial_dict)
+        self._generators = generators
+
+    def __getitem__(self, key: str) -> ImageVariant:
+        if not super().__contains__(key) and key in self._generators:
+            self[key] = self._generators[key]()
+        return super().__getitem__(key)
+
+    def get(self, key: str, default: Any = None) -> Any:
+        if not super().__contains__(key) and key in self._generators:
+            self[key] = self._generators[key]()
+        return super().get(key, default)
+
+    def __contains__(self, key: object) -> bool:
+        return super().__contains__(key) or (isinstance(key, str) and key in self._generators)
+
+    def keys(self):
+        return list(set(super().keys()) | set(self._generators.keys()))
+
+    def __iter__(self):
+        return iter(self.keys())
+
+    def __len__(self):
+        return len(self.keys())
+
+
 def calculate_sharpness(gray_img: np.ndarray) -> float:
     """Calculates the variance of the Laplacian as a sharpness metric."""
     laplacian = cv2.Laplacian(gray_img, cv2.CV_64F)
@@ -156,92 +190,103 @@ def generate_multi_variants(
     is_blurry = sharpness < blur_threshold
     has_shadows, has_glare = detect_shadows_and_glare(gray)
 
-    variants: Dict[str, ImageVariant] = {}
-
-    # Variant 1: CLAHE + Multiscale Sharpness (Default high precision - Ultra Fast)
+    # Variant 1: CLAHE + Multiscale Sharpness (Default high precision - Ultra Fast, computed immediately)
     denoised_base = cv2.GaussianBlur(gray, (3, 3), 0.8)
     sharpened_base = enhance_sharpness_multiscale(denoised_base)
     clahe_v1 = apply_clahe(sharpened_base, clip_limit=3.0, grid_size=8)
-    variants["clahe_enhanced"] = ImageVariant(
+    clahe_var = ImageVariant(
         name="clahe_enhanced",
         description="CLAHE + Realce de Nitidez Multiescala",
         image=clahe_v1,
         quality_score=round(sharpness * 1.5, 1),
     )
 
-    # Variant 2: Shadow-Free / Illumination Flattening (Cell phone photos & flash shadows)
-    flat_gray = remove_illumination_gradient(gray)
-    denoised_flat = cv2.GaussianBlur(flat_gray, (3, 3), 0.8)
-    sharp_flat = enhance_sharpness_multiscale(denoised_flat)
-    variants["shadow_free"] = ImageVariant(
-        name="shadow_free",
-        description="Aplanado de Iluminación y Eliminación de Sombras",
-        image=sharp_flat,
-        quality_score=round(sharpness * 1.4, 1),
-    )
-
-    # Variant 3: Adaptive Gaussian Thresholding (High contrast binary for patterned/blue backgrounds)
-    adaptive_thresh = cv2.adaptiveThreshold(
-        clahe_v1,
-        255,
-        cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
-        cv2.THRESH_BINARY,
-        blockSize=15,
-        C=8,
-    )
-    variants["adaptive_thresh"] = ImageVariant(
-        name="adaptive_thresh",
-        description="Binarización Adaptativa Gaussian C",
-        image=adaptive_thresh,
-        quality_score=round(sharpness, 1),
-        is_binary=True,
-    )
-
-    # Variant 4: Otsu Global Thresholding with morphological stroke boost
-    _, otsu_raw = cv2.threshold(clahe_v1, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-    # Subtle morphological closing to repair broken character strokes
-    kernel_stroke = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
-    otsu_closed = cv2.morphologyEx(otsu_raw, cv2.MORPH_CLOSE, kernel_stroke)
-    variants["otsu_closed"] = ImageVariant(
-        name="otsu_closed",
-        description="Binarización Otsu con Cierre de Trazos",
-        image=otsu_closed,
-        quality_score=round(sharpness, 1),
-        is_binary=True,
-    )
-
-    # Variant 5: Gamma & Contrast Expansion (Underexposed/Dark photos vs Overexposed/Glare)
-    mean_brightness = float(np.mean(gray))
-    gamma_val = 1.65 if mean_brightness < 110 else 0.75
-    gamma_img = apply_gamma_correction(clahe_v1, gamma=gamma_val)
-    variants["gamma_contrast"] = ImageVariant(
-        name="gamma_contrast",
-        description=f"Corrección Gamma (γ={gamma_val}) y Expansión de Rango Dinámico",
-        image=gamma_img,
-        quality_score=round(calculate_sharpness(gamma_img), 1),
-    )
-
-    # Variant 6: Deskewed or Super-Resolution Sharpness
-    deskewed_img, deskew_angle = deskew_image(clahe_v1)
-    if abs(deskew_angle) >= 0.5:
-        variants["deskewed"] = ImageVariant(
-            name="deskewed",
-            description=f"Enderezamiento Angular ({deskew_angle:+.1f}°)",
-            image=deskewed_img,
-            quality_score=round(calculate_sharpness(deskewed_img), 1),
+    # Lazy generators for secondary variants (only evaluated on demand if Tier 1 requires fallback)
+    def _gen_shadow_free() -> ImageVariant:
+        flat_gray = remove_illumination_gradient(gray)
+        denoised_flat = cv2.GaussianBlur(flat_gray, (3, 3), 0.8)
+        sharp_flat = enhance_sharpness_multiscale(denoised_flat)
+        return ImageVariant(
+            name="shadow_free",
+            description="Aplanado de Iluminación y Eliminación de Sombras",
+            image=sharp_flat,
+            quality_score=round(sharpness * 1.4, 1),
         )
-    else:
-        # 1.35x Bicubic scaling + subtle unsharp mask for recovering low-res small fonts
-        h, w = clahe_v1.shape[:2]
-        upscaled = cv2.resize(clahe_v1, (int(w * 1.3), int(h * 1.3)), interpolation=cv2.INTER_CUBIC)
-        kernel_sr = np.array([[0, -0.3, 0], [-0.3, 2.2, -0.3], [0, -0.3, 0]], dtype=np.float32)
-        sr_sharp = cv2.filter2D(upscaled, -1, kernel_sr)
-        variants["super_res"] = ImageVariant(
-            name="super_res",
-            description="Super-Resolución Bicúbica (1.3x) + Realce de Microcaracteres",
-            image=sr_sharp,
-            quality_score=round(calculate_sharpness(sr_sharp), 1),
+
+    def _gen_adaptive_thresh() -> ImageVariant:
+        adaptive_thresh = cv2.adaptiveThreshold(
+            clahe_v1,
+            255,
+            cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+            cv2.THRESH_BINARY,
+            blockSize=15,
+            C=8,
         )
+        return ImageVariant(
+            name="adaptive_thresh",
+            description="Binarización Adaptativa Gaussian C",
+            image=adaptive_thresh,
+            quality_score=round(sharpness, 1),
+            is_binary=True,
+        )
+
+    def _gen_otsu_closed() -> ImageVariant:
+        _, otsu_raw = cv2.threshold(clahe_v1, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        kernel_stroke = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
+        otsu_closed = cv2.morphologyEx(otsu_raw, cv2.MORPH_CLOSE, kernel_stroke)
+        return ImageVariant(
+            name="otsu_closed",
+            description="Binarización Otsu con Cierre de Trazos",
+            image=otsu_closed,
+            quality_score=round(sharpness, 1),
+            is_binary=True,
+        )
+
+    def _gen_gamma_contrast() -> ImageVariant:
+        mean_brightness = float(np.mean(gray))
+        gamma_val = 1.65 if mean_brightness < 110 else 0.75
+        gamma_img = apply_gamma_correction(clahe_v1, gamma=gamma_val)
+        return ImageVariant(
+            name="gamma_contrast",
+            description=f"Corrección Gamma (γ={gamma_val}) y Expansión de Rango Dinámico",
+            image=gamma_img,
+            quality_score=round(calculate_sharpness(gamma_img), 1),
+        )
+
+    def _gen_deskewed_or_sr() -> ImageVariant:
+        deskewed_img, deskew_angle = deskew_image(clahe_v1)
+        if abs(deskew_angle) >= 0.5:
+            return ImageVariant(
+                name="deskewed",
+                description=f"Enderezamiento Angular ({deskew_angle:+.1f}°)",
+                image=deskewed_img,
+                quality_score=round(calculate_sharpness(deskewed_img), 1),
+            )
+        else:
+            h, w = clahe_v1.shape[:2]
+            upscaled = cv2.resize(clahe_v1, (int(w * 1.3), int(h * 1.3)), interpolation=cv2.INTER_CUBIC)
+            kernel_sr = np.array([[0, -0.3, 0], [-0.3, 2.2, -0.3], [0, -0.3, 0]], dtype=np.float32)
+            sr_sharp = cv2.filter2D(upscaled, -1, kernel_sr)
+            return ImageVariant(
+                name="super_res",
+                description="Super-Resolución Bicúbica (1.3x) + Realce de Microcaracteres",
+                image=sr_sharp,
+                quality_score=round(calculate_sharpness(sr_sharp), 1),
+            )
+
+    generators = {
+        "shadow_free": _gen_shadow_free,
+        "adaptive_thresh": _gen_adaptive_thresh,
+        "otsu_closed": _gen_otsu_closed,
+        "gamma_contrast": _gen_gamma_contrast,
+        "deskewed": _gen_deskewed_or_sr,
+        "super_res": _gen_deskewed_or_sr,
+    }
+
+    variants = LazyVariantsDict(
+        initial_dict={"clahe_enhanced": clahe_var},
+        generators=generators,
+    )
 
     # Quality message
     quality_notes = []

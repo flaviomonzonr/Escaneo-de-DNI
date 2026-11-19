@@ -27,7 +27,7 @@ echo.
 echo =======================================================================
 echo   LISTO! PUERTOS HABILITADOS EN EL FIREWALL DE WINDOWS
 echo   Ahora ya puedes ingresar desde tu celular a:
-echo   http://192.168.68.55:5173
+echo   http://192.168.68.71:5173 (o la IP que muestre dev.js)
 echo =======================================================================
 echo.
 pause

@@ -70,12 +70,12 @@ export default function ExcelDiagnosticView() {
           <p className="text-xs text-slate-500 mt-1">Revisando celdas ocultas, comentarios, fórmulas y hojas.</p>
         </div>
       ) : !diagnostic || diagnostic.status === 'error' ? (
-        <div className="p-6 rounded-2xl bg-amber-950/40 border border-amber-800/60 text-amber-200">
+        <div className="p-6 rounded-2xl bg-[#101F3B] border border-cyan-500/50 text-cyan-200">
           <div className="flex items-center space-x-2 font-bold mb-1">
-            <AlertCircle className="w-5 h-5 text-amber-400" />
+            <AlertCircle className="w-5 h-5 text-cyan-400" />
             <span>Aviso del Diagnóstico</span>
           </div>
-          <p className="text-xs text-amber-300/90">
+          <p className="text-xs text-slate-200">
             {diagnostic?.message || 'No se pudo cargar el archivo Excel fuente. Asegúrese de que exista en la carpeta `exports/Registros.xlsx` o `data/`.'}
           </p>
         </div>
@@ -97,18 +97,18 @@ export default function ExcelDiagnosticView() {
             <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 space-y-2">
               <div className="flex items-center justify-between text-xs text-slate-400 font-semibold">
                 <span>Notas y Comentarios</span>
-                <MessageSquare className="w-4 h-4 text-purple-400" />
+                <MessageSquare className="w-4 h-4 text-cyan-400" />
               </div>
-              <div className="text-2xl font-bold text-purple-300 font-mono">{diagnostic.total_comments}</div>
+              <div className="text-2xl font-bold text-cyan-300 font-mono">{diagnostic.total_comments}</div>
               <p className="text-[11px] text-slate-500">Anotaciones de celdas recuperables</p>
             </div>
 
             <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 space-y-2">
               <div className="flex items-center justify-between text-xs text-slate-400 font-semibold">
                 <span>Filas Ocultas</span>
-                <EyeOff className="w-4 h-4 text-amber-400" />
+                <EyeOff className="w-4 h-4 text-teal-400" />
               </div>
-              <div className="text-2xl font-bold text-amber-300 font-mono">{diagnostic.total_hidden_rows}</div>
+              <div className="text-2xl font-bold text-teal-300 font-mono">{diagnostic.total_hidden_rows}</div>
               <p className="text-[11px] text-slate-500">Filas ocultas analizadas por DNI</p>
             </div>
 
@@ -150,7 +150,7 @@ export default function ExcelDiagnosticView() {
                       </td>
                       <td className="p-3.5">
                         {s.is_hidden ? (
-                          <span className="px-2 py-0.5 rounded text-[10px] bg-amber-950/80 text-amber-400 border border-amber-800/50 font-semibold">
+                          <span className="px-2 py-0.5 rounded text-[10px] bg-[#101F3B] text-cyan-300 border border-cyan-500/40 font-semibold">
                             Oculta ({s.sheet_state})
                           </span>
                         ) : (

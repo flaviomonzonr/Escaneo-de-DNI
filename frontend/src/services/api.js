@@ -30,6 +30,9 @@ const API_BASE_URL = getApiBaseUrl();
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
   timeout: 120000, // 120 segundos para OCR y procesamiento de imágenes de alta resolución
+  headers: {
+    'ngrok-skip-browser-warning': 'true',
+  },
 });
 
 export const api = {
@@ -43,6 +46,99 @@ export const api = {
   getNetworkInfo: async () => {
     const res = await apiClient.get('/api/system/network-info');
     return res.data;
+  },
+
+  // Factiliza API methods
+  getFactilizaConfig: async () => {
+    const res = await apiClient.get('/api/factiliza/config');
+    return res.data;
+  },
+
+  setFactilizaConfig: async (token) => {
+    const res = await apiClient.post('/api/factiliza/config', { token });
+    return res.data;
+  },
+
+  getHistoricalStats: async () => {
+    const res = await apiClient.get('/api/historical/stats');
+    return res.data;
+  },
+
+  syncHistoricalData: async () => {
+    const res = await apiClient.post('/api/historical/sync');
+    return res.data;
+  },
+
+  // SBS Previsional API methods
+  querySBS: async ({ doc_number, paternal_surname, maternal_surname = '', first_names = '', doc_type = 'DNI', force_refresh = false }) => {
+    const res = await apiClient.post('/api/sbs/consultar', {
+      doc_number,
+      paternal_surname,
+      maternal_surname,
+      first_names,
+      doc_type,
+      force_refresh,
+    });
+    return res.data;
+  },
+
+  getSBSStats: async () => {
+    const res = await apiClient.get('/api/sbs/stats');
+    return res.data;
+  },
+
+  getSBSRecords: async (limit = 100) => {
+    const res = await apiClient.get(`/api/sbs/records?limit=${limit}`);
+    return res.data;
+  },
+
+  downloadSBSExcelUrl: () => {
+    const baseUrl = apiClient.defaults.baseURL || '';
+    return `${baseUrl}/api/sbs/download-excel`;
+  },
+
+  queryFactilizaDni: async (dni, token) => {
+    const res = await apiClient.post('/api/factiliza/dni', { dni, token });
+    return res.data;
+  },
+
+  queryFactilizaCee: async (cee, token) => {
+    const res = await apiClient.post('/api/factiliza/cee', { cee, token });
+    return res.data;
+  },
+
+  queryFactilizaDocument: async (docType, docNumber, token) => {
+    const res = await apiClient.post('/api/factiliza/query', { doc_type: docType, doc_number: docNumber, token });
+    return res.data;
+  },
+
+  queryFactilizaBatch: async (dnis, token) => {
+    const res = await apiClient.post('/api/factiliza/batch', { dnis, token });
+    return res.data;
+  },
+
+  saveFactilizaBatch: async (records, options = {}) => {
+    const res = await apiClient.post('/api/factiliza/batch-save', { records, ...options });
+    return res.data;
+  },
+
+  exportFactilizaBatchExcel: async (records) => {
+    const response = await apiClient.post(
+      '/api/factiliza/batch-export-excel',
+      { records },
+      { responseType: 'blob' }
+    );
+    const blob = new Blob([response.data], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `Consulta_Masiva_DNI_${new Date().toISOString().slice(0, 10)}.xlsx`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
   },
 
   // Scan front and back of document
@@ -202,6 +298,20 @@ export const api = {
   // Get contract generation history
   getContractsHistory: async (params = {}) => {
     const res = await apiClient.get('/api/contracts/history', { params });
+    return res.data;
+  },
+
+  // Contract Catalogs and Batch Update
+  getContractCatalogs: async () => {
+    const res = await apiClient.get('/api/contracts/catalogs');
+    return res.data;
+  },
+
+  batchUpdateContracts: async (recordIds, updates) => {
+    const res = await apiClient.post('/api/scanned-records/batch-contracts-update', {
+      record_ids: recordIds,
+      updates: updates,
+    });
     return res.data;
   },
 

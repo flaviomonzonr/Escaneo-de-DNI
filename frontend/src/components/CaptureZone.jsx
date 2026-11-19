@@ -3,16 +3,13 @@ import {
   Upload,
   Camera,
   X,
-  Sparkles,
   ArrowRight,
-  CreditCard,
   RefreshCw,
-  CheckCircle2,
   FileText,
   Scan,
-  FileSearch,
   RotateCcw,
-  Zap,
+  Check,
+  Crosshair,
 } from 'lucide-react';
 import CameraModal from './CameraModal';
 
@@ -30,13 +27,15 @@ export default function CaptureZone({
   onStartScan,
   isScanning,
   scanStep,
+  theme = 'dark',
+  deviceMode = 'desktop',
 }) {
-  // Camera modal state: { isOpen: boolean, mode: 'sequential' | 'front' | 'back' }
-  const [cameraState, setCameraState] = useState({ isOpen: false, mode: 'sequential' });
+  const [cameraState, setCameraState] = useState({ isOpen: false, mode: 'front' });
+  const [includeBackForAddress, setIncludeBackForAddress] = useState(false);
   const frontInputRef = useRef(null);
   const backInputRef = useRef(null);
 
-  // Handle file select (Gallery / File picker)
+  // File Select Handler
   const handleFileChange = (e, side) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -53,7 +52,7 @@ export default function CaptureZone({
     }
   };
 
-  // Drag & drop handlers
+  // Drag & Drop
   const handleDrop = (e, side) => {
     e.preventDefault();
     const file = e.dataTransfer.files?.[0];
@@ -71,7 +70,7 @@ export default function CaptureZone({
     }
   };
 
-  // Sequential camera capture complete
+  // Sequential capture handler
   const handleSequentialCapture = (frontData, backData) => {
     if (frontPreview) URL.revokeObjectURL(frontPreview);
     if (backPreview) URL.revokeObjectURL(backPreview);
@@ -83,7 +82,7 @@ export default function CaptureZone({
     setBackPreview(backData.previewUrl);
   };
 
-  // Single retake capture
+  // Single retake capture handler
   const handleSingleCapture = (side, file, previewUrl) => {
     if (side === 'front') {
       if (frontPreview) URL.revokeObjectURL(frontPreview);
@@ -110,41 +109,42 @@ export default function CaptureZone({
     }
   };
 
-  // Synthetic demo loader
-  const loadDemoScenario = (scenario) => {
-    const createDemoCanvas = (title, subtitle, color, isBack) => {
+  // Synthetic demo loader - Chavín Navy & Steel styling on canvas
+  const loadDemoScenario = () => {
+    const createDemoCanvas = (title, subtitle, isBack) => {
       const canvas = document.createElement('canvas');
       canvas.width = 1000;
       canvas.height = 630;
       const ctx = canvas.getContext('2d');
 
+      // Clean Chavín Navy / Steel gradient
       const grad = ctx.createLinearGradient(0, 0, 1000, 630);
-      if (color === 'blue') {
-        grad.addColorStop(0, '#0F2B66');
-        grad.addColorStop(1, '#1E4DB8');
-      } else {
-        grad.addColorStop(0, '#0A4B40');
-        grad.addColorStop(1, '#10806E');
-      }
+      grad.addColorStop(0, '#060D1A');
+      grad.addColorStop(1, '#101F3B');
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, 1000, 630);
 
-      ctx.strokeStyle = '#FFFFFF';
-      ctx.lineWidth = 12;
-      ctx.strokeRect(20, 20, 960, 590);
+      // Subtle framing in Chrysocolla Turquoise
+      ctx.strokeStyle = '#06B6D4';
+      ctx.lineWidth = 4;
+      ctx.strokeRect(30, 30, 940, 570);
+
+      // Typography
+      ctx.fillStyle = '#94A3B8';
+      ctx.font = 'bold 22px monospace';
+      ctx.fillText('DOCUMENTO NACIONAL DE IDENTIDAD • REPÚBLICA DEL PERÚ', 60, 80);
 
       ctx.fillStyle = '#FFFFFF';
-      ctx.font = 'bold 36px sans-serif';
-      ctx.fillText('REPÚBLICA DEL PERÚ - REGISTRO NACIONAL (RENIEC)', 50, 80);
+      ctx.font = 'bold 42px sans-serif';
+      ctx.fillText(title, 60, 160);
 
-      ctx.font = 'bold 44px sans-serif';
-      ctx.fillText(title, 50, 160);
+      ctx.font = '26px sans-serif';
+      ctx.fillStyle = '#CBD5E1';
+      ctx.fillText(subtitle, 60, 220);
 
-      ctx.font = '28px sans-serif';
-      ctx.fillText(subtitle, 50, 220);
-
-      ctx.font = 'bold 32px sans-serif';
-      ctx.fillText(isBack ? 'CÓDIGO MRZ / UBIGEO / DIRECCIÓN' : 'DNI N°: 47859632 • FECHA: 15/04/1992', 50, 320);
+      ctx.font = 'bold 30px monospace';
+      ctx.fillStyle = '#22D3EE';
+      ctx.fillText(isBack ? 'IDPER47859632<<<<<<<<<<<<<<<<<<<' : 'DNI: 47859632 • NACIONALIDAD: PERUANA', 60, 320);
 
       return new Promise((resolve) => {
         canvas.toBlob((blob) => {
@@ -153,352 +153,518 @@ export default function CaptureZone({
       });
     };
 
-    Promise.all([
-      createDemoCanvas('DNI DE PRUEBA (ANVERSO)', 'JUAN CARLOS PÉREZ QUISPE', 'blue', false),
-      createDemoCanvas('DNI DE PRUEBA (REVERSO)', 'DIRECCIÓN: AV. LOS LAURELES 450 - LIMA', 'teal', true),
-    ]).then(([fFile, bFile]) => {
-      if (frontPreview) URL.revokeObjectURL(frontPreview);
-      if (backPreview) URL.revokeObjectURL(backPreview);
-      setFrontFile(fFile);
-      setFrontPreview(URL.createObjectURL(fFile));
-      setBackFile(bFile);
-      setBackPreview(URL.createObjectURL(bFile));
-    });
+    createDemoCanvas('PÉREZ QUISPE, JUAN CARLOS', 'FECHA DE NACIMIENTO: 15/04/1992', false)
+      .then((fFile) => {
+        if (frontPreview) URL.revokeObjectURL(frontPreview);
+        setFrontFile(fFile);
+        setFrontPreview(URL.createObjectURL(fFile));
+        if (showBackViewfinder) {
+          createDemoCanvas('DIRECCIÓN: AV. LOS LAURELES 450 - LIMA', 'UBIGEO: 150101 • ESTADO CIVIL: SOLTERO', true)
+            .then((bFile) => {
+              if (backPreview) URL.revokeObjectURL(backPreview);
+              setBackFile(bFile);
+              setBackPreview(URL.createObjectURL(bFile));
+            });
+        }
+      });
   };
 
-  const hasPhotos = Boolean(frontFile && backFile);
-  const canScan = hasPhotos && !isScanning;
+  const isForeigner = docType === 'Carnet de Extranjería';
+  const showBackViewfinder = isForeigner && includeBackForAddress;
+  // Solo se requiere la foto del Anverso para habilitar el escaneo
+  const canScan = Boolean(frontFile) && !isScanning;
+
+  // Grid layout adapts: 1 columna centrada si es solo Anverso, 2 columnas si se considera Reverso para Extranjero
+  const gridClasses = showBackViewfinder
+    ? (deviceMode === 'mobile' ? 'grid grid-cols-1 gap-4' : 'grid grid-cols-1 md:grid-cols-2 gap-5 xl:gap-6')
+    : 'max-w-2xl mx-auto w-full';
 
   return (
-    <div className="space-y-4 sm:space-y-5 animate-fade-in select-none">
+    <div className="space-y-4 select-none">
       
       {/* ============================================================ */}
-      {/* 1. PANEL SUPERIOR: TITULO, INSIGNIAS Y BOTON PRINCIPAL */}
+      {/* 0. SELECTOR DE TIPO DE DOCUMENTO Y CONTROL DE REVERSO        */}
       {/* ============================================================ */}
-      <div className="bg-white rounded-2xl p-4 sm:p-6 border border-slate-200/90 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
-        
-        {/* Left: Clear Title, Subtitle & Elegant Badges */}
-        <div className="space-y-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200/70 text-[11px] font-bold">
-              <Sparkles className="w-3 h-3 text-[#1D4ED8]" />
-              <span>Alta Precisión</span>
-            </span>
-            <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-md bg-teal-50 text-teal-800 border border-teal-200/70 text-[11px] font-bold">
-              <Zap className="w-3 h-3 text-[#0D9488]" />
-              <span>Reconocimiento Automático</span>
-            </span>
-            <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200 text-[11px] font-medium">
-              <span>OpenCV + RapidOCR AI</span>
-            </span>
-          </div>
-
-          <div>
-            <h2 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">
-              Escaneo de Documento DNI
-            </h2>
-            <p className="text-xs text-slate-500 mt-0.5 max-w-xl">
-              Captura o sube las fotos del Anverso y Reverso para extraer los datos y llenar plantillas Excel automáticamente.
-            </p>
+      <div className="card-enterprise p-3 sm:p-3.5 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 border border-[#1E3557] bg-[#0B1528] shadow-lg">
+        <div className="flex flex-wrap items-center gap-2.5">
+          <span className="text-xs font-mono font-bold text-slate-300">DOCUMENTO:</span>
+          <div className="flex items-center p-1 rounded-lg bg-[#060D1A] border border-[#1D334E] text-xs font-mono">
+            <button
+              type="button"
+              onClick={() => {
+                if (setDocType) setDocType('DNI');
+                setIncludeBackForAddress(false);
+              }}
+              className={`px-3 py-1.5 rounded-md font-bold transition flex items-center space-x-1.5 btn-precision ${
+                !isForeigner
+                  ? 'bg-gradient-to-r from-cyan-500 to-teal-500 text-slate-950 font-black shadow-sm border border-cyan-300/40'
+                  : 'text-slate-300 hover:text-white'
+              }`}
+            >
+              <span>🇵🇪 DNI Peruano (Solo Anverso)</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                if (setDocType) setDocType('Carnet de Extranjería');
+              }}
+              className={`px-3 py-1.5 rounded-md font-bold transition flex items-center space-x-1.5 btn-precision ${
+                isForeigner
+                  ? 'bg-gradient-to-r from-teal-500 to-emerald-500 text-slate-950 font-black shadow-sm border border-teal-300/40'
+                  : 'text-slate-300 hover:text-white'
+              }`}
+            >
+              <span>🌐 Carnet de Extranjería</span>
+            </button>
           </div>
         </div>
 
-        {/* Right: Prominent Primary Action Button */}
-        <button
-          type="button"
-          onClick={() => setCameraState({ isOpen: true, mode: 'sequential' })}
-          className="flex items-center justify-center space-x-2.5 px-6 py-3.5 bg-gradient-to-r from-[#1E40AF] to-[#0D9488] hover:from-[#1E3A8A] hover:to-[#0F766E] active:scale-98 text-white font-bold text-xs sm:text-sm rounded-xl shadow-md transition transform min-h-[48px] shrink-0"
-        >
-          <Camera className="w-4 h-4 text-white" />
-          <span>📸 Escanear DNI con Cámara</span>
-          <ArrowRight className="w-4 h-4 text-blue-100" />
-        </button>
+        {/* Solo para Extranjero: Opción para considerar el reverso para dirección */}
+        {isForeigner ? (
+          <label className="flex items-center space-x-2 text-xs font-mono font-bold text-slate-200 cursor-pointer bg-[#101F3B] hover:bg-[#162A4F] px-3.5 py-2 rounded-lg border border-[#274468] hover:border-teal-400 transition select-none animate-in fade-in duration-200">
+            <input
+              type="checkbox"
+              checked={includeBackForAddress}
+              onChange={(e) => setIncludeBackForAddress(e.target.checked)}
+              className="w-4 h-4 rounded border-[#274468] text-teal-400 focus:ring-teal-400 bg-[#040914] cursor-pointer"
+            />
+            <span className="text-teal-200">Considerar Reverso (Solo detalles de dirección)</span>
+          </label>
+        ) : (
+          <div className="text-[11px] font-mono text-cyan-300/90 flex items-center space-x-1.5 bg-[#060D1A] px-3 py-1.5 rounded-lg border border-[#1E3557]">
+            <Check className="w-3.5 h-3.5 text-cyan-400 stroke-[3]" />
+            <span>DNI: Reverso obviado. Solo se requiere foto del Anverso.</span>
+          </div>
+        )}
+      </div>
+
+      {/* ============================================================ */}
+      {/* 1. CALIBRATOR METRIC BAR & PRIMARY SHUTTER LAUNCHER          */}
+      {/* ============================================================ */}
+      <div className="card-enterprise p-3.5 sm:p-4 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 border border-[#1E3557] bg-[#0B1528] shadow-lg">
+        
+        {/* Left: Technical Telemetry & Metadata */}
+        <div className="flex flex-wrap items-center gap-2.5">
+          <div className="flex items-center space-x-2 px-3 py-1.5 rounded-lg bg-[#101F3B] border border-[#274468] text-white font-mono text-xs shadow-xs">
+            <Crosshair className="w-4 h-4 text-cyan-400" />
+            <span className="font-extrabold text-white">CALIBRADOR_CHAVÍN</span>
+            <span className="text-cyan-300 font-bold">v2.6</span>
+          </div>
+
+          <div className="hidden sm:flex items-center space-x-2.5 font-mono text-xs">
+            <span className="text-slate-600 font-bold">|</span>
+            <span className="text-slate-300 font-medium">ESTÁNDAR: <strong className="text-white font-bold">ISO/IEC 7810 ID-1</strong></span>
+            <span className="text-slate-600 font-bold">•</span>
+            <span className="text-slate-300 font-medium">PIPELINE: <strong className="text-cyan-300 font-bold">OPENCV+RAPIDOCR</strong></span>
+          </div>
+
+          <div className="flex items-center space-x-2 text-xs font-mono font-bold text-teal-200 bg-[#0A3D44]/90 px-2.5 py-1 rounded-md border border-teal-400/50 shadow-xs">
+            <span className="w-2 h-2 rounded-full bg-teal-400 animate-pulse"></span>
+            <span>FEED_ACTIVE</span>
+          </div>
+        </div>
+
+        {/* Right: Primary Shutter Button */}
+        <div className="flex items-center space-x-2">
+          {showBackViewfinder ? (
+            <button
+              type="button"
+              onClick={() => setCameraState({ isOpen: true, mode: 'sequential' })}
+              className="w-full md:w-auto inline-flex items-center justify-center space-x-2.5 px-6 py-2.5 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-slate-950 font-mono font-black text-xs rounded-lg shadow-lg shadow-teal-500/20 btn-precision min-h-[44px] tracking-wide border border-teal-300/40"
+            >
+              <Camera className="w-4 h-4 text-slate-950 stroke-[2.5]" />
+              <span>OBTURADOR SECUENCIAL (ANVERSO + REVERSO)</span>
+              <ArrowRight className="w-4 h-4 text-slate-950 opacity-80" />
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setCameraState({ isOpen: true, mode: 'front' })}
+              className="w-full md:w-auto inline-flex items-center justify-center space-x-2.5 px-6 py-2.5 bg-gradient-to-r from-cyan-500 via-teal-500 to-teal-600 hover:from-cyan-400 hover:to-teal-500 text-slate-950 font-mono font-black text-xs rounded-lg shadow-lg shadow-cyan-500/20 btn-precision min-h-[44px] tracking-wide border border-cyan-300/40"
+            >
+              <Camera className="w-4 h-4 text-slate-950 stroke-[2.5]" />
+              <span>📸 OBTURAR ANVERSO (CÁMARA)</span>
+              <ArrowRight className="w-4 h-4 text-slate-950 opacity-80" />
+            </button>
+          )}
+        </div>
 
       </div>
 
       {/* ============================================================ */}
-      {/* 2. TARJETAS ANVERSO Y REVERSO (1 COL CELULAR, 2 COLS PC) */}
+      {/* 2. VIEWFINDERS: ANVERSO (Y REVERSO SI EXTRANJERO ACTIVO)     */}
       {/* ============================================================ */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className={gridClasses}>
         
-        {/* Card 1: Anverso (Cara Frontal - Azul Corporativo) */}
-        <div className="rounded-2xl overflow-hidden shadow-xs border border-slate-200 bg-white flex flex-col justify-between">
+        {/* ==================== VIEWFINDER 1: ANVERSO ==================== */}
+        <div className="card-enterprise p-4 sm:p-5 flex flex-col justify-between space-y-4 bg-[#0B1528] border border-[#1E3557] shadow-xl hover:border-cyan-500/50 transition-all">
           
-          {/* Card Header */}
-          <div className="bg-[#1E40AF] text-white px-4 py-3 flex items-center justify-between">
-            <div className="flex items-center space-x-2.5">
-              <span className="w-6 h-6 rounded-lg bg-white/20 text-white text-xs font-bold flex items-center justify-center">
-                1
+          {/* Header minimalista y técnico */}
+          <div className="flex items-center justify-between pb-3 border-b border-[#1E3557] text-xs">
+            <div className="flex items-center space-x-2.5 font-mono">
+              <span className="px-2.5 py-0.5 rounded bg-cyan-500/20 border border-cyan-400/60 text-cyan-300 text-[11px] font-extrabold">
+                VIEW_01
               </span>
-              <div>
-                <h3 className="font-bold text-white text-xs sm:text-sm leading-tight">
-                  Anverso (Cara Frontal)
-                </h3>
-                <span className="text-[10px] text-blue-200 font-medium">Foto, Nombres, Apellidos y DNI</span>
-              </div>
+              <span className="font-extrabold text-white text-sm tracking-wider">
+                ANVERSO (CARA FRONTAL)
+              </span>
             </div>
 
-            {frontPreview && (
-              <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 text-[10px] font-bold border border-emerald-400/30">
-                <CheckCircle2 className="w-3 h-3" />
-                <span>Listo</span>
+            {/* Telemetry Badge */}
+            {frontPreview ? (
+              <span className="inline-flex items-center space-x-1.5 font-mono text-xs font-bold text-teal-200 bg-[#0A3D44]/90 px-2.5 py-1 rounded-md border border-teal-400/50">
+                <Check className="w-3.5 h-3.5 text-teal-300 stroke-[3]" />
+                <span>CAPTURED_OK</span>
+              </span>
+            ) : (
+              <span className="inline-flex items-center space-x-1.5 font-mono text-xs font-semibold text-slate-200 bg-[#101F3B] px-2.5 py-1 rounded-md border border-[#274468]">
+                <span className="w-2 h-2 rounded-full bg-slate-400"></span>
+                <span>STANDBY</span>
               </span>
             )}
           </div>
 
-          {/* Card Body */}
-          <div className="p-4 space-y-3 flex-1 flex flex-col justify-between">
+          {/* Viewfinder Viewport with Corner Reticles */}
+          <div
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={(e) => handleDrop(e, 'front')}
+            className="viewfinder-viewport aspect-[1.586] technical-grid flex flex-col items-center justify-center p-3 text-center border-[#1E3557] min-h-[220px] sm:min-h-[260px] lg:min-h-[300px]"
+          >
+            {/* Corner Reticles (L-shaped precision brackets) */}
+            <div className="reticle-corner reticle-tl" />
+            <div className="reticle-corner reticle-tr" />
+            <div className="reticle-corner reticle-bl" />
+            <div className="reticle-corner reticle-br" />
+
+            {/* Subtle Center Crosshair */}
+            <div className="center-crosshair" />
+
+            {/* HUD Telemetry Coordinates */}
+            <div className="absolute top-2.5 left-6 text-xs font-mono font-bold text-slate-200 bg-[#060D1A]/90 px-2 py-0.5 rounded border border-[#1E3557] pointer-events-none hidden sm:block">
+              POS: [FRONT_CANVAS]
+            </div>
+            <div className="absolute top-2.5 right-6 text-xs font-mono font-bold text-slate-200 bg-[#060D1A]/90 px-2 py-0.5 rounded border border-[#1E3557] pointer-events-none hidden sm:block">
+              DIM: 85.60×53.98mm (ID-1)
+            </div>
+
             {!frontPreview ? (
-              <div
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={(e) => handleDrop(e, 'front')}
-                className="relative border-2 border-dashed border-blue-200 hover:border-blue-400 rounded-xl p-4 text-center transition-all bg-blue-50/30 hover:bg-blue-50/60 flex flex-col items-center justify-center min-h-[170px]"
-              >
-                <div className="w-10 h-10 rounded-xl bg-blue-100 text-[#1E40AF] flex items-center justify-center mb-1.5 shadow-2xs">
-                  <CreditCard className="w-5 h-5" />
+              <>
+                {/* Precision Laser Line (Turquoise sweep) */}
+                <div className="laser-line-precision">
+                  <div className="laser-aura-beam" />
                 </div>
 
-                <p className="text-xs sm:text-sm font-bold text-slate-800">
-                  Sin foto del Anverso
-                </p>
-                <p className="text-[11px] text-slate-500 mt-0.5">
-                  Toma una foto con la cámara o selecciona desde tu galería
-                </p>
+                <div className="z-10 flex flex-col items-center space-y-3 max-w-sm px-2">
+                  <div className="w-12 h-12 rounded-xl bg-cyan-500/15 border border-cyan-400/40 flex items-center justify-center shadow-lg shadow-cyan-950/40">
+                    <Crosshair className="w-6 h-6 text-cyan-300" />
+                  </div>
+                  
+                  <div className="bg-[#060D1A]/90 backdrop-blur-md px-4 py-2.5 rounded-xl border border-[#1E3557] shadow-md">
+                    <h4 className="font-mono text-sm font-extrabold text-white tracking-wide">
+                      CALIBRADOR ANVERSO
+                    </h4>
+                    <p className="text-xs text-slate-200 font-semibold mt-1 font-sans leading-snug">
+                      Alinee el documento dentro del marco para corrección de perspectiva
+                    </p>
+                  </div>
 
-                {/* Touch Buttons */}
-                <div className="mt-3 flex flex-wrap items-center justify-center gap-2 w-full">
-                  <button
-                    type="button"
-                    onClick={() => setCameraState({ isOpen: true, mode: 'front' })}
-                    className="flex-1 min-w-[130px] flex items-center justify-center space-x-1.5 px-3.5 py-2.5 bg-[#1E40AF] hover:bg-[#1E3A8A] text-white text-xs font-bold rounded-lg shadow-xs active:scale-95 transition min-h-[44px]"
-                  >
-                    <Camera className="w-3.5 h-3.5 text-cyan-200" />
-                    <span>Tomar Anverso</span>
-                  </button>
+                  {/* Ergonomic Shutter Actions */}
+                  <div className="pt-2 flex items-center gap-2.5 w-full">
+                    <button
+                      type="button"
+                      onClick={() => setCameraState({ isOpen: true, mode: 'front' })}
+                      className="flex-1 py-2.5 px-4 rounded-lg bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-slate-950 font-mono text-xs font-black btn-precision flex items-center justify-center space-x-2 min-h-[44px] shadow-md shadow-cyan-500/25 border border-cyan-300/40"
+                    >
+                      <Camera className="w-4 h-4 text-slate-950 stroke-[2.5]" />
+                      <span>Obturar Anverso</span>
+                    </button>
 
-                  <button
-                    type="button"
-                    onClick={() => frontInputRef.current?.click()}
-                    className="flex items-center justify-center space-x-1 px-3 py-2.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 text-xs font-bold rounded-lg shadow-2xs active:scale-95 transition min-h-[44px]"
-                  >
-                    <Upload className="w-3.5 h-3.5 text-slate-500" />
-                    <span>Galería</span>
-                  </button>
-                  <input
-                    ref={frontInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => handleFileChange(e, 'front')}
-                    className="hidden"
-                  />
+                    <button
+                      type="button"
+                      onClick={() => frontInputRef.current?.click()}
+                      className="py-2.5 px-4 rounded-lg bg-[#101F3B] hover:bg-[#162A4F] text-white font-mono text-xs font-bold btn-precision flex items-center justify-center space-x-1.5 min-h-[44px] border border-[#274468] shadow-sm"
+                      title="Importar archivo de imagen"
+                    >
+                      <Upload className="w-4 h-4 text-cyan-400" />
+                      <span>Archivo</span>
+                    </button>
+                    <input
+                      ref={frontInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => handleFileChange(e, 'front')}
+                      className="hidden"
+                    />
+                  </div>
                 </div>
-              </div>
+              </>
             ) : (
-              /* Image Preview Container */
-              <div className="space-y-2.5">
-                <div className="relative rounded-xl overflow-hidden border border-slate-200 bg-slate-950 aspect-[1.586] flex items-center justify-center shadow-inner">
-                  <img
-                    src={frontPreview}
-                    alt="Anverso DNI"
-                    className="w-full h-full object-contain"
-                  />
+              /* Image Loaded in Viewfinder */
+              <div className="relative w-full h-full flex items-center justify-center">
+                <img
+                  src={frontPreview}
+                  alt="Anverso DNI Calibrado"
+                  className="w-full h-full object-contain"
+                />
+
+                {/* Laser animation while scanning */}
+                {isScanning && (
+                  <div className="laser-line-precision scanning">
+                    <div className="laser-aura-beam" />
+                  </div>
+                )}
+
+                {/* Viewport Overlay Controls */}
+                <div className="absolute top-2 right-2 flex items-center space-x-1.5 z-20">
                   <button
+                    type="button"
                     onClick={() => removeImage('front')}
-                    className="absolute top-2 right-2 p-1.5 rounded-lg bg-black/70 hover:bg-rose-600 text-white transition shadow-sm backdrop-blur-xs active:scale-95"
-                    title="Eliminar foto"
+                    className="p-1.5 rounded-md bg-[#040914]/90 hover:bg-rose-600 text-white border border-white/20 transition btn-precision"
+                    title="Descartar imagen"
                   >
                     <X className="w-4 h-4" />
                   </button>
                 </div>
 
-                <div className="flex items-center justify-between gap-2">
+                <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between z-20 pointer-events-auto">
+                  <span className="font-mono text-xs font-bold text-teal-200 bg-[#040914]/90 px-2.5 py-1 rounded border border-teal-500/40">
+                    STATUS: READY_FOR_EXTRACT
+                  </span>
                   <button
                     type="button"
                     onClick={() => setCameraState({ isOpen: true, mode: 'front' })}
-                    className="flex-1 flex items-center justify-center space-x-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 rounded-lg text-xs font-bold transition min-h-[40px]"
+                    className="font-mono text-xs font-bold text-white bg-[#0B1528] hover:bg-[#101F3B] px-3 py-1.5 rounded border border-[#274468] flex items-center space-x-1.5 btn-precision shadow-sm"
                   >
-                    <RotateCcw className="w-3.5 h-3.5 text-slate-600" />
-                    <span>Repetir Foto Anverso</span>
+                    <RotateCcw className="w-3.5 h-3.5 text-cyan-400" />
+                    <span>Re-obturar</span>
                   </button>
                 </div>
               </div>
             )}
-
-            {/* Checklist */}
-            <div className="grid grid-cols-2 gap-1 pt-2 border-t border-slate-100 text-[10px] font-semibold text-slate-600">
-              <div className="flex items-center space-x-1">
-                <CheckCircle2 className="w-3 h-3 text-[#1E40AF]" />
-                <span>Auto-recorte OpenCV</span>
-              </div>
-              <div className="flex items-center space-x-1">
-                <CheckCircle2 className="w-3 h-3 text-[#1E40AF]" />
-                <span>Alineación de bordes</span>
-              </div>
-            </div>
           </div>
+
+          {/* Technical Pipeline Checklist */}
+          <div className="flex items-center justify-between pt-1.5 font-mono text-xs font-bold text-slate-200 border-t border-[#1E3557]">
+            <span className="flex items-center space-x-1.5">
+              <span className="w-2 h-2 rounded-full bg-cyan-400 shadow-glow-turquoise"></span>
+              <span>AUTO_DESKEW: ENABLED</span>
+            </span>
+            <span className="flex items-center space-x-1.5">
+              <span className="w-2 h-2 rounded-full bg-cyan-400 shadow-glow-turquoise"></span>
+              <span>FOUR_POINT_TRANSFORM</span>
+            </span>
+          </div>
+
         </div>
 
-        {/* Card 2: Reverso (Cara Posterior - Turquesa) */}
-        <div className="rounded-2xl overflow-hidden shadow-xs border border-slate-200 bg-white flex flex-col justify-between">
+        {/* ==================== VIEWFINDER 2: REVERSO (SOLO EXTRANJEROS SI ACTIVO) ==================== */}
+        {showBackViewfinder && (
+        <div className="card-enterprise p-4 sm:p-5 flex flex-col justify-between space-y-4 bg-[#0B1528] border border-[#1E3557] shadow-xl hover:border-teal-500/50 transition-all animate-in fade-in duration-200">
           
-          {/* Card Header */}
-          <div className="bg-[#0D9488] text-white px-4 py-3 flex items-center justify-between">
-            <div className="flex items-center space-x-2.5">
-              <span className="w-6 h-6 rounded-lg bg-white/20 text-white text-xs font-bold flex items-center justify-center">
-                2
+          {/* Header minimalista y técnico */}
+          <div className="flex items-center justify-between pb-3 border-b border-[#1E3557] text-xs">
+            <div className="flex items-center space-x-2.5 font-mono">
+              <span className="px-2.5 py-0.5 rounded bg-teal-500/20 border border-teal-400/60 text-teal-300 text-[11px] font-extrabold">
+                VIEW_02
               </span>
-              <div>
-                <h3 className="font-bold text-white text-xs sm:text-sm leading-tight">
-                  Reverso (Cara Posterior)
-                </h3>
-                <span className="text-[10px] text-teal-100 font-medium">MRZ, Dirección, Ubigeo y Estado Civil</span>
-              </div>
+              <span className="font-extrabold text-white text-sm tracking-wider">
+                REVERSO (DETALLES DE DIRECCIÓN - EXTRANJERO)
+              </span>
             </div>
 
-            {backPreview && (
-              <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 text-[10px] font-bold border border-emerald-400/30">
-                <CheckCircle2 className="w-3 h-3" />
-                <span>Listo</span>
+            {/* Telemetry Badge */}
+            {backPreview ? (
+              <span className="inline-flex items-center space-x-1.5 font-mono text-xs font-bold text-teal-200 bg-[#0A3D44]/90 px-2.5 py-1 rounded-md border border-teal-400/50">
+                <Check className="w-3.5 h-3.5 text-teal-300 stroke-[3]" />
+                <span>CAPTURED_OK</span>
+              </span>
+            ) : (
+              <span className="inline-flex items-center space-x-1.5 font-mono text-xs font-semibold text-slate-200 bg-[#101F3B] px-2.5 py-1 rounded-md border border-[#274468]">
+                <span className="w-2 h-2 rounded-full bg-slate-400"></span>
+                <span>STANDBY</span>
               </span>
             )}
           </div>
 
-          {/* Card Body */}
-          <div className="p-4 space-y-3 flex-1 flex flex-col justify-between">
+          {/* Viewfinder Viewport with Corner Reticles */}
+          <div
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={(e) => handleDrop(e, 'back')}
+            className="viewfinder-viewport aspect-[1.586] technical-grid flex flex-col items-center justify-center p-3 text-center border-[#1E3557] min-h-[220px] sm:min-h-[260px] lg:min-h-[300px]"
+          >
+            {/* Corner Reticles in Petroleum Teal */}
+            <div className="reticle-corner reticle-tl" style={{ borderColor: '#14B8A6' }} />
+            <div className="reticle-corner reticle-tr" style={{ borderColor: '#14B8A6' }} />
+            <div className="reticle-corner reticle-bl" style={{ borderColor: '#14B8A6' }} />
+            <div className="reticle-corner reticle-br" style={{ borderColor: '#14B8A6' }} />
+
+            {/* Subtle Center Crosshair */}
+            <div className="center-crosshair" style={{ opacity: 0.5, borderColor: '#14B8A6' }} />
+
+            {/* HUD Telemetry Coordinates */}
+            <div className="absolute top-2.5 left-6 text-xs font-mono font-bold text-slate-200 bg-[#060D1A]/90 px-2 py-0.5 rounded border border-[#1E3557] pointer-events-none hidden sm:block">
+              POS: [REVERSE_CANVAS]
+            </div>
+            <div className="absolute top-2.5 right-6 text-xs font-mono font-bold text-teal-300 bg-[#060D1A]/90 px-2 py-0.5 rounded border border-teal-500/50 pointer-events-none hidden sm:block">
+              PARSER: ICAO_9303_TD1
+            </div>
+
             {!backPreview ? (
-              <div
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={(e) => handleDrop(e, 'back')}
-                className="relative border-2 border-dashed border-teal-200 hover:border-teal-400 rounded-xl p-4 text-center transition-all bg-teal-50/30 hover:bg-teal-50/60 flex flex-col items-center justify-center min-h-[170px]"
-              >
-                <div className="w-10 h-10 rounded-xl bg-teal-100 text-[#0D9488] flex items-center justify-center mb-1.5 shadow-2xs">
-                  <CreditCard className="w-5 h-5" />
+              <>
+                {/* Precision Laser Line (Teal sweep) */}
+                <div className="laser-line-precision">
+                  <div className="laser-aura-beam" />
                 </div>
 
-                <p className="text-xs sm:text-sm font-bold text-slate-800">
-                  Sin foto del Reverso
-                </p>
-                <p className="text-[11px] text-slate-500 mt-0.5">
-                  Toma una foto con la cámara o selecciona desde tu galería
-                </p>
+                <div className="z-10 flex flex-col items-center space-y-3 max-w-sm px-2">
+                  <div className="w-12 h-12 rounded-xl bg-teal-500/15 border border-teal-400/40 flex items-center justify-center shadow-lg shadow-teal-950/40">
+                    <Crosshair className="w-6 h-6 text-teal-300" />
+                  </div>
+                  
+                  <div className="bg-[#060D1A]/90 backdrop-blur-md px-4 py-2.5 rounded-xl border border-[#1E3557] shadow-md">
+                    <h4 className="font-mono text-sm font-extrabold text-white tracking-wide">
+                      CALIBRADOR REVERSO
+                    </h4>
+                    <p className="text-xs text-slate-200 font-semibold mt-1 font-sans leading-snug">
+                      Alinee las 3 líneas MRZ y el bloque de dirección en el encuadre
+                    </p>
+                  </div>
 
-                {/* Touch Buttons */}
-                <div className="mt-3 flex flex-wrap items-center justify-center gap-2 w-full">
-                  <button
-                    type="button"
-                    onClick={() => setCameraState({ isOpen: true, mode: 'back' })}
-                    className="flex-1 min-w-[130px] flex items-center justify-center space-x-1.5 px-3.5 py-2.5 bg-[#0D9488] hover:bg-[#0F766E] text-white text-xs font-bold rounded-lg shadow-xs active:scale-95 transition min-h-[44px]"
-                  >
-                    <Camera className="w-3.5 h-3.5 text-teal-200" />
-                    <span>Tomar Reverso</span>
-                  </button>
+                  {/* Ergonomic Shutter Actions */}
+                  <div className="pt-2 flex items-center gap-2.5 w-full">
+                    <button
+                      type="button"
+                      onClick={() => setCameraState({ isOpen: true, mode: 'back' })}
+                      className="flex-1 py-2.5 px-4 rounded-lg bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-slate-950 font-mono text-xs font-black btn-precision flex items-center justify-center space-x-2 min-h-[44px] shadow-md shadow-teal-500/25 border border-teal-300/40"
+                    >
+                      <Camera className="w-4 h-4 text-slate-950 stroke-[2.5]" />
+                      <span>Obturar Reverso</span>
+                    </button>
 
-                  <button
-                    type="button"
-                    onClick={() => backInputRef.current?.click()}
-                    className="flex items-center justify-center space-x-1 px-3 py-2.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 text-xs font-bold rounded-lg shadow-2xs active:scale-95 transition min-h-[44px]"
-                  >
-                    <Upload className="w-3.5 h-3.5 text-slate-500" />
-                    <span>Galería</span>
-                  </button>
-                  <input
-                    ref={backInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => handleFileChange(e, 'back')}
-                    className="hidden"
-                  />
+                    <button
+                      type="button"
+                      onClick={() => backInputRef.current?.click()}
+                      className="py-2.5 px-4 rounded-lg bg-[#101F3B] hover:bg-[#162A4F] text-white font-mono text-xs font-bold btn-precision flex items-center justify-center space-x-1.5 min-h-[44px] border border-[#274468] shadow-sm"
+                      title="Importar archivo de imagen"
+                    >
+                      <Upload className="w-4 h-4 text-teal-400" />
+                      <span>Archivo</span>
+                    </button>
+                    <input
+                      ref={backInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => handleFileChange(e, 'back')}
+                      className="hidden"
+                    />
+                  </div>
                 </div>
-              </div>
+              </>
             ) : (
-              /* Image Preview Container */
-              <div className="space-y-2.5">
-                <div className="relative rounded-xl overflow-hidden border border-slate-200 bg-slate-950 aspect-[1.586] flex items-center justify-center shadow-inner">
-                  <img
-                    src={backPreview}
-                    alt="Reverso DNI"
-                    className="w-full h-full object-contain"
-                  />
+              /* Image Loaded in Viewfinder */
+              <div className="relative w-full h-full flex items-center justify-center">
+                <img
+                  src={backPreview}
+                  alt="Reverso DNI Calibrado"
+                  className="w-full h-full object-contain"
+                />
+
+                {/* Laser animation while scanning */}
+                {isScanning && (
+                  <div className="laser-line-precision scanning">
+                    <div className="laser-aura-beam" />
+                  </div>
+                )}
+
+                {/* Viewport Overlay Controls */}
+                <div className="absolute top-2 right-2 flex items-center space-x-1.5 z-20">
                   <button
+                    type="button"
                     onClick={() => removeImage('back')}
-                    className="absolute top-2 right-2 p-1.5 rounded-lg bg-black/70 hover:bg-rose-600 text-white transition shadow-sm backdrop-blur-xs active:scale-95"
-                    title="Eliminar foto"
+                    className="p-1.5 rounded-md bg-[#040914]/90 hover:bg-rose-600 text-white border border-white/20 transition btn-precision"
+                    title="Descartar imagen"
                   >
                     <X className="w-4 h-4" />
                   </button>
                 </div>
 
-                <div className="flex items-center justify-between gap-2">
+                <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between z-20 pointer-events-auto">
+                  <span className="font-mono text-xs font-bold text-teal-200 bg-[#040914]/90 px-2.5 py-1 rounded border border-teal-500/40">
+                    STATUS: READY_FOR_EXTRACT
+                  </span>
                   <button
                     type="button"
                     onClick={() => setCameraState({ isOpen: true, mode: 'back' })}
-                    className="flex-1 flex items-center justify-center space-x-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 rounded-lg text-xs font-bold transition min-h-[40px]"
+                    className="font-mono text-xs font-bold text-white bg-[#0B1528] hover:bg-[#101F3B] px-3 py-1.5 rounded border border-[#274468] flex items-center space-x-1.5 btn-precision shadow-sm"
                   >
-                    <RotateCcw className="w-3.5 h-3.5 text-slate-600" />
-                    <span>Repetir Foto Reverso</span>
+                    <RotateCcw className="w-3.5 h-3.5 text-teal-400" />
+                    <span>Re-obturar</span>
                   </button>
                 </div>
               </div>
             )}
-
-            {/* Checklist */}
-            <div className="grid grid-cols-2 gap-1 pt-2 border-t border-slate-100 text-[10px] font-semibold text-slate-600">
-              <div className="flex items-center space-x-1">
-                <CheckCircle2 className="w-3 h-3 text-[#0D9488]" />
-                <span>Lectura MRZ OCR</span>
-              </div>
-              <div className="flex items-center space-x-1">
-                <CheckCircle2 className="w-3 h-3 text-[#0D9488]" />
-                <span>Extracción de Ubigeo</span>
-              </div>
-            </div>
           </div>
+
+          {/* Technical Pipeline Checklist */}
+          <div className="flex items-center justify-between pt-1.5 font-mono text-xs font-bold text-slate-200 border-t border-[#1E3557]">
+            <span className="flex items-center space-x-1.5">
+              <span className="w-2 h-2 rounded-full bg-teal-400 shadow-glow-petroleum"></span>
+              <span>MRZ_DECODER: ACTIVE</span>
+            </span>
+            <span className="flex items-center space-x-1.5">
+              <span className="w-2 h-2 rounded-full bg-teal-400 shadow-glow-petroleum"></span>
+              <span>UBIGEO_AUTO_RESOLVE</span>
+            </span>
+          </div>
+
         </div>
+        )}
 
       </div>
 
       {/* ============================================================ */}
-      {/* 3. BARRA INFERIOR DE ACCION (RESPONSIVE) */}
+      {/* 3. BARRA DE ACCIÓN Y TELEMETRÍA                              */}
       {/* ============================================================ */}
-      <div className="bg-white rounded-2xl border border-slate-200/90 p-4 shadow-sm flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+      <div className="card-enterprise p-3.5 sm:p-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 border border-[#1E3557] bg-[#0B1528] shadow-lg">
         
-        {/* Left: Quick Test Button */}
-        <div className="flex items-center justify-between sm:justify-start gap-3">
-          <div className="hidden sm:flex items-center space-x-2 text-xs text-slate-500">
-            <FileSearch className="w-4 h-4 text-[#1E40AF]" />
-            <span>¿Probar sin cámara?</span>
-          </div>
-
+        {/* Left: Quick Demo Loader */}
+        <div className="flex items-center justify-between sm:justify-start space-x-2">
           <button
             type="button"
-            onClick={() => loadDemoScenario('DNI_DEMO')}
-            className="w-full sm:w-auto inline-flex items-center justify-center space-x-1.5 px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 font-bold text-xs transition shadow-2xs active:scale-95 min-h-[44px]"
+            onClick={loadDemoScenario}
+            className="px-4 py-2.5 rounded-lg bg-[#101F3B] hover:bg-[#162A4F] text-white border border-[#274468] font-mono text-xs font-bold btn-precision flex items-center space-x-2 min-h-[44px] shadow-sm"
           >
-            <FileText className="w-4 h-4 text-[#1E40AF]" />
-            <span>Cargar DNI de Prueba</span>
+            <FileText className="w-4 h-4 text-cyan-400" />
+            <span>CARGAR_MUESTRA_DEMO.RAW</span>
           </button>
+          
+          <div className="hidden lg:flex items-center space-x-2.5 text-xs font-mono font-bold text-slate-300 pl-3">
+            <span>MOTOR: <strong className="text-white">RAPIDOCR_PERU</strong></span>
+            <span className="text-slate-600">•</span>
+            <span>MODELO: <strong className="text-cyan-300">PP-OCRv4 LÍTICO</strong></span>
+          </div>
         </div>
 
-        {/* Right: Primary Scan OCR Button */}
+        {/* Right: Primary Execute OCR Extraction Button */}
         <button
           onClick={onStartScan}
           disabled={!canScan}
-          className={`w-full sm:w-auto flex items-center justify-center space-x-2.5 px-7 py-3.5 rounded-xl font-bold text-xs sm:text-sm transition-all shadow-md min-h-[48px] ${
+          className={`flex items-center justify-center space-x-2.5 px-6 py-2.5 rounded-lg font-mono text-xs font-black transition-all min-h-[44px] tracking-wider ${
             canScan
-              ? 'bg-gradient-to-r from-[#0D9488] to-[#10B981] hover:from-[#0F766E] hover:to-[#0D9488] text-white shadow-teal-900/20 active:scale-98 cursor-pointer'
-              : 'bg-slate-200 text-slate-400 cursor-not-allowed border border-slate-300'
+              ? 'bg-gradient-to-r from-cyan-400 via-teal-400 to-cyan-300 hover:from-cyan-300 hover:to-teal-300 text-slate-950 shadow-lg shadow-cyan-500/30 btn-precision cursor-pointer border border-cyan-200/50'
+              : 'bg-[#101F3B]/60 text-slate-400 border border-[#1E3557] cursor-not-allowed font-bold'
           }`}
         >
           {isScanning ? (
             <>
-              <RefreshCw className="w-4 h-4 animate-spin text-white" />
-              <span>{scanStep || 'Procesando con OpenCV y OCR...'}</span>
+              <RefreshCw className="w-4 h-4 animate-spin text-slate-950" />
+              <span>{scanStep || 'PROCESANDO_PIPELINE_OCR...'}</span>
             </>
           ) : (
             <>
               <Scan className="w-4 h-4" />
-              <span>Escanear y Extraer Datos Automáticamente</span>
-              <ArrowRight className="w-4 h-4" />
+              <span>INICIAR EXTRACCIÓN OCR</span>
+              <ArrowRight className="w-4 h-4 opacity-80" />
             </>
           )}
         </button>

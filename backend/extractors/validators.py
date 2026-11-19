@@ -1,4 +1,5 @@
 import re
+import difflib
 from datetime import datetime
 from typing import Tuple, Optional
 
@@ -64,7 +65,7 @@ COMMON_PERU_GIVEN_NAMES = {
     "MARISOL", "MARITZA", "MARLENE", "MARTA", "MARTHA", "MARTIN", "MARY", "MATILDE",
     "MAURA", "MAURICIO", "MAURO", "MAX", "MAXIMO", "MAYRA", "MELANIE", "MELCHOR", "MELISSA",
     "MERCEDES", "MIA", "MICHAEL", "MIGUEL", "MILAGROS", "MIRIAM", "MIRTHA", "MOISES",
-    "MONICA", "MYRIAM", "NANCY", "NATALIA", "NATALY", "NELLY", "NELSON", "NESTOR", "NICOLAS",
+    "MONICA", "MYRIAM", "NADIA", "NANCY", "NATALIA", "NATALY", "NELLY", "NELSON", "NESTOR", "NICOLAS",
     "NIDIA", "NILDA", "NILO", "NILVER", "NOEMI", "NORA", "NORMA", "OCTAVIO", "OLGA", "ORLANDO",
     "OSCAR", "OSWALDO", "PABLO", "PAOLA", "PAOLO", "PATRICIA", "PATRICIO", "PAULA", "PAULINA",
     "PAULO", "PEDRO", "PERCY", "PILAR", "RAFAEL", "RAIZA", "RAMIRO", "RAMON", "RAQUEL",
@@ -72,13 +73,101 @@ COMMON_PERU_GIVEN_NAMES = {
     "RITA", "ROBERT", "ROBERTO", "ROCIO", "RODOLFO", "RODRIGO", "ROGELIO", "ROGER", "ROLANDO",
     "ROMAN", "ROMEL", "ROMINA", "RONALD", "ROQUE", "ROSA", "ROSALIA", "ROSARIO", "ROSAURA",
     "ROXANA", "RUBEN", "RUTH", "SABINA", "SAMUEL", "SANDRA", "SANTIAGO", "SANTOS", "SARA",
-    "SAUL", "SEBASTIAN", "SEGUNDO", "SERGIO", "SILVIA", "SILVIO", "SIMON", "SOFIA", "SOL",
+    "SAUL", "SEBASTIAN", "SEGUNDO", "SERGIO", "SEYDA", "SILVIA", "SILVIO", "SIMON", "SOFIA", "SOL",
     "SONIA", "STEPHANIE", "SUSANA", "TANIA", "TERESA", "TOMAS", "URIEL", "URSULA", "VALENTIN",
-    "VALENTINA", "VALERIA", "VALERIANA", "VANESSA", "VERONICA", "VICENTE", "VICTOR",
+    "VALENTINA", "VALERIA", "VALERIANA", "VANESSA", "VERONICA", "VESTALY", "VICENTE", "VICTOR",
     "VICTORIA", "VILMA", "VIRGILIO", "VIRGINIA", "VLADIMIR", "WALTER", "WASHINGTON",
     "WILDER", "WILFREDO", "WILLIAMS", "WILLIAM", "WILLY", "WILMER", "WILSON", "YADIRA",
-    "YANET", "YENI", "YENNY", "YESENIA", "YESSICA", "YOLANDA", "YOSHI", "YURI", "ZULEMA"
+    "YANET", "YENI", "YENNY", "YESENIA", "YESSICA", "YOLANDA", "YOSHI", "YURI", "ZULEMA",
+    "DANEILYS", "ROSMERY", "DAYANA", "DAHIANA", "GENESIS", "YOSELIN", "CORINA"
 }
+
+# Common Peruvian Surnames for splitting concatenated OCR words
+COMMON_PERU_SURNAMES = {
+    "ESTRADA", "CHAYCHA", "QUISPE", "FLORES", "RODRIGUEZ", "SANCHEZ", "GARCIA", "ROJAS",
+    "DIAZ", "TORRES", "LOPEZ", "GONZALES", "GONZALEZ", "PEREZ", "VASQUEZ", "MENDOZA",
+    "ESPINOZA", "CASTILLO", "HUAMAN", "RAMOS", "VARGAS", "GUTIERREZ", "REYES", "CHAVEZ",
+    "HERRERA", "MAMANI", "CRUZ", "CACERES", "ALVAREZ", "ROMERO", "FERNANDEZ", "RIVERA",
+    "MORALES", "CASTRO", "AGUILAR", "VALVERDE", "CARDENAS", "CHACON", "CACIO", "CABRERA",
+    "MEJIA", "CONTRERAS", "SALAZAR", "SILVA", "DELGADO", "MEDINA", "VEGA", "CAMPOS",
+    "GUERRERO", "SOTO", "CARRASCO", "CORDOVA", "PAREDES", "CALDERON", "ACOSTA", "PARAGUACUTO",
+    "GUTIERREZ", "MENDEZ", "DOMINGUEZ", "MONZON", "ROSAS", "PALACIOS", "ZAVALETA",
+    "VALENZUELA", "CAMPOS", "TINUCO", "PACHECO", "CONDORI", "TAPIA", "CORONADO", "ORTEGA"
+}
+
+
+def correct_ocr_name_typos(text: str) -> str:
+    """
+    Corrects common OCR character confusions in Peruvian given names against known name dictionary.
+    (e.g., 'DAVIG' -> 'DAVID', 'JUANDAVIO' -> 'JUAN DAVID').
+    """
+    if not text:
+        return text
+    tokens = text.split()
+    corrected = []
+    for tok in tokens:
+        clean_tok = re.sub(r"[^A-Za-z]", "", tok.upper())
+        if clean_tok in COMMON_PERU_GIVEN_NAMES:
+            corrected.append(clean_tok)
+        elif len(clean_tok) >= 4:
+            matches = difflib.get_close_matches(clean_tok, list(COMMON_PERU_GIVEN_NAMES), n=1, cutoff=0.75)
+            if matches:
+                corrected.append(matches[0])
+            else:
+                corrected.append(clean_tok)
+        else:
+            corrected.append(clean_tok)
+    return " ".join(corrected)
+
+
+def correct_ocr_surname_typos(text: str) -> str:
+    """
+    Corrects common OCR character confusions in Peruvian surnames against known surname dictionary.
+    (e.g., 'DOMINGUDY' -> 'DOMINGUEZ').
+    """
+    if not text:
+        return text
+    tokens = text.split()
+    corrected = []
+    for tok in tokens:
+        clean_tok = re.sub(r"[^A-Za-z]", "", tok.upper())
+        if clean_tok in COMMON_PERU_SURNAMES:
+            corrected.append(clean_tok)
+        elif len(clean_tok) >= 5:
+            matches = difflib.get_close_matches(clean_tok, list(COMMON_PERU_SURNAMES), n=1, cutoff=0.72)
+            if matches:
+                corrected.append(matches[0])
+            else:
+                corrected.append(clean_tok)
+        else:
+            corrected.append(clean_tok)
+    return " ".join(corrected)
+
+
+def separate_concatenated_surnames(text: str) -> Tuple[str, str]:
+    """
+    Separates two surnames that were glued together by OCR (e.g. 'ESTRADACHAYCHA' -> ('ESTRADA', 'CHAYCHA')).
+    Returns: (paternal_surname, maternal_surname)
+    """
+    if not text:
+        return "", ""
+    clean = re.sub(r"[^A-Za-z]", "", text.strip().upper())
+    if len(clean) < 6:
+        return clean, ""
+        
+    # Check against known surname dictionary
+    for i in range(3, len(clean) - 2):
+        p1, p2 = clean[:i], clean[i:]
+        if p1 in COMMON_PERU_SURNAMES and p2 in COMMON_PERU_SURNAMES:
+            return p1, p2
+            
+    # Try with first part in dictionary and second part having valid syllable length
+    for i in range(4, len(clean) - 3):
+        p1, p2 = clean[:i], clean[i:]
+        if p1 in COMMON_PERU_SURNAMES and len(p2) >= 4:
+            return p1, p2
+            
+    return clean, ""
 
 
 def separate_concatenated_names(text: str) -> str:
@@ -94,7 +183,7 @@ def separate_concatenated_names(text: str) -> str:
     res_tokens = []
 
     for tok in tokens:
-        tok_upper = tok.upper()
+        tok_upper = re.sub(r"[^A-Za-z]", "", tok.upper())
         # If token is long and not in name dictionary as a standalone name
         if len(tok_upper) >= 6 and tok_upper not in COMMON_PERU_GIVEN_NAMES:
             split_found = False
@@ -177,15 +266,19 @@ CIVIL_STATUS_MAP = {
     "S": "SOLTERO",
     "SOLTERO": "SOLTERO",
     "SOLTERA": "SOLTERO",
+    "SINGLE": "SOLTERO",
     "C": "CASADO",
     "CASADO": "CASADO",
     "CASADA": "CASADO",
+    "MARRIED": "CASADO",
     "V": "VIUDO",
     "VIUDO": "VIUDO",
     "VIUDA": "VIUDO",
+    "WIDOWED": "VIUDO",
     "D": "DIVORCIADO",
     "DIVORCIADO": "DIVORCIADO",
     "DIVORCIADA": "DIVORCIADO",
+    "DIVORCED": "DIVORCIADO",
     "CO": "CONVIVIENTE",
     "CONVIVIENTE": "CONVIVIENTE",
 }
@@ -204,37 +297,63 @@ def clean_text(text: str) -> str:
 def validate_dni(dni_str: str) -> Tuple[bool, str, Optional[str]]:
     """
     Validates Peruvian DNI format (must be exactly 8 digits).
+    Handles strict OCR noise character mapping (O->0, I/l->1, S->5, B->8, Z->2)
+    ONLY in 8-character numeric contexts without altering ambiguous words.
     Returns: (is_valid, normalized_dni, error_message)
     """
     if not dni_str:
         return False, "", "Número de DNI no detectado"
 
-    # If format like 02763215-2 or 02763215<8, extract the primary 8 digits
-    m = re.search(r"\b(\d{8})\b", dni_str)
+    raw = str(dni_str).strip().upper()
+
+    # Exact 8 digit standalone pattern (e.g. "02763215")
+    m = re.search(r"\b(\d{8})\b", raw)
     if m:
         return True, m.group(1), None
 
-    cleaned = re.sub(r"[^\d]", "", dni_str)
-    if len(cleaned) == 8:
-        return True, cleaned, None
-    elif len(cleaned) > 8:
-        # Might include check digit or extra trailing number
-        return True, cleaned[:8], None
-    elif len(cleaned) == 0:
+    # Strip punctuation common in DNI headers like "DNI: 02.763.215" or "02763215-2"
+    clean_punct = re.sub(r"[\s\.\-\/\:]", "", raw)
+    if re.fullmatch(r"\d{8}", clean_punct):
+        return True, clean_punct, None
+
+    # Contextual OCR character correction: only if candidate is exactly 8 characters
+    # and consists mostly of digits with 1 or 2 classic letter misreads
+    OCR_DIGIT_MAP = {"O": "0", "I": "1", "L": "1", "S": "5", "B": "8", "Z": "2"}
+    candidate_tokens = re.findall(r"\b[0-9A-Z]{8}\b", raw)
+    for cand in candidate_tokens:
+        digit_count = sum(c.isdigit() for c in cand)
+        # Allow at most 2 substitutions if candidate is >= 6 digits
+        if digit_count >= 6:
+            fixed = "".join(OCR_DIGIT_MAP.get(c, c) for c in cand)
+            if fixed.isdigit() and len(fixed) == 8:
+                return True, fixed, None
+
+    # If numeric sequence is extracted
+    digits_only = re.sub(r"\D", "", raw)
+    if len(digits_only) == 8:
+        return True, digits_only, None
+    elif len(digits_only) > 8:
+        # Might include check digit suffix (e.g. 739689223 -> 73968922)
+        return True, digits_only[:8], None
+    elif len(digits_only) == 0:
         return False, "", "Número de DNI no detectado"
     else:
-        return False, cleaned, f"DNI inválido: debe tener 8 dígitos (detectados {len(cleaned)})"
+        return False, digits_only, f"DNI inválido: debe tener exactamente 8 dígitos (detectados {len(digits_only)})"
 
 
 def validate_ce(ce_str: str) -> Tuple[bool, str, Optional[str]]:
     """
-    Validates Carnet de Extranjería format (usually 9 digits or alphanumeric 8-10 chars).
+    Validates Carnet de Extranjería format (usually 9 digits or alphanumeric 7-12 chars).
+    Does NOT enforce the 8-digit DNI constraint.
     """
     if not ce_str:
         return False, "", "Número de Carnet de Extranjería no detectado"
 
-    cleaned = re.sub(r"[^A-Za-z0-9]", "", ce_str.upper())
-    if 7 <= len(cleaned) <= 12:
+    cleaned = re.sub(r"[^A-Za-z0-9]", "", str(ce_str).upper())
+    # Standard Migraciones CE is 9 digits (e.g. 001077238, 004455020)
+    if cleaned.isdigit() and len(cleaned) == 9:
+        return True, cleaned, None
+    elif 7 <= len(cleaned) <= 12:
         return True, cleaned, None
     elif len(cleaned) == 0:
         return False, "", "Número de Carnet de Extranjería no detectado"
@@ -242,58 +361,113 @@ def validate_ce(ce_str: str) -> Tuple[bool, str, Optional[str]]:
         return False, cleaned, f"Formato de CE inusual ({len(cleaned)} caracteres)"
 
 
-def normalize_and_validate_date(date_raw: str) -> Tuple[bool, str, Optional[str]]:
+def normalize_and_validate_date(date_raw: str, field_type: Optional[str] = None) -> Tuple[bool, str, Optional[str]]:
     """
     Normalizes a date string into standard DD/MM/AAAA format and verifies calendar validity.
-    Handles formats like: "15/08/1990", "15-08-1990", "15 08 1990", "15081990", "02 061997", "15 AGO 1990", "NO CADUCA".
+    Handles formats: "15/08/1990", "15-08-1990", "15.08.1990", "15 08 1990", "15081990",
+    "1990-08-15" (ISO), "15 AGO 1990", "NO CADUCA".
+    Resolves century ambiguity for 2-digit years according to field_type ('birth_date', 'issue_date', 'expiry_date').
     """
     if not date_raw:
         return False, "", "Fecha vacía"
 
-    clean = date_raw.upper().strip()
+    clean = str(date_raw).upper().strip()
 
     # Special handling for non-expiring IDs in Peru
     if any(k in clean for k in ["NO CADUCA", "NO CADUC", "NO VENCE", "PERMANENTE", "ILIMITAD", "INDEFINID"]):
         return True, "NO CADUCA", None
-    
-    if "00/01/01" in clean or "01/01/0000" in clean or "000101" in clean:
+
+    if "00/01/01" in clean or "01/01/0000" in clean or "000101" in clean or "999999" in clean:
         return True, "NO CADUCA", None
 
-    # Replace month text with numbers if present
+    # Replace month text with numbers if present (e.g. '18AGO2000', '15 SET 1990', '22ENE2026')
     for month_name, month_num in SPANISH_MONTHS.items():
-        clean = re.sub(rf"\b{month_name}\b", month_num, clean)
+        clean = re.sub(rf"(^|\d|\s){month_name}(\d|\s|$)", rf"\g<1> {month_num} \g<2>", clean)
+        clean = re.sub(rf"\b{month_name}\b", f" {month_num} ", clean)
+    clean = re.sub(r"\s+", " ", clean).strip()
 
-    # 1. Search for standard delimited date: DD/MM/YYYY, DD-MM-YYYY, DD.MM.YYYY, DD MM YYYY, DD  MM  YYYY
-    match = re.search(r"\b(0?[1-9]|[12][0-9]|3[01])[\/\-\.\s]+(0?[1-9]|1[0-2])[\/\-\.\s]+(\d{4}|\d{2})\b", clean)
-    if match:
-        day, month, year = match.groups()
+    day, month, year = None, None, None
+
+    # 1. ISO format: YYYY-MM-DD or YYYY/MM/DD
+    iso_match = re.search(r"\b(\d{4})[\/\-\.](0?[1-9]|1[0-2])[\/\-\.](0?[1-9]|[12][0-9]|3[01])\b", clean)
+    if iso_match:
+        year, month, day = iso_match.groups()
     else:
-        # 2. Search for mixed spaced date: e.g. "02 061997" or "0206 1997"
-        mixed_match = re.search(r"\b(0[1-9]|[12][0-9]|3[01])\s*(0[1-9]|1[0-2])\s*(\d{4})\b", clean)
-        if mixed_match:
-            day, month, year = mixed_match.groups()
-        else:
-            # 3. Search compact 8-digit date: e.g. 20092023, 24121996, 17092014, 08052008
-            compact_match = re.search(r"\b(0[1-9]|[12][0-9]|3[01])(0[1-9]|1[0-2])(\d{4})\b", clean)
-            if compact_match:
-                day, month, year = compact_match.groups()
-            else:
+        # 2. Check 3-part date candidate (DD/MM/YYYY, DD-MM-YYYY, DD.MM.YYYY, DD MM YYYY)
+        three_part = re.search(r"\b(\d{1,4})[\/\-\.\s]+(\d{1,4})[\/\-\.\s]+(\d{2,4})\b", clean)
+        if three_part:
+            d_cand, m_cand, y_cand = three_part.groups()
+            try:
+                d_i, m_i = int(d_cand), int(m_cand)
+                if not (1 <= d_i <= 31 and 1 <= m_i <= 12):
+                    return False, date_raw, f"Día o mes fuera de rango ({d_cand}/{m_cand})"
+                day, month, year = d_cand, m_cand, y_cand
+            except ValueError:
                 return False, date_raw, f"Formato de fecha inválido ({date_raw})"
+        else:
+            # 3. Mixed spaced date: e.g. "02 061997" or "0206 1997"
+            mixed_match = re.search(r"\b(0[1-9]|[12][0-9]|3[01])\s*(0[1-9]|1[0-2])\s*(\d{4})\b", clean)
+            if mixed_match:
+                day, month, year = mixed_match.groups()
+            else:
+                # 4. Compact 8-digit date: e.g. 20092023, 24121996, 17092014, 08052008
+                compact_match = re.search(r"\b(0[1-9]|[12][0-9]|3[01])(0[1-9]|1[0-2])(\d{4})\b", clean)
+                if compact_match:
+                    day, month, year = compact_match.groups()
+                else:
+                    # 5. Month-Year only (common in CE expiry e.g. ENE 2030 or 01 2030): default day to 01
+                    # Only allowed for expiry_date when no day exists
+                    if field_type == "expiry_date":
+                        my_match = re.search(r"\b(0?[1-9]|1[0-2])[\/\-\.\s]+(\d{4})\b", clean)
+                        if my_match:
+                            day = "01"
+                            month, year = my_match.groups()
+                    if not day:
+                        return False, date_raw, f"Formato de fecha inválido ({date_raw})"
 
     day = day.zfill(2)
     month = month.zfill(2)
 
-    # Convert 2-digit year to 4-digit year (MRZ or old dates)
+    # Convert 2-digit year to 4-digit year with strict century rules
     if len(year) == 2:
         y_int = int(year)
-        current_yy = datetime.now().year % 100
-        year = str(2000 + y_int) if y_int <= (current_yy + 15) else str(1900 + y_int)
+        now_dt = datetime.now()
+        current_yy = now_dt.year % 100
+
+        if field_type == "birth_date":
+            # Adult workforce resolution: anyone with yy <= (current_yy - 16) is 2000s, else 1900s
+            # E.g. in 2026 (current_yy=26): 00-10 -> 2000-2010 (age 16-26); 11-99 -> 1911-1999
+            threshold = max(0, current_yy - 15)
+            year = str(2000 + y_int) if y_int <= threshold else str(1900 + y_int)
+        elif field_type == "expiry_date":
+            # Documents in circulation expire in the 21st century (2000+)
+            year = str(2000 + y_int)
+        elif field_type == "issue_date":
+            # Issue date cannot be in the future
+            year = str(2000 + y_int) if y_int <= current_yy else str(1900 + y_int)
+        else:
+            # General fallback: if <= current_yy + 15 -> 2000s, else 1900s
+            year = str(2000 + y_int) if y_int <= (current_yy + 15) else str(1900 + y_int)
 
     formatted_date = f"{day}/{month}/{year}"
 
-    # Verify true calendar validity
+    # Verify real calendar validity (leap year, days per month)
     try:
         dt = datetime.strptime(formatted_date, "%d/%m/%Y")
+        now_dt = datetime.now()
+
+        # Contextual validation based on field_type
+        if field_type == "birth_date":
+            if dt > now_dt:
+                return False, formatted_date, "Fecha de nacimiento en el futuro"
+            if dt.year < 1920:
+                return False, formatted_date, f"Año de nacimiento fuera de rango ({dt.year})"
+        elif field_type == "issue_date":
+            if dt > now_dt:
+                return False, formatted_date, "Fecha de emisión en el futuro"
+            if dt.year < 1980:
+                return False, formatted_date, f"Año de emisión fuera de rango ({dt.year})"
+
         if 1900 <= dt.year <= 2100:
             return True, formatted_date, None
         else:
