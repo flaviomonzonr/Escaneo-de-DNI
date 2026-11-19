@@ -126,17 +126,19 @@ export default function App() {
     setReconnectTrigger((t) => t + 1);
   };
 
-  const handleStartScan = async () => {
-    if (!frontFile) return;
+  const handleStartScan = async (overrideFrontFile = null, overrideBackFile = null) => {
+    const targetFront = overrideFrontFile || frontFile;
+    const targetBack = overrideBackFile || backFile;
+    if (!targetFront) return;
 
     setIsScanning(true);
-    setScanStepText('DETECT_BOUNDARIES_AND_DESKEW...');
+    setScanStepText('DETECTANDO_DNI_Y_VERIFICANDO_HISTORICO...');
 
     try {
-      setTimeout(() => setScanStepText('EXTRACTING_DATA_RAPIDOCR...'), 400);
-      setTimeout(() => setScanStepText('NORMALIZING_MRZ_AND_UBIGEO...'), 900);
+      setTimeout(() => setScanStepText('CONSULTANDO_DATA_HISTORICA_LOCAL...'), 300);
+      setTimeout(() => setScanStepText('AUTOCOMPLETANDO_CAMPOS...'), 650);
 
-      const result = await api.scanDocument(frontFile, backFile, docType);
+      const result = await api.scanDocument(targetFront, targetBack, docType);
       setScanResult(result);
     } catch (err) {
       console.error('Scan error:', err);

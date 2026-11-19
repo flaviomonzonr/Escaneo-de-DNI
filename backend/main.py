@@ -594,30 +594,88 @@ async def scan_document(
                     fields_dict["doc_number"].source = "ocr"
                     fields_dict["doc_number"].validation_message = "Verificado en base de datos"
 
-                # 2. birth_date: PRIORIDAD OCR. Solo si OCR no la detectó, usar Data Histórica / API como respaldo
+                # 2. birth_date: PRIORIDAD OCR con respaldo estricto de Data Histórica
                 ocr_birth = fields_dict.get("birth_date")
-                if not (ocr_birth and ocr_birth.is_valid and ocr_birth.value):
-                    api_birth = (api_res.get("birth_date") or "").strip()
-                    if api_birth:
-                        val_b_ok, fmt_b, _ = normalize_and_validate_date(api_birth, field_type="birth_date")
-                        if val_b_ok:
-                            extracted_dict["birth_date"] = fmt_b
-                            fields_dict["birth_date"] = FieldConfidence(
-                                value=fmt_b,
-                                confidence=95.0,
-                                is_valid=True,
-                                status="CONFIRMADO",
-                                origin_type="COMPLEMENTADO_HISTORICO" if source_id == "data_historica" else "COMPLEMENTADO_API",
-                                source=source_id,
-                                anchor_matched=f"{origin_badge_hint} (Fecha de nacimiento)",
-                            )
-                else:
+                needs_hist_birth = (
+                    not ocr_birth 
+                    or not ocr_birth.is_valid 
+                    or not ocr_birth.value 
+                    or ocr_birth.confidence < 75 
+                    or ocr_birth.status in ("REVISAR", "SIN_DETECTAR", "NO_DETECTADO")
+                )
+                if needs_hist_birth and api_res.get("birth_date"):
+                    api_birth = str(api_res.get("birth_date")).strip()
+                    val_b_ok, fmt_b, _ = normalize_and_validate_date(api_birth, field_type="birth_date")
+                    if val_b_ok:
+                        extracted_dict["birth_date"] = fmt_b
+                        fields_dict["birth_date"] = FieldConfidence(
+                            value=fmt_b,
+                            confidence=99.0,
+                            is_valid=True,
+                            status="CONFIRMADO",
+                            origin_type="COMPLEMENTADO_HISTORICO" if source_id == "data_historica" else "COMPLEMENTADO_API",
+                            source=source_id,
+                            anchor_matched=f"{origin_badge_hint} (Fecha de nacimiento)",
+                        )
+                elif ocr_birth and ocr_birth.is_valid and ocr_birth.value:
                     fields_dict["birth_date"].source = "ocr"
 
-                # 3. issue_date y expiry_date: Son físicas del documento, NUNCA sobreescribir
-                if "issue_date" in fields_dict:
+                # 2B. sex: asegurar código 'M' o 'F' con respaldo de histórico
+                ocr_sex = fields_dict.get("sex")
+                needs_hist_sex = (
+                    not ocr_sex 
+                    or not ocr_sex.is_valid 
+                    or not ocr_sex.value 
+                    or ocr_sex.confidence < 75 
+                    or ocr_sex.value not in ("M", "F")
+                )
+                if needs_hist_sex and api_res.get("sex"):
+                    raw_s = str(api_res.get("sex")).strip().upper()
+                    s_val = "M" if raw_s in ("M", "MASCULINO", "1", "H", "HOMBRE") else ("F" if raw_s in ("F", "FEMENINO", "2", "MUJER") else raw_s)
+                    extracted_dict["sex"] = s_val
+                    fields_dict["sex"] = FieldConfidence(
+                        value=s_val,
+                        confidence=99.0,
+                        is_valid=True,
+                        status="CONFIRMADO",
+                        origin_type="COMPLEMENTADO_HISTORICO" if source_id == "data_historica" else "COMPLEMENTADO_API",
+                        source=source_id,
+                        anchor_matched=f"{origin_badge_hint} (Sexo)",
+                    )
+
+                # 3. issue_date y expiry_date: respaldo de histórico si OCR no las detectó
+                ocr_issue = fields_dict.get("issue_date")
+                if not (ocr_issue and ocr_issue.is_valid and ocr_issue.value) and api_res.get("issue_date"):
+                    val_i_ok, fmt_i, _ = normalize_and_validate_date(str(api_res.get("issue_date")), field_type="issue_date")
+                    if val_i_ok:
+                        extracted_dict["issue_date"] = fmt_i
+                        fields_dict["issue_date"] = FieldConfidence(
+                            value=fmt_i,
+                            confidence=95.0,
+                            is_valid=True,
+                            status="CONFIRMADO",
+                            origin_type="COMPLEMENTADO_HISTORICO" if source_id == "data_historica" else "COMPLEMENTADO_API",
+                            source=source_id,
+                            anchor_matched=f"{origin_badge_hint} (Fecha de emisión)",
+                        )
+                elif "issue_date" in fields_dict:
                     fields_dict["issue_date"].source = "ocr"
-                if "expiry_date" in fields_dict:
+
+                ocr_exp = fields_dict.get("expiry_date")
+                if not (ocr_exp and ocr_exp.is_valid and ocr_exp.value) and api_res.get("expiry_date"):
+                    val_e_ok, fmt_e, _ = normalize_and_validate_date(str(api_res.get("expiry_date")), field_type="expiry_date")
+                    if val_e_ok:
+                        extracted_dict["expiry_date"] = fmt_e
+                        fields_dict["expiry_date"] = FieldConfidence(
+                            value=fmt_e,
+                            confidence=95.0,
+                            is_valid=True,
+                            status="CONFIRMADO",
+                            origin_type="COMPLEMENTADO_HISTORICO" if source_id == "data_historica" else "COMPLEMENTADO_API",
+                            source=source_id,
+                            anchor_matched=f"{origin_badge_hint} (Fecha de vencimiento)",
+                        )
+                elif "expiry_date" in fields_dict:
                     fields_dict["expiry_date"].source = "ocr"
 
                 # 4. Búsqueda automática SBS para completar AFP y CUSPP si están ausentes
@@ -766,11 +824,11 @@ async def scan_document(
         blood_type=extracted_dict.get("blood_type", ""),
         civil_status=extracted_dict.get("civil_status", ""),
         migratory_status=extracted_dict.get("migratory_status", ""),
-        phone="999999999",
-        email="sincorreo@gmail.com",
-        pension_system="",
-        pension_commission="",
-        cuspp="",
+        phone=extracted_dict.get("phone") or "999999999",
+        email=extracted_dict.get("email") or "sincorreo@gmail.com",
+        pension_system=extracted_dict.get("pension_system", ""),
+        pension_commission=extracted_dict.get("pension_commission", ""),
+        cuspp=extracted_dict.get("cuspp", ""),
         observations=extracted_dict.get("observations", ""),
         fields=fields_dict,
         quality_front=qm_front,
@@ -786,6 +844,9 @@ async def scan_document(
         warnings=all_warnings,
         api_complemented=api_complemented,
         api_status=api_status_info,
+        source=source_id if (is_valid_for_api and api_complemented) else "ocr",
+        is_historical=(source_id == "data_historica") if (is_valid_for_api and api_complemented) else False,
+        historical_auto_completed=(source_id == "data_historica") if (is_valid_for_api and api_complemented) else False,
     )
 
 

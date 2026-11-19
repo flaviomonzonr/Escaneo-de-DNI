@@ -107,14 +107,27 @@ class HistoricalDataService:
         names = (getattr(sc, "first_names", None) or "").strip().upper()
         full_name = f"{pat} {mat}, {names}".strip().strip(",")
 
-        # Normalizar sexo
+        # Normalizar sexo a código de formulario ('M' / 'F')
         sex_raw = (getattr(sc, "sex", None) or "").strip().upper()
-        if sex_raw in ("M", "MASCULINO", "1"):
-            sex = "MASCULINO"
-        elif sex_raw in ("F", "FEMENINO", "2"):
-            sex = "FEMENINO"
+        if sex_raw in ("M", "MASCULINO", "1", "H", "HOMBRE"):
+            sex = "M"
+            sex_desc = "MASCULINO"
+        elif sex_raw in ("F", "FEMENINO", "2", "MUJER"):
+            sex = "F"
+            sex_desc = "FEMENINO"
         else:
             sex = sex_raw
+            sex_desc = sex_raw
+
+        # Normalizar fecha de nacimiento a DD/MM/AAAA
+        raw_b = (getattr(sc, "birth_date", "") or "").strip()
+        birth_fmt = raw_b
+        if "-" in raw_b and len(raw_b) >= 10:
+            parts = raw_b[:10].split("-")
+            if len(parts) == 3 and len(parts[0]) == 4:
+                birth_fmt = f"{parts[2]}/{parts[1]}/{parts[0]}"
+        elif " " in raw_b and "/" not in raw_b:
+            birth_fmt = raw_b.split()[0]
 
         return {
             "success": True,
@@ -128,8 +141,9 @@ class HistoricalDataService:
             "paternal_surname": pat,
             "maternal_surname": mat,
             "full_name": full_name or f"{pat} {mat} {names}".strip(),
-            "birth_date": getattr(sc, "birth_date", "") or "",
+            "birth_date": birth_fmt,
             "sex": sex,
+            "sex_desc": sex_desc,
             "civil_status": getattr(sc, "civil_status", None) or "SOLTERO",
             "nationality": getattr(sc, "nationality", None) or "PERUANA",
             "address": getattr(sc, "address", "") or "",
@@ -169,13 +183,17 @@ class HistoricalDataService:
         names = _get_val("first_names").upper()
         full_name = f"{pat} {mat}, {names}".strip().strip(",")
 
+        # Normalizar sexo
         sex_val = _get_val("sex").upper()
-        if sex_val in ("M", "MASCULINO", "1"):
-            sex = "MASCULINO"
-        elif sex_val in ("F", "FEMENINO", "2"):
-            sex = "FEMENINO"
+        if sex_val in ("M", "MASCULINO", "1", "H", "HOMBRE"):
+            sex = "M"
+            sex_desc = "MASCULINO"
+        elif sex_val in ("F", "FEMENINO", "2", "MUJER"):
+            sex = "F"
+            sex_desc = "FEMENINO"
         else:
             sex = sex_val
+            sex_desc = sex_val
 
         # Address y Ubigeo
         dept = _get_val("observaciones") or _get_val("department")
@@ -184,7 +202,15 @@ class HistoricalDataService:
         address = _get_val("fecha_de_vencimiento") or _get_val("address")  # En algunos excels de NISIRA está en esta col
 
         # Fechas
-        birth_d = _get_val("birth_date")
+        raw_b = _get_val("birth_date")
+        birth_fmt = raw_b
+        if "-" in raw_b and len(raw_b) >= 10:
+            parts = raw_b[:10].split("-")
+            if len(parts) == 3 and len(parts[0]) == 4:
+                birth_fmt = f"{parts[2]}/{parts[1]}/{parts[0]}"
+        elif " " in raw_b and "/" not in raw_b:
+            birth_fmt = raw_b.split()[0]
+
         issue_d = _get_val("columna_u") or _get_val("issue_date")
         exp_d = _get_val("columna_q") or _get_val("expiry_date")
 
@@ -200,8 +226,9 @@ class HistoricalDataService:
             "paternal_surname": pat,
             "maternal_surname": mat,
             "full_name": full_name or f"{pat} {mat} {names}".strip(),
-            "birth_date": birth_d,
+            "birth_date": birth_fmt,
             "sex": sex,
+            "sex_desc": sex_desc,
             "civil_status": "SOLTERO",
             "nationality": _get_val("nacionalidad") or "PERUANA",
             "address": address,
@@ -256,9 +283,17 @@ class HistoricalDataService:
             if data.get("full_name"):
                 worker.full_name = str(data["full_name"]).strip().upper()
             if data.get("birth_date"):
-                worker.birth_date = str(data["birth_date"]).strip()
+                b_raw = str(data["birth_date"]).strip()
+                if "-" in b_raw and len(b_raw) >= 10:
+                    parts = b_raw[:10].split("-")
+                    if len(parts) == 3 and len(parts[0]) == 4:
+                        b_raw = f"{parts[2]}/{parts[1]}/{parts[0]}"
+                elif " " in b_raw and "/" not in b_raw:
+                    b_raw = b_raw.split()[0]
+                worker.birth_date = b_raw
             if data.get("sex"):
-                worker.sex = str(data["sex"]).strip().upper()
+                s_raw = str(data["sex"]).strip().upper()
+                worker.sex = "M" if s_raw in ("M", "MASCULINO", "1", "H", "HOMBRE") else ("F" if s_raw in ("F", "FEMENINO", "2", "MUJER") else s_raw)
             if data.get("civil_status"):
                 worker.civil_status = str(data["civil_status"]).strip().upper()
             if data.get("nationality"):

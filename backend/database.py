@@ -279,6 +279,28 @@ class HistoricalWorker(Base):
     created_at = Column(DateTime, default=get_peru_now, nullable=False)
 
     def to_dict(self):
+        # Normalizar Sexo a código estándar de formulario/contratos ('M' / 'F')
+        raw_sex = (self.sex or "").strip().upper()
+        if raw_sex in ("M", "MASCULINO", "1", "H", "HOMBRE"):
+            sex_code = "M"
+            sex_desc = "MASCULINO"
+        elif raw_sex in ("F", "FEMENINO", "2", "MUJER"):
+            sex_code = "F"
+            sex_desc = "FEMENINO"
+        else:
+            sex_code = raw_sex
+            sex_desc = raw_sex
+
+        # Normalizar Fecha de Nacimiento a DD/MM/AAAA
+        raw_birth = (self.birth_date or "").strip()
+        birth_fmt = raw_birth
+        if "-" in raw_birth and len(raw_birth) >= 10:
+            parts = raw_birth[:10].split("-")
+            if len(parts) == 3 and len(parts[0]) == 4:
+                birth_fmt = f"{parts[2]}/{parts[1]}/{parts[0]}"
+        elif " " in raw_birth and "/" not in raw_birth:
+            birth_fmt = raw_birth.split()[0]
+
         return {
             "success": True,
             "status_code": 200,
@@ -291,9 +313,10 @@ class HistoricalWorker(Base):
             "paternal_surname": self.paternal_surname or "",
             "maternal_surname": self.maternal_surname or "",
             "full_name": self.full_name or f"{self.paternal_surname} {self.maternal_surname} {self.first_names}".strip(),
-            "birth_date": self.birth_date or "",
-            "sex": self.sex or "",
-            "civil_status": self.civil_status or "",
+            "birth_date": birth_fmt,
+            "sex": sex_code,
+            "sex_desc": sex_desc,
+            "civil_status": self.civil_status or "SOLTERO",
             "nationality": self.nationality or "PERUANA",
             "address": self.address or "",
             "department": self.department or "",

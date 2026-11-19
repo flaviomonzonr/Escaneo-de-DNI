@@ -45,6 +45,10 @@ export default function CaptureZone({
       if (frontPreview) URL.revokeObjectURL(frontPreview);
       setFrontFile(file);
       setFrontPreview(previewUrl);
+      // Auto-iniciar escaneo y comprobación histórica inmediata
+      if (onStartScan) {
+        setTimeout(() => onStartScan(file, backFile), 150);
+      }
     } else {
       if (backPreview) URL.revokeObjectURL(backPreview);
       setBackFile(file);
@@ -63,6 +67,9 @@ export default function CaptureZone({
       if (frontPreview) URL.revokeObjectURL(frontPreview);
       setFrontFile(file);
       setFrontPreview(previewUrl);
+      if (onStartScan) {
+        setTimeout(() => onStartScan(file, backFile), 150);
+      }
     } else {
       if (backPreview) URL.revokeObjectURL(backPreview);
       setBackFile(file);
@@ -80,6 +87,10 @@ export default function CaptureZone({
 
     setBackFile(backData.file);
     setBackPreview(backData.previewUrl);
+
+    if (onStartScan) {
+      setTimeout(() => onStartScan(frontData.file, backData.file), 150);
+    }
   };
 
   // Single retake capture handler
@@ -88,6 +99,10 @@ export default function CaptureZone({
       if (frontPreview) URL.revokeObjectURL(frontPreview);
       setFrontFile(file);
       setFrontPreview(previewUrl);
+      // Al tomar foto del anverso, procesar de inmediato sin pedir seguir escaneando
+      if (onStartScan) {
+        setTimeout(() => onStartScan(file, backFile), 150);
+      }
     } else {
       if (backPreview) URL.revokeObjectURL(backPreview);
       setBackFile(file);

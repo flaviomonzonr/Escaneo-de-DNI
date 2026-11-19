@@ -83,6 +83,9 @@ class ScanResponse(BaseModel):
     # API Complementation Status
     api_complemented: bool = False
     api_status: Optional[Dict[str, Any]] = None
+    source: Optional[str] = "ocr"
+    is_historical: bool = False
+    historical_auto_completed: bool = False
 
 
 class RecordCreate(BaseModel):

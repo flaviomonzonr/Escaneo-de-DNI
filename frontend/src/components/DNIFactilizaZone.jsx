@@ -177,6 +177,21 @@ export default function DNIFactilizaZone({
 
       if (res?.success) {
         const itemSource = res.source || (res.is_historical ? 'data_historica' : 'factiliza');
+
+        // Normalización garantizada de Sexo y Fecha de Nacimiento para el sistema
+        const rawSex = res.sex || '';
+        const cleanSex = ['M', 'MASCULINO', '1', 'H', 'HOMBRE'].includes(String(rawSex).trim().toUpperCase())
+          ? 'M'
+          : ['F', 'FEMENINO', '2', 'MUJER'].includes(String(rawSex).trim().toUpperCase())
+          ? 'F'
+          : rawSex;
+
+        let cleanBirth = (res.birth_date || '').trim();
+        if (/^\d{4}-\d{2}-\d{2}/.test(cleanBirth)) {
+          const parts = cleanBirth.slice(0, 10).split('-');
+          cleanBirth = `${parts[2]}/${parts[1]}/${parts[0]}`;
+        }
+
         onResultReady({
           doc_type: res.doc_type || queryDocType,
           doc_number: res.doc_number || cleanDoc,
@@ -184,9 +199,9 @@ export default function DNIFactilizaZone({
           maternal_surname: res.maternal_surname || '',
           first_names: res.first_names || '',
           nationality: res.nationality || (queryDocType === 'DNI' ? 'PERUANA' : ''),
-          birth_date: res.birth_date || '',
-          sex: res.sex || '',
-          civil_status: res.civil_status || '',
+          birth_date: cleanBirth,
+          sex: cleanSex,
+          civil_status: res.civil_status || 'SOLTERO',
           address: res.address || '',
           department: res.department || '',
           province: res.province || '',
@@ -219,8 +234,8 @@ export default function DNIFactilizaZone({
             first_names: { value: res.first_names, confidence: 100, is_valid: true, status: 'CONFIRMADO', source: itemSource },
             paternal_surname: { value: res.paternal_surname, confidence: 100, is_valid: true, status: 'CONFIRMADO', source: itemSource },
             maternal_surname: { value: res.maternal_surname, confidence: 100, is_valid: true, status: 'CONFIRMADO', source: itemSource },
-            birth_date: { value: res.birth_date, confidence: res.birth_date ? 100 : 0, is_valid: Boolean(res.birth_date), status: res.birth_date ? 'CONFIRMADO' : 'REVISAR', source: itemSource },
-            sex: { value: res.sex, confidence: res.sex ? 100 : 0, is_valid: Boolean(res.sex), status: res.sex ? 'CONFIRMADO' : 'REVISAR', source: itemSource },
+            birth_date: { value: cleanBirth, confidence: cleanBirth ? 100 : 0, is_valid: Boolean(cleanBirth), status: cleanBirth ? 'CONFIRMADO' : 'REVISAR', source: itemSource },
+            sex: { value: cleanSex, confidence: cleanSex ? 100 : 0, is_valid: Boolean(cleanSex), status: cleanSex ? 'CONFIRMADO' : 'REVISAR', source: itemSource },
             issue_date: { value: res.issue_date || '', confidence: res.issue_date ? 95 : 0, is_valid: Boolean(res.issue_date), status: res.issue_date ? 'CONFIRMADO' : 'REVISAR', source: itemSource },
             expiry_date: { value: res.expiry_date || '', confidence: res.expiry_date ? 95 : 0, is_valid: Boolean(res.expiry_date), status: res.expiry_date ? 'CONFIRMADO' : 'REVISAR', source: itemSource },
             address: { value: res.address, confidence: 95, is_valid: true, status: 'CONFIRMADO', source: itemSource },

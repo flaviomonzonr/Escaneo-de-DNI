@@ -24,7 +24,7 @@ COLUMN_MAPPINGS = {
         "APELLIDOS_Y_NOMBRES", "APELLIDOS Y NOMBRES", "APELLIDOS Y NOMBRE", "APELLIDOS_NOMBRE",
         "NOMBRES_Y_APELLIDOS", "NOMBRES Y APELLIDOS", "NOMBRE_COMPLETO", "NOMBRE COMPLETO",
         "APELLIDOS Y NOMBRES COMPLETOS", "NOMBRES Y APELLIDOS COMPLETOS", "DATOS_PERSONALES",
-        "DATOS PERSONALES", "TRABAJADOR", "EMPLEADO", "COLABORADOR"
+        "DATOS PERSONALES"
     ],
     "doc_type": [
         "IDDOCIDENTIDAD", "TIP. DOCUMENTO", "TIP DOCUMENTO", "TIPO DOCUMENTO", "TIPO DOC", "DOC IDENTIDAD"
@@ -197,6 +197,15 @@ def best_field_for_header(header_raw: str) -> Optional[str]:
     norm_h = normalize_header(header_raw)
     if not norm_h:
         return None
+
+    # Exclusiones estrictas solicitadas por el usuario:
+    # 1. Es Trabajador Sindicalizado / sindicalizado: NO llenar nombres ni apellidos
+    if any(k in norm_h for k in ["SINDICALIZADO", "SINDICAL", "SINDICATO"]):
+        return None
+    # 2. AUTOGENERADO (IPSS) / autogeneradoipss: NO llenar con CUSPP
+    if any(k in norm_h for k in ["AUTOGENERADOIPSS", "AUTOGENERADO IPSS", "IPSS", "ESSALUD"]):
+        return None
+
     best_field = None
     best_score = 0
     for field_key, aliases in COLUMN_MAPPINGS.items():
@@ -769,6 +778,27 @@ class ExcelTemplateService:
                     dist_part = parts[1]
                     dist = dist or (dist_part.split("(")[0].strip() if "(" in dist_part else dist_part.strip())
 
+            # Normalizar código de Ubigeo INEI estricto (solo 6 dígitos en formato texto, sin nombres de dpto/prov/dist)
+            clean_ub_inei = ""
+            digits_direct = "".join(c for c in str(ub_inei or "") if c.isdigit())
+            if len(digits_direct) == 6:
+                clean_ub_inei = digits_direct
+            elif 0 < len(digits_direct) < 6:
+                clean_ub_inei = digits_direct.zfill(6)
+
+            if not clean_ub_inei and ubigeo_raw:
+                m_ub = re.search(r"\((\d{6})\)", ubigeo_raw) or re.search(r"\b(\d{6})\b", ubigeo_raw)
+                if m_ub:
+                    clean_ub_inei = m_ub.group(1)
+                else:
+                    try:
+                        from backend.services.ubigeo_service import ubigeo_service
+                        res_ub = ubigeo_service.resolve_from_text(ubigeo_raw)
+                        if res_ub and res_ub.get("ubigeo_inei"):
+                            clean_ub_inei = str(res_ub["ubigeo_inei"]).strip().zfill(6)
+                    except Exception:
+                        pass
+
             raw_doc_type = raw_rec.get("doc_type", "DNI") or "DNI"
             is_dni_type = "DNI" in str(raw_doc_type).upper()
 
@@ -883,9 +913,9 @@ class ExcelTemplateService:
                 "department": dept,
                 "province": prov,
                 "district": dist,
-                "ubigeo": ubigeo_raw,
-                "ubigeo_inei": ub_inei or ubigeo_raw,
-                "idubigeo": ub_inei or ubigeo_raw,
+                "ubigeo": clean_ub_inei,
+                "ubigeo_inei": clean_ub_inei,
+                "idubigeo": clean_ub_inei,
                 "ubigeo_reniec": ub_reniec,
                 "issue_date": (raw_rec.get("issue_date") or "").strip(),
                 "expiry_date": (raw_rec.get("expiry_date") or "").strip(),
@@ -975,11 +1005,37 @@ class ExcelTemplateService:
                         cell.value = afp_code
                         cell.alignment = Alignment(horizontal="center", vertical="center")
                         continue
-                    if "AUTOGENERADO" in norm_h or "CUSPP" in norm_h:
+
+                    # REGLA USUARIO: AUTOGENERADO (IPSS) NO LLENAR CON CUSPP
+                    if any(k in norm_h for k in ["AUTOGENERADOIPSS", "AUTOGENERADO IPSS", "IPSS", "ESSALUD"]):
+                        cell.value = baseline_values.get(c_idx, "")
+                        continue
+
+                    # REGLA USUARIO: CUSPP solo en columna AUTOGENERADO (CUSPP) / autogeneradoafp
+                    if ("CUSPP" in norm_h or "AUTOGENERADOAFP" in norm_h or ("AUTOGENERADO" in norm_h and "AFP" in norm_h)):
                         cell.number_format = "@"
                         cell.value = "" if is_onp else str(worker_dni_data.get("cuspp") or "").strip()
                         cell.alignment = Alignment(horizontal="center", vertical="center")
                         continue
+
+                    # REGLA USUARIO: Es Trabajador Sindicalizado / sindicalizado - NO llenar nombres ni apellidos
+                    if any(k in norm_h for k in ["SINDICALIZADO", "SINDICAL", "SINDICATO"]):
+                        cell.value = baseline_values.get(c_idx, "")
+                        continue
+
+                    # REGLA USUARIO: Cod.Ubigeo / idubigeo solo dígitos en formato texto (@), sin nombres
+                    if any(k in norm_h for k in ["IDUBIGEO", "COD UBIGEO", "COD.UBIGEO", "UBIGEO INEI", "COD INEI", "UBIGEO"]):
+                        clean_ub = str(worker_dni_data.get("ubigeo_inei") or worker_dni_data.get("idubigeo") or worker_dni_data.get("ubigeo") or "").strip()
+                        digits_only = "".join(c for c in clean_ub if c.isdigit())
+                        if len(digits_only) > 6:
+                            digits_only = digits_only[:6]
+                        elif 0 < len(digits_only) < 6:
+                            digits_only = digits_only.zfill(6)
+                        cell.number_format = "@"
+                        cell.value = digits_only
+                        cell.alignment = Alignment(horizontal="center", vertical="center")
+                        continue
+
                     if "MIXTA" in norm_h or "TIPO DE COMISION" in norm_h:
                         cell.number_format = "@"
                         cell.value = "" if is_onp else tc_com_val
@@ -1143,6 +1199,27 @@ class ExcelTemplateService:
                     dist_part = parts[2]
                     dist = dist or (dist_part.split("(")[0].strip() if "(" in dist_part else dist_part.strip())
 
+            # Normalizar código de Ubigeo INEI estricto (solo 6 dígitos en formato texto, sin nombres de dpto/prov/dist)
+            clean_ub_inei = ""
+            digits_direct = "".join(c for c in str(ub_inei or "") if c.isdigit())
+            if len(digits_direct) == 6:
+                clean_ub_inei = digits_direct
+            elif 0 < len(digits_direct) < 6:
+                clean_ub_inei = digits_direct.zfill(6)
+
+            if not clean_ub_inei and ubigeo_raw:
+                m_ub = re.search(r"\((\d{6})\)", ubigeo_raw) or re.search(r"\b(\d{6})\b", ubigeo_raw)
+                if m_ub:
+                    clean_ub_inei = m_ub.group(1)
+                else:
+                    try:
+                        from backend.services.ubigeo_service import ubigeo_service
+                        res_ub = ubigeo_service.resolve_from_text(ubigeo_raw)
+                        if res_ub and res_ub.get("ubigeo_inei"):
+                            clean_ub_inei = str(res_ub["ubigeo_inei"]).strip().zfill(6)
+                    except Exception:
+                        pass
+
             raw_doc_type = raw_rec.get("doc_type", "DNI") or "DNI"
             is_dni_type = "DNI" in str(raw_doc_type).upper()
 
@@ -1256,9 +1333,9 @@ class ExcelTemplateService:
                 "department": dept,
                 "province": prov,
                 "district": dist,
-                "ubigeo": ubigeo_raw,
-                "ubigeo_inei": ub_inei or ubigeo_raw,
-                "idubigeo": ub_inei or ubigeo_raw,
+                "ubigeo": clean_ub_inei,
+                "ubigeo_inei": clean_ub_inei,
+                "idubigeo": clean_ub_inei,
                 "ubigeo_reniec": ub_reniec,
                 "issue_date": (raw_rec.get("issue_date") or "").strip(),
                 "expiry_date": (raw_rec.get("expiry_date") or "").strip(),
@@ -1344,11 +1421,37 @@ class ExcelTemplateService:
                         cell.value = afp_code
                         cell.alignment = Alignment(horizontal="center", vertical="center")
                         continue
-                    if "AUTOGENERADO" in norm_h or "CUSPP" in norm_h:
+
+                    # REGLA USUARIO: AUTOGENERADO (IPSS) NO LLENAR CON CUSPP
+                    if any(k in norm_h for k in ["AUTOGENERADOIPSS", "AUTOGENERADO IPSS", "IPSS", "ESSALUD"]):
+                        cell.value = baseline_values.get(c_idx, "")
+                        continue
+
+                    # REGLA USUARIO: CUSPP solo en columna AUTOGENERADO (CUSPP) / autogeneradoafp
+                    if ("CUSPP" in norm_h or "AUTOGENERADOAFP" in norm_h or ("AUTOGENERADO" in norm_h and "AFP" in norm_h)):
                         cell.number_format = "@"
                         cell.value = "" if is_onp else str(worker_dni_data.get("cuspp") or "").strip()
                         cell.alignment = Alignment(horizontal="center", vertical="center")
                         continue
+
+                    # REGLA USUARIO: Es Trabajador Sindicalizado / sindicalizado - NO llenar nombres ni apellidos
+                    if any(k in norm_h for k in ["SINDICALIZADO", "SINDICAL", "SINDICATO"]):
+                        cell.value = baseline_values.get(c_idx, "")
+                        continue
+
+                    # REGLA USUARIO: Cod.Ubigeo / idubigeo solo dígitos en formato texto (@), sin nombres
+                    if any(k in norm_h for k in ["IDUBIGEO", "COD UBIGEO", "COD.UBIGEO", "UBIGEO INEI", "COD INEI", "UBIGEO"]):
+                        clean_ub = str(worker_dni_data.get("ubigeo_inei") or worker_dni_data.get("idubigeo") or worker_dni_data.get("ubigeo") or "").strip()
+                        digits_only = "".join(c for c in clean_ub if c.isdigit())
+                        if len(digits_only) > 6:
+                            digits_only = digits_only[:6]
+                        elif 0 < len(digits_only) < 6:
+                            digits_only = digits_only.zfill(6)
+                        cell.number_format = "@"
+                        cell.value = digits_only
+                        cell.alignment = Alignment(horizontal="center", vertical="center")
+                        continue
+
                     if "MIXTA" in norm_h or "TIPO DE COMISION" in norm_h:
                         cell.number_format = "@"
                         cell.value = "" if is_onp else tc_com_val

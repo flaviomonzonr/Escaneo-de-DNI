@@ -327,8 +327,14 @@ export default function ReviewForm({
       case 'ubigeo':
         return (!formData.ubigeo || !formData.ubigeo.trim()) && !formData.ubigeo_inei;
       case 'phone':
+        if (scanResult?.is_historical || scanResult?.source === 'data_historica') {
+          return !formData.phone || !formData.phone.trim();
+        }
         return !formData.phone || formData.phone.trim() === '' || formData.phone === '999999999';
       case 'email':
+        if (scanResult?.is_historical || scanResult?.source === 'data_historica') {
+          return !formData.email || !formData.email.trim();
+        }
         return !formData.email || formData.email.trim() === '' || formData.email === 'sincorreo@gmail.com';
       case 'civil_status':
         return !formData.civil_status || !formData.civil_status.trim();
