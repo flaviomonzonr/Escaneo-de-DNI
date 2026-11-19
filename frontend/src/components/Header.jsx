@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   Menu,
   RefreshCw,
@@ -11,6 +11,8 @@ import {
   X,
   Moon,
   Sun,
+  Palette,
+  Sparkles,
 } from 'lucide-react';
 
 export default function Header({
@@ -24,6 +26,28 @@ export default function Header({
 }) {
   const [showShareModal, setShowShareModal] = useState(false);
   const [copiedUrl, setCopiedUrl] = useState('');
+  const [showThemeMenu, setShowThemeMenu] = useState(false);
+  const themeMenuRef = useRef(null);
+
+  const THEMES = [
+    { id: 'dark', label: 'Oscuro Suave', desc: 'Pizarra descansada (Recomendado)', icon: Moon, color: 'text-cyan-300' },
+    { id: 'deep', label: 'Noche Marina', desc: 'Azul marino original', icon: Sparkles, color: 'text-blue-400' },
+    { id: 'steel', label: 'Gris Grafito', desc: 'Acero de alto contraste', icon: Palette, color: 'text-slate-300' },
+    { id: 'light', label: 'Modo Claro', desc: 'Calcita de día', icon: Sun, color: 'text-amber-300' },
+  ];
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (themeMenuRef.current && !themeMenuRef.current.contains(e.target)) {
+        setShowThemeMenu(false);
+      }
+    };
+    if (showThemeMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showThemeMenu]);
+
   const isOnline = healthInfo && (healthInfo.status === 'healthy' || healthInfo.status === 'degraded');
 
   const wifiUrls = healthInfo?.wifi_urls?.length
@@ -153,18 +177,59 @@ export default function Header({
               </button>
             )}
 
-            {/* Dark / Light Minimal Toggle - Strict: No yellow sun */}
-            <button
-              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-              className="p-2 rounded-lg text-slate-300 hover:text-white bg-[#0B1528] hover:bg-[#101F3B] border border-[#1E3557] transition btn-precision"
-              title={theme === 'dark' ? 'Cambiar a modo Claro' : 'Cambiar a modo Oscuro'}
-            >
-              {theme === 'dark' ? (
-                <Sun className="w-4 h-4 text-cyan-300" />
-              ) : (
-                <Moon className="w-4 h-4 text-slate-300" />
+            {/* Selector Multi-Tema (Suave, Noche Marina, Acero, Claro) */}
+            <div className="relative" ref={themeMenuRef}>
+              <button
+                type="button"
+                onClick={() => setShowThemeMenu(!showThemeMenu)}
+                className="p-2 rounded-lg text-slate-200 hover:text-white bg-[#13223f] hover:bg-[#1b2e54] border border-[#2d466f] transition btn-precision flex items-center gap-1.5 shadow-sm"
+                title="Elegir tema de interfaz"
+              >
+                {theme === 'dark' && <Moon className="w-4 h-4 text-cyan-300" />}
+                {theme === 'deep' && <Sparkles className="w-4 h-4 text-blue-400" />}
+                {theme === 'steel' && <Palette className="w-4 h-4 text-slate-300" />}
+                {theme === 'light' && <Sun className="w-4 h-4 text-amber-400" />}
+                <span className="text-[11px] font-mono hidden md:inline font-bold">
+                  {THEMES.find(t => t.id === theme)?.label || 'Tema'}
+                </span>
+              </button>
+
+              {showThemeMenu && (
+                <div className="absolute right-0 mt-1.5 w-60 bg-[#13223f] border border-[#2d466f] rounded-xl shadow-2xl p-1.5 z-50 animate-in fade-in zoom-in-95 duration-100">
+                  <div className="px-2 py-1 text-[10px] font-mono uppercase tracking-wider text-slate-400 border-b border-[#2d466f] mb-1">
+                    Seleccionar Tema
+                  </div>
+                  {THEMES.map((t) => {
+                    const IconComp = t.icon;
+                    const isActive = theme === t.id;
+                    return (
+                      <button
+                        key={t.id}
+                        type="button"
+                        onClick={() => {
+                          setTheme(t.id);
+                          setShowThemeMenu(false);
+                        }}
+                        className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left text-xs transition ${
+                          isActive
+                            ? 'bg-cyan-500/20 text-cyan-200 border border-cyan-500/50 font-bold'
+                            : 'text-slate-200 hover:bg-[#1b2e54] hover:text-white'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <IconComp className={`w-4 h-4 ${t.color}`} />
+                          <div>
+                            <div className="font-semibold text-xs leading-none">{t.label}</div>
+                            <div className="text-[10px] text-slate-400 mt-0.5">{t.desc}</div>
+                          </div>
+                        </div>
+                        {isActive && <Check className="w-3.5 h-3.5 text-cyan-400" />}
+                      </button>
+                    );
+                  })}
+                </div>
               )}
-            </button>
+            </div>
 
             {/* Wi-Fi Share Link */}
             <button

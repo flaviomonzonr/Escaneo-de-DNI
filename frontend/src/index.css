@@ -13,6 +13,28 @@
 :root,
 [data-theme="dark"] {
   --color-scheme: dark;
+  /* Oscuro Suave (Slate Navy) - Tonos más suaves, descansados y de alto contraste */
+  --bg-canvas: #0b1329;
+  --bg-surface: #13223f;
+  --bg-surface-elevated: #1b2e54;
+  --bg-surface-alt: #233b6a;
+  --bg-viewfinder: #0f1c34;
+  --border-subtle: #2d466f;
+  --border-medium: #3c5d94;
+  --border-strong: #527bbd;
+  --border-reticle: #06b6d4;
+  --text-primary: #f8fafc;
+  --text-secondary: #e2e8f0;
+  --text-tertiary: #cbd5e1;
+  --text-muted: #94a3b8;
+  --laser-beam: linear-gradient(90deg, transparent 0%, #00e5ff 25%, #06b6d4 50%, #00e5ff 75%, transparent 100%);
+  --laser-glow: 0 0 16px rgba(6, 182, 212, 0.85);
+  --grid-color: rgba(6, 182, 212, 0.09);
+}
+
+[data-theme="deep"] {
+  --color-scheme: dark;
+  /* Noche Marina (Original Chavín) */
   --bg-canvas: #060d1a;
   --bg-surface: #0b1528;
   --bg-surface-elevated: #101f3b;
@@ -31,8 +53,30 @@
   --grid-color: rgba(6, 182, 212, 0.08);
 }
 
+[data-theme="steel"] {
+  --color-scheme: dark;
+  /* Gris Acero / Grafito Neutro de Alto Contraste */
+  --bg-canvas: #111827;
+  --bg-surface: #1f2937;
+  --bg-surface-elevated: #2d3748;
+  --bg-surface-alt: #374151;
+  --bg-viewfinder: #111827;
+  --border-subtle: #374151;
+  --border-medium: #4b5563;
+  --border-strong: #6b7280;
+  --border-reticle: #38bdf8;
+  --text-primary: #f9fafb;
+  --text-secondary: #e5e7eb;
+  --text-tertiary: #cbd5e1;
+  --text-muted: #9ca3af;
+  --laser-beam: linear-gradient(90deg, transparent 0%, #38bdf8 25%, #0284c7 50%, #38bdf8 75%, transparent 100%);
+  --laser-glow: 0 0 16px rgba(56, 189, 248, 0.85);
+  --grid-color: rgba(56, 189, 248, 0.08);
+}
+
 [data-theme="light"] {
   --color-scheme: light;
+  /* Modo Claro (Calcita) */
   --bg-canvas: #f4f7fb;
   --bg-surface: #ffffff;
   --bg-surface-elevated: #eaf1f8;

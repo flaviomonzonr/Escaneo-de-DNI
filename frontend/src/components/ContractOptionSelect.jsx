@@ -129,17 +129,17 @@ export default function ContractOptionSelect({
           compact ? 'px-2 py-1 text-xs h-7' : 'px-3 py-2 text-sm h-10'
         } ${
           disabled 
-            ? 'opacity-50 cursor-not-allowed bg-[#0B1528] text-slate-400 border-[#1E3557]' 
-            : 'bg-[#0B1528] hover:bg-[#101F3B] cursor-pointer text-white border-[#1D334E] hover:border-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-400/40'
+            ? 'opacity-50 cursor-not-allowed bg-slate-800/50 text-slate-400 border-slate-700' 
+            : 'bg-slate-800 hover:bg-slate-700/90 cursor-pointer text-white border-slate-600 hover:border-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-400/40 shadow-sm'
         } ${selectedItem ? 'font-medium' : 'text-slate-400'}`}
       >
         <span className="truncate pr-1">
           {selectedItem ? (
             <span className="flex items-center gap-1.5">
-              <span className="px-1.5 py-0.5 rounded bg-[#0A3D44] text-teal-200 font-mono text-[11px] font-bold border border-teal-500/40">
+              <span className="px-1.5 py-0.5 rounded bg-teal-900/60 text-teal-200 font-mono text-[11px] font-bold border border-teal-500/50">
                 {selectedItem.code}
               </span>
-              {!compact && <span className="truncate text-slate-200">{selectedItem.description}</span>}
+              {!compact && <span className="truncate text-slate-100">{selectedItem.description}</span>}
             </span>
           ) : (
             placeholder
@@ -151,7 +151,7 @@ export default function ContractOptionSelect({
             <span
               onClick={handleClear}
               title="Limpiar"
-              className="hover:text-rose-400 p-0.5 rounded hover:bg-[#101F3B] transition-colors"
+              className="hover:text-rose-400 p-0.5 rounded hover:bg-slate-700 transition-colors"
             >
               <X className="w-3 h-3" />
             </span>
@@ -164,10 +164,10 @@ export default function ContractOptionSelect({
       {isOpen && (
         <div
           role="listbox"
-          className="absolute z-50 mt-1 w-80 max-w-[90vw] bg-[#040914] border border-[#274468] rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-100 left-0"
+          className="absolute z-50 mt-1 w-80 max-w-[90vw] bg-slate-900 border border-slate-600 rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-100 left-0"
         >
           {/* Barra de Búsqueda */}
-          <div className="p-2.5 border-b border-[#1E3557] bg-[#060D1A] flex items-center gap-2">
+          <div className="p-2.5 border-b border-slate-700 bg-slate-850 flex items-center gap-2">
             <Search className="w-3.5 h-3.5 text-cyan-400 flex-shrink-0" />
             <input
               ref={inputRef}
@@ -178,7 +178,7 @@ export default function ContractOptionSelect({
                 setHighlightedIndex(0);
               }}
               placeholder="Buscar por código o nombre..."
-              className="w-full bg-[#0B1528] border border-[#1D334E] rounded-md px-2.5 py-1 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400"
+              className="w-full bg-slate-800 border border-slate-600 rounded-md px-2.5 py-1 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-cyan-400"
             />
             {searchTerm && (
               <button
@@ -194,7 +194,7 @@ export default function ContractOptionSelect({
           {/* Lista de Opciones */}
           <ul
             ref={listRef}
-            className="max-h-60 overflow-y-auto py-1 divide-y divide-[#101F3B]"
+            className="max-h-60 overflow-y-auto py-1 divide-y divide-slate-800"
           >
             {filteredOptions.length === 0 ? (
               <li className="px-3 py-3 text-xs text-slate-400 text-center italic">
@@ -216,11 +216,11 @@ export default function ContractOptionSelect({
                       isHighlighted
                         ? 'bg-cyan-500/20 text-cyan-100'
                         : isSelected
-                        ? 'bg-[#101F3B] text-white'
-                        : 'text-slate-300 hover:bg-[#0B1528]'
+                        ? 'bg-slate-800 text-white font-semibold'
+                        : 'text-slate-200 hover:bg-slate-800/70'
                     }`}
                   >
-                    <span className="font-mono font-bold px-1.5 py-0.5 rounded bg-[#0A3D44] border border-teal-500/40 text-teal-200 flex-shrink-0">
+                    <span className="font-mono font-bold px-1.5 py-0.5 rounded bg-teal-900/60 border border-teal-500/40 text-teal-200 flex-shrink-0">
                       {opt.code}
                     </span>
                     <span className="flex-1 leading-tight text-slate-200">
@@ -236,7 +236,7 @@ export default function ContractOptionSelect({
           </ul>
 
           {/* Footer de navegación rápida */}
-          <div className="px-3 py-1.5 bg-[#060D1A] border-t border-[#1E3557] text-[10px] text-slate-400 flex justify-between font-mono">
+          <div className="px-3 py-1.5 bg-slate-850 border-t border-slate-700 text-[10px] text-slate-400 flex justify-between font-mono">
             <span>{filteredOptions.length} opción(es)</span>
             <span>Usa ⇅ flechas + Enter</span>
           </div>
