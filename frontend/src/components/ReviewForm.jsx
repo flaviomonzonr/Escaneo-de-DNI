@@ -218,7 +218,12 @@ export default function ReviewForm({
     setShowUbigeoDropdown(false);
   };
 
-  const fieldsMeta = scanResult?.fields || {};
+  const [fieldsMeta, setFieldsMeta] = useState(scanResult?.fields || {});
+  useEffect(() => {
+    if (scanResult?.fields) {
+      setFieldsMeta(scanResult.fields);
+    }
+  }, [scanResult]);
   const isDni = formData.doc_type === 'DNI' || formData.doc_type === 'DNI Electrónico';
 
   const handleChange = (field, value) => {

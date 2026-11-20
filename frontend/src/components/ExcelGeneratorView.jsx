@@ -222,24 +222,34 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
   };
 
   useEffect(() => {
-    const updateWidths = () => {
+    const updateScrollPercentages = () => {
       if (contractTableScrollRef.current) {
-        const sw = contractTableScrollRef.current.scrollWidth;
-        if (sw > 0) setContractContentWidth(sw);
+        const el = contractTableScrollRef.current;
+        const max = el.scrollWidth - el.clientWidth;
+        if (max > 0) {
+          setContractScrollPercent(Math.min(100, Math.max(0, (el.scrollLeft / max) * 100)));
+        } else {
+          setContractScrollPercent(0);
+        }
       }
       if (personalTableScrollRef.current) {
-        const sw = personalTableScrollRef.current.scrollWidth;
-        if (sw > 0) setPersonalContentWidth(sw);
+        const el = personalTableScrollRef.current;
+        const max = el.scrollWidth - el.clientWidth;
+        if (max > 0) {
+          setPersonalScrollPercent(Math.min(100, Math.max(0, (el.scrollLeft / max) * 100)));
+        } else {
+          setPersonalScrollPercent(0);
+        }
       }
     };
-    updateWidths();
-    const timer1 = setTimeout(updateWidths, 150);
-    const timer2 = setTimeout(updateWidths, 600);
-    window.addEventListener('resize', updateWidths);
+    updateScrollPercentages();
+    const timer1 = setTimeout(updateScrollPercentages, 150);
+    const timer2 = setTimeout(updateScrollPercentages, 600);
+    window.addEventListener('resize', updateScrollPercentages);
     return () => {
       clearTimeout(timer1);
       clearTimeout(timer2);
-      window.removeEventListener('resize', updateWidths);
+      window.removeEventListener('resize', updateScrollPercentages);
     };
   }, [records, viewMode]);
 

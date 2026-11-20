@@ -9,6 +9,7 @@ import ReviewForm from './components/ReviewForm';
 import TemplatesView from './components/TemplatesView';
 import HistoryView from './components/HistoryView';
 import ExcelGeneratorView from './components/ExcelGeneratorView';
+import ErrorBoundary from './components/ErrorBoundary';
 import BottomNav from './components/BottomNav';
 import { api } from './services/api';
 import {
@@ -509,25 +510,34 @@ export default function App() {
 
             {/* TAB 2: GENERAR EXCEL POR LOTE */}
             {activeTab === 'batch_excel' && (
-              <ExcelGeneratorView
-                onNavigateToScan={() => setActiveTab('scan')}
-                onNavigateToTemplates={() => setActiveTab('templates')}
-                reconnectTrigger={reconnectTrigger}
-              />
+              <ErrorBoundary
+                componentName="Generador de Excel por Lote"
+                onReset={() => setActiveTab('scan')}
+              >
+                <ExcelGeneratorView
+                  onNavigateToScan={() => setActiveTab('scan')}
+                  onNavigateToTemplates={() => setActiveTab('templates')}
+                  reconnectTrigger={reconnectTrigger}
+                />
+              </ErrorBoundary>
             )}
 
             {/* TAB 3: PLANTILLAS EXCEL */}
             {activeTab === 'templates' && (
-              <TemplatesView
-                reconnectTrigger={reconnectTrigger}
-              />
+              <ErrorBoundary componentName="Gestión de Plantillas" onReset={() => setActiveTab('scan')}>
+                <TemplatesView
+                  reconnectTrigger={reconnectTrigger}
+                />
+              </ErrorBoundary>
             )}
 
             {/* TAB 4: HISTORIAL DE REGISTROS */}
             {activeTab === 'scan_history' && (
-              <HistoryView
-                reconnectTrigger={reconnectTrigger}
-              />
+              <ErrorBoundary componentName="Historial de Escaneos" onReset={() => setActiveTab('scan')}>
+                <HistoryView
+                  reconnectTrigger={reconnectTrigger}
+                />
+              </ErrorBoundary>
             )}
 
           </div>
