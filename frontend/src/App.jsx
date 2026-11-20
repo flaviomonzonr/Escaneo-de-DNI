@@ -257,7 +257,7 @@ export default function App() {
         )}
 
         {/* Main Workspace Body - Full width & padding optimized for Fullscreen */}
-        <main className={`flex-1 w-full min-w-0 max-w-full overflow-x-hidden px-3 sm:px-6 lg:px-8 xl:px-10 pt-4 pb-24 lg:pb-8 ${getMainContainerClass()} transition-all duration-200`}>
+        <main className={`flex-1 w-full min-w-0 max-w-full overflow-x-hidden px-2 sm:px-4 lg:px-5 xl:px-6 pt-2 pb-16 lg:pb-6 ${getMainContainerClass()} transition-all duration-200`}>
           
           {/* Simulated Smartphone Shell Wrapper when deviceMode === 'mobile' & showDeviceFrame (Desktop only) */}
           <div className={!isMobileScreen && deviceMode === 'mobile' && showDeviceFrame ? 'bg-[#040914] rounded-[38px] shadow-2xl border-[6px] border-[#1D334E] overflow-hidden relative p-3 sm:p-4 my-2 min-h-[740px]' : ''}>

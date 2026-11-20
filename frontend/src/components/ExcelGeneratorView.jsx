@@ -958,12 +958,12 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
       )}
 
       {/* BARRA SUPERIOR UNIFICADA DE CONTROL Y GENERACIÓN */}
-      <div className="bg-slate-900/95 border border-slate-700/80 rounded-xl p-3 sm:p-4 shadow-xl space-y-3">
+      <div className="bg-slate-900/95 border border-slate-700/80 rounded-xl p-2.5 sm:p-3 shadow-xl space-y-2">
         {/* Fila 1: Selector de Plantilla + Botón de Acción Principal */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-2.5">
           <div className="flex flex-wrap items-center gap-2 flex-1 min-w-0">
             <span className="text-xs font-bold text-cyan-300 flex items-center gap-1.5 flex-shrink-0">
-              <FileSpreadsheet className="w-4 h-4 text-cyan-300" />
+              <FileSpreadsheet className="w-3.5 h-3.5 text-cyan-300" />
               <span>Plantilla Excel:</span>
             </span>
 
@@ -975,7 +975,7 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
               <select
                 value={selectedTemplateKey}
                 onChange={(e) => handleSelectTemplateKey(e.target.value)}
-                className="flex-1 max-w-md px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-700 text-white text-xs font-semibold focus:outline-none focus:border-cyan-400 truncate"
+                className="flex-1 max-w-md px-2.5 py-1 rounded-lg bg-slate-950 border border-slate-700 text-white text-xs font-semibold focus:outline-none focus:border-cyan-400 truncate"
               >
                 {combinedTemplates.map((tpl) => (
                   <option key={tpl.key} value={tpl.key}>
@@ -998,7 +998,7 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
             <button
               onClick={handleGenerateExcel}
               disabled={isGenerating || selectedIds.size === 0 || !selectedTemplateObj}
-              className={`px-5 py-2.5 rounded-lg text-xs sm:text-sm font-extrabold text-white shadow-lg flex items-center justify-center gap-2 transition transform active:scale-95 ${
+              className={`px-4 py-2 rounded-lg text-xs font-extrabold text-white shadow-lg flex items-center justify-center gap-2 transition transform active:scale-95 ${
                 isGenerating || selectedIds.size === 0 || !selectedTemplateObj
                   ? 'bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed'
                   : 'bg-gradient-to-r from-cyan-400 via-teal-400 to-emerald-400 hover:from-cyan-300 hover:to-teal-300 text-slate-950 font-black shadow-cyan-500/20'
@@ -1006,12 +1006,12 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
             >
               {isGenerating ? (
                 <>
-                  <RefreshCw className="w-4 h-4 animate-spin text-slate-950" />
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin text-slate-950" />
                   <span>Generando Excel...</span>
                 </>
               ) : (
                 <>
-                  <Sparkles className="w-4 h-4 text-slate-950" />
+                  <Sparkles className="w-3.5 h-3.5 text-slate-950" />
                   <span>Generar Excel ({selectedIds.size} Filas) ➔</span>
                 </>
               )}
@@ -1020,7 +1020,7 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
         </div>
 
         {/* Fila 2: Filtros de Fecha, Hora, Búsqueda y Selector de Modos de Vista */}
-        <div className="flex flex-wrap items-center gap-2 pt-2.5 border-t border-slate-800 text-xs">
+        <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-800 text-xs">
           {/* Selector de Fecha */}
           <div className="flex items-center gap-1.5 min-w-[170px]">
             <Calendar className="w-3.5 h-3.5 text-cyan-300 flex-shrink-0" />
@@ -1158,24 +1158,24 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
           BARRA RÁPIDA: BÁSICOS SUGERIDOS (1-CLIC) Y REPLICACIÓN MAESTRA DE FILA 1
           (El panel masivo pesado fue eliminado para una experiencia 100% ágil)
           ========================================================================= */}
-      <div className="p-3 bg-slate-900 border border-teal-500/40 rounded-xl shadow-xl flex flex-col xl:flex-row xl:items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-1.5 text-xs font-black text-cyan-300 mr-1 flex-shrink-0">
-            <DollarSign className="w-4 h-4 text-cyan-300" />
-            <span className="tracking-wide uppercase">Básicos Sugeridos:</span>
+      <div className="p-2 sm:p-2.5 bg-slate-900 border border-teal-500/40 rounded-xl shadow-xl flex flex-col xl:flex-row xl:items-center justify-between gap-2 text-xs">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <div className="flex items-center gap-1 text-[11px] font-black text-cyan-300 mr-1 flex-shrink-0">
+            <DollarSign className="w-3.5 h-3.5 text-cyan-300" />
+            <span className="tracking-wide uppercase">Básicos:</span>
           </div>
 
           {/* Grupo Jornal Agrario Diario */}
-          <div className="flex items-center gap-1 bg-[#0A3D44]/60 border border-teal-500/40 px-2.5 py-1 rounded-lg">
-            <span className="text-[10px] font-extrabold text-teal-200 uppercase tracking-wider mr-1">
-              🌾 Jornal Diario:
+          <div className="flex items-center gap-1 bg-[#0A3D44]/60 border border-teal-500/40 px-2 py-0.5 rounded-lg">
+            <span className="text-[9px] font-extrabold text-teal-200 uppercase tracking-wider mr-0.5">
+              🌾 Jornal:
             </span>
             {[51.82, 53.08, 55.88].map((amt) => (
               <button
                 key={amt}
                 type="button"
                 onClick={() => handleApplySuggestedBasico(amt)}
-                className="px-2 py-0.5 rounded bg-[#0A3D44] hover:bg-teal-400 hover:text-slate-950 text-cyan-200 font-mono font-black text-xs border border-teal-500/50 transition transform active:scale-95 shadow-sm"
+                className="px-1.5 py-0.5 rounded bg-[#0A3D44] hover:bg-teal-400 hover:text-slate-950 text-cyan-200 font-mono font-black text-[11px] border border-teal-500/50 transition transform active:scale-95 shadow-xs"
                 title={`Aplicar S/. ${amt} (Jornal Agrario) a todas las filas seleccionadas`}
               >
                 S/. {amt}
@@ -1184,8 +1184,8 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
           </div>
 
           {/* Grupo Sueldos Mensuales */}
-          <div className="flex flex-wrap items-center gap-1 bg-slate-950 border border-slate-700 px-2.5 py-1 rounded-lg">
-            <span className="text-[10px] font-extrabold text-emerald-400 uppercase tracking-wider mr-1">
+          <div className="flex flex-wrap items-center gap-1 bg-slate-950 border border-slate-700 px-2 py-0.5 rounded-lg">
+            <span className="text-[9px] font-extrabold text-emerald-400 uppercase tracking-wider mr-0.5">
               💼 Mensual:
             </span>
             {[1800, 2000, 2500, 3000, 3500, 4000, 4500, 5000, 6000, 7000, 8000, 9000, 10000].map((amt) => (
@@ -1193,7 +1193,7 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
                 key={amt}
                 type="button"
                 onClick={() => handleApplySuggestedBasico(amt)}
-                className="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-emerald-400 hover:text-slate-950 text-slate-200 font-mono font-bold text-xs border border-slate-700 transition transform active:scale-95 shadow-sm"
+                className="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-emerald-400 hover:text-slate-950 text-slate-200 font-mono font-bold text-[11px] border border-slate-700 transition transform active:scale-95 shadow-xs"
                 title={`Aplicar S/. ${amt.toLocaleString()} mensual a todas las filas seleccionadas`}
               >
                 {amt >= 1000 ? `${amt / 1000}k` : amt}
@@ -1207,15 +1207,15 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
           type="button"
           onClick={handleCopyFullRow1ToAll}
           disabled={records.length === 0}
-          className="px-4 py-2 rounded-lg bg-gradient-to-r from-teal-500 via-teal-600 to-emerald-600 hover:from-teal-400 hover:to-emerald-500 text-slate-950 text-xs font-black shadow-lg flex items-center justify-center gap-2 transition transform active:scale-95 flex-shrink-0"
+          className="px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-teal-500 via-teal-600 to-emerald-600 hover:from-teal-400 hover:to-emerald-500 text-slate-950 text-xs font-black shadow-md flex items-center justify-center gap-1.5 transition transform active:scale-95 flex-shrink-0"
           title={
             viewMode === 'personal'
               ? 'Copia Cargo, Planilla, Cat. Ocupacional, Tipo Trab., Básico, AFP y sucursal de Fila 1 a las seleccionadas'
               : 'Copia Cod. Planilla, Básico, Fechas, Duración y Tipo de Contrato de Fila 1 a las seleccionadas'
           }
         >
-          <Zap className="w-4 h-4 fill-slate-950 text-slate-950" />
-          <span>⚡ Copiar Toda la Fila 1 a Filas Seleccionadas ({selectedIds.size})</span>
+          <Zap className="w-3.5 h-3.5 fill-slate-950 text-slate-950" />
+          <span>⚡ Copiar Toda la Fila 1 ({selectedIds.size})</span>
         </button>
       </div>
 
@@ -1264,35 +1264,35 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
 
           {/* DESPLAZADOR HORIZONTAL LARGO (FULL WIDTH) DE COLUMNAS DE CONTRATOS */}
           <div
-            className="px-4 py-3 border-b flex flex-col gap-2.5 shadow-md select-none"
+            className="px-3 py-2 border-b flex flex-col gap-1.5 shadow-md select-none"
             style={{ backgroundColor: 'var(--bg-surface-elevated, #0d192e)', borderColor: 'var(--border-subtle, #1e293b)' }}
           >
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="flex items-center gap-2.5">
-                <span className="p-1.5 rounded-lg bg-cyan-950/80 border border-cyan-500/50 text-cyan-300 shadow-xs">
-                  <ArrowLeftRight className="w-4 h-4 text-cyan-400 animate-pulse" />
+            <div className="flex flex-wrap items-center justify-between gap-1.5">
+              <div className="flex items-center gap-2">
+                <span className="p-1 rounded-md bg-cyan-950/80 border border-cyan-500/50 text-cyan-300 shadow-xs">
+                  <ArrowLeftRight className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
                 </span>
-                <div className="flex items-baseline gap-2">
+                <div className="flex items-baseline gap-1.5">
                   <span className="text-xs font-bold font-mono tracking-wide text-slate-200">
                     Desplazar Personal / Contratos:
                   </span>
                   <span className="px-2 py-0.5 rounded-full bg-cyan-500/20 border border-cyan-400/50 text-cyan-300 font-mono font-black text-xs">
                     {Math.round(contractScrollPercent)}%
                   </span>
-                  <span className="hidden sm:inline text-[11px] text-cyan-400 font-mono font-medium">
+                  <span className="hidden sm:inline text-[10px] text-cyan-400 font-mono font-medium">
                     ({getContractSectionDescription(contractScrollPercent)})
                   </span>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 text-xs">
-                <span className="hidden md:inline font-mono text-[11px] text-slate-400 mr-1">
-                  11 columnas oficiales • {records.length} trabajadores
+              <div className="flex items-center gap-1.5 text-xs">
+                <span className="hidden md:inline font-mono text-[10px] text-slate-400 mr-1">
+                  11 columnas • {records.length} trabajadores
                 </span>
                 <button
                   type="button"
                   onClick={() => handleJumpContractScroll(0)}
-                  className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 text-[11px] font-mono font-semibold transition shadow-xs"
+                  className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 text-[10px] font-mono font-semibold transition shadow-xs"
                   title="Ir al inicio (Columna 1: DNI / Nombres)"
                 >
                   ◀ Inicio
@@ -1300,7 +1300,7 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
                 <button
                   type="button"
                   onClick={() => handleJumpContractScroll(100)}
-                  className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 text-[11px] font-mono font-semibold transition shadow-xs"
+                  className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 text-[10px] font-mono font-semibold transition shadow-xs"
                   title="Ir al final (Columna 11: Tipo Contrato y Ref)"
                 >
                   Fin ▶
@@ -1327,38 +1327,38 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
           <div
             ref={contractTableScrollRef}
             onScroll={handleContractTableScroll}
-            className="overflow-x-auto w-full max-w-full max-h-[calc(100vh-280px)] min-h-[400px] custom-table-scrollbar"
+            className="overflow-x-auto w-full max-w-full max-h-[calc(100vh-240px)] min-h-[360px] custom-table-scrollbar"
           >
-            <table className="min-w-[1900px] w-full border-collapse text-left text-xs">
+            <table className="min-w-[1260px] w-full border-collapse text-left text-xs">
               <thead className="sticky top-0 z-20 shadow-md">
-                <tr className="divide-x divide-slate-700 text-[11px] font-extrabold uppercase">
+                <tr className="divide-x divide-slate-700 text-[10px] font-extrabold uppercase">
                   {/* Selector checkbox (Sticky Izquierda) */}
-                  <th className="p-3 w-12 text-center bg-slate-900 text-slate-300 border-b-2 border-slate-600 sticky left-0 z-30 shadow-[2px_0_6px_rgba(0,0,0,0.3)]">
+                  <th className="p-2 w-10 text-center bg-slate-900 text-slate-300 border-b-2 border-slate-600 sticky left-0 z-30 shadow-[2px_0_6px_rgba(0,0,0,0.3)]">
                     #
                   </th>
 
                   {/* 1. Nro. Documento (Sticky Izquierda) */}
-                  <th className="p-3 min-w-[130px] bg-slate-900 text-cyan-200 border-b-2 border-cyan-400 sticky left-12 z-30 shadow-[4px_0_10px_rgba(0,0,0,0.35)]">
+                  <th className="p-2 min-w-[110px] bg-slate-900 text-cyan-200 border-b-2 border-cyan-400 sticky left-10 z-30 shadow-[4px_0_10px_rgba(0,0,0,0.35)]">
                     Nro. Documento
                   </th>
 
                   {/* 2. Apellidos y Nombres */}
-                  <th className="p-3 min-w-[260px] bg-slate-800/95 text-cyan-200 border-b-2 border-cyan-400">
+                  <th className="p-2 min-w-[200px] bg-slate-800/95 text-cyan-200 border-b-2 border-cyan-400">
                     Apellidos y Nombres
                   </th>
 
                   {/* 3. Cod. Planilla (Amarillo) */}
-                  <th className="p-2.5 min-w-[150px] bg-teal-950/80 text-teal-100 border-b-2 border-teal-400">
-                    <div className="flex items-center justify-between gap-1.5">
-                      <span className="font-bold">🔷 Cod. Planilla</span>
+                  <th className="p-2 min-w-[115px] bg-teal-950/80 text-teal-100 border-b-2 border-teal-400">
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="font-bold">🔷 Planilla</span>
                       {records.length > 0 && (
                         <button
                           type="button"
                           onClick={() => handleCopyFieldFromRow1('cod_planilla', 'Cod. Planilla')}
-                          className="px-2 py-1 rounded bg-teal-600 hover:bg-teal-500 text-white text-[10px] font-black shadow flex items-center gap-1 transition"
+                          className="px-1.5 py-0.5 rounded bg-teal-600 hover:bg-teal-500 text-white text-[9px] font-black shadow flex items-center gap-0.5 transition"
                           title="Copiar Cod. Planilla de Fila 1 a seleccionados"
                         >
-                          <ArrowDown className="w-3 h-3" />
+                          <ArrowDown className="w-2.5 h-2.5" />
                           <span>1°</span>
                         </button>
                       )}
@@ -1366,17 +1366,17 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
                   </th>
 
                   {/* 4. Nro. Contrato (Verde) */}
-                  <th className="p-2.5 min-w-[140px] bg-slate-800/95 text-cyan-200 border-b-2 border-cyan-400">
-                    <div className="flex items-center justify-between gap-1.5">
+                  <th className="p-2 min-w-[105px] bg-slate-800/95 text-cyan-200 border-b-2 border-cyan-400">
+                    <div className="flex items-center justify-between gap-1">
                       <span className="font-bold">Nro. Contrato</span>
                       {records.length > 0 && (
                         <button
                           type="button"
                           onClick={() => handleCopyFieldFromRow1('nro_contrato', 'Nro. Contrato')}
-                          className="px-2 py-1 rounded bg-emerald-700 hover:bg-emerald-600 text-white text-[10px] font-black shadow flex items-center gap-1 transition"
+                          className="px-1.5 py-0.5 rounded bg-emerald-700 hover:bg-emerald-600 text-white text-[9px] font-black shadow flex items-center gap-0.5 transition"
                           title="Copiar Nro. Contrato de Fila 1 a seleccionados"
                         >
-                          <ArrowDown className="w-3 h-3" />
+                          <ArrowDown className="w-2.5 h-2.5" />
                           <span>1°</span>
                         </button>
                       )}
@@ -1384,17 +1384,17 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
                   </th>
 
                   {/* 5. Básico (Amarillo) */}
-                  <th className="p-2.5 min-w-[140px] bg-teal-950/80 text-teal-100 border-b-2 border-teal-400">
-                    <div className="flex items-center justify-between gap-1.5">
+                  <th className="p-2 min-w-[95px] bg-teal-950/80 text-teal-100 border-b-2 border-teal-400">
+                    <div className="flex items-center justify-between gap-1">
                       <span className="font-bold">🔷 Básico</span>
                       {records.length > 0 && (
                         <button
                           type="button"
                           onClick={() => handleCopyFieldFromRow1('basico', 'Básico')}
-                          className="px-2 py-1 rounded bg-teal-600 hover:bg-teal-500 text-white text-[10px] font-black shadow flex items-center gap-1 transition"
+                          className="px-1.5 py-0.5 rounded bg-teal-600 hover:bg-teal-500 text-white text-[9px] font-black shadow flex items-center gap-0.5 transition"
                           title="Copiar Básico de Fila 1 a seleccionados"
                         >
-                          <ArrowDown className="w-3 h-3" />
+                          <ArrowDown className="w-2.5 h-2.5" />
                           <span>1°</span>
                         </button>
                       )}
@@ -1402,17 +1402,17 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
                   </th>
 
                   {/* 6. Inicio Contrato (Amarillo) */}
-                  <th className="p-2.5 min-w-[150px] bg-teal-950/80 text-teal-100 border-b-2 border-teal-400">
-                    <div className="flex items-center justify-between gap-1.5">
-                      <span className="font-bold">🔷 Inicio Contrato</span>
+                  <th className="p-2 min-w-[125px] bg-teal-950/80 text-teal-100 border-b-2 border-teal-400">
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="font-bold">🔷 Inicio</span>
                       {records.length > 0 && (
                         <button
                           type="button"
                           onClick={() => handleCopyFieldFromRow1('inicio_contrato', 'Inicio Contrato')}
-                          className="px-2 py-1 rounded bg-teal-600 hover:bg-teal-500 text-white text-[10px] font-black shadow flex items-center gap-1 transition"
+                          className="px-1.5 py-0.5 rounded bg-teal-600 hover:bg-teal-500 text-white text-[9px] font-black shadow flex items-center gap-0.5 transition"
                           title="Copiar Inicio Contrato de Fila 1 a seleccionados"
                         >
-                          <ArrowDown className="w-3 h-3" />
+                          <ArrowDown className="w-2.5 h-2.5" />
                           <span>1°</span>
                         </button>
                       )}
@@ -1420,17 +1420,17 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
                   </th>
 
                   {/* 7. Duración (Verde) */}
-                  <th className="p-2.5 min-w-[120px] bg-slate-800/95 text-cyan-200 border-b-2 border-cyan-400">
-                    <div className="flex items-center justify-between gap-1.5">
+                  <th className="p-2 min-w-[95px] bg-slate-800/95 text-cyan-200 border-b-2 border-cyan-400">
+                    <div className="flex items-center justify-between gap-1">
                       <span className="font-bold">Duración</span>
                       {records.length > 0 && (
                         <button
                           type="button"
                           onClick={() => handleCopyFieldFromRow1('duracion', 'Duración')}
-                          className="px-2 py-1 rounded bg-emerald-700 hover:bg-emerald-600 text-white text-[10px] font-black shadow flex items-center gap-1 transition"
+                          className="px-1.5 py-0.5 rounded bg-emerald-700 hover:bg-emerald-600 text-white text-[9px] font-black shadow flex items-center gap-0.5 transition"
                           title="Copiar Duración de Fila 1 a seleccionados"
                         >
-                          <ArrowDown className="w-3 h-3" />
+                          <ArrowDown className="w-2.5 h-2.5" />
                           <span>1°</span>
                         </button>
                       )}
@@ -1438,17 +1438,17 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
                   </th>
 
                   {/* 8. Fin Contrato (Amarillo) */}
-                  <th className="p-2.5 min-w-[150px] bg-teal-950/80 text-teal-100 border-b-2 border-teal-400">
-                    <div className="flex items-center justify-between gap-1.5">
+                  <th className="p-2 min-w-[125px] bg-teal-950/80 text-teal-100 border-b-2 border-teal-400">
+                    <div className="flex items-center justify-between gap-1">
                       <span className="font-bold">🔷 Fin Contrato</span>
                       {records.length > 0 && (
                         <button
                           type="button"
                           onClick={() => handleCopyFieldFromRow1('fin_contrato', 'Fin Contrato')}
-                          className="px-2 py-1 rounded bg-teal-600 hover:bg-teal-500 text-white text-[10px] font-black shadow flex items-center gap-1 transition"
+                          className="px-1.5 py-0.5 rounded bg-teal-600 hover:bg-teal-500 text-white text-[9px] font-black shadow flex items-center gap-0.5 transition"
                           title="Copiar Fin Contrato de Fila 1 a seleccionados"
                         >
-                          <ArrowDown className="w-3 h-3" />
+                          <ArrowDown className="w-2.5 h-2.5" />
                           <span>1°</span>
                         </button>
                       )}
@@ -1456,17 +1456,17 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
                   </th>
 
                   {/* 9. F. Firma Contrato (Amarillo) */}
-                  <th className="p-2.5 min-w-[150px] bg-teal-950/80 text-teal-100 border-b-2 border-teal-400">
-                    <div className="flex items-center justify-between gap-1.5">
-                      <span className="font-bold">🔷 F. Firma Contrato</span>
+                  <th className="p-2 min-w-[125px] bg-teal-950/80 text-teal-100 border-b-2 border-teal-400">
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="font-bold">🔷 F. Firma</span>
                       {records.length > 0 && (
                         <button
                           type="button"
                           onClick={() => handleCopyFieldFromRow1('fecha_firma_contrato', 'F. Firma Contrato')}
-                          className="px-2 py-1 rounded bg-teal-600 hover:bg-teal-500 text-white text-[10px] font-black shadow flex items-center gap-1 transition"
+                          className="px-1.5 py-0.5 rounded bg-teal-600 hover:bg-teal-500 text-white text-[9px] font-black shadow flex items-center gap-0.5 transition"
                           title="Copiar F. Firma Contrato de Fila 1 a seleccionados"
                         >
-                          <ArrowDown className="w-3 h-3" />
+                          <ArrowDown className="w-2.5 h-2.5" />
                           <span>1°</span>
                         </button>
                       )}
@@ -1474,17 +1474,17 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
                   </th>
 
                   {/* 10. Tipo de Contrato (Amarillo) */}
-                  <th className="p-2.5 min-w-[260px] bg-teal-950/80 text-teal-100 border-b-2 border-teal-400">
-                    <div className="flex items-center justify-between gap-1.5">
-                      <span className="font-bold">🔷 Tipo de Contrato</span>
+                  <th className="p-2 min-w-[180px] bg-teal-950/80 text-teal-100 border-b-2 border-teal-400">
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="font-bold">🔷 Tipo Contrato</span>
                       {records.length > 0 && (
                         <button
                           type="button"
                           onClick={() => handleCopyFieldFromRow1('tipo_contrato', 'Tipo de Contrato')}
-                          className="px-2 py-1 rounded bg-teal-600 hover:bg-teal-500 text-white text-[10px] font-black shadow flex items-center gap-1 transition"
+                          className="px-1.5 py-0.5 rounded bg-teal-600 hover:bg-teal-500 text-white text-[9px] font-black shadow flex items-center gap-0.5 transition"
                           title="Copiar Tipo de Contrato de Fila 1 a seleccionados"
                         >
-                          <ArrowDown className="w-3 h-3" />
+                          <ArrowDown className="w-2.5 h-2.5" />
                           <span>1°</span>
                         </button>
                       )}
@@ -1492,17 +1492,17 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
                   </th>
 
                   {/* 11. Nro. Contrato Ref (Verde) */}
-                  <th className="p-2.5 min-w-[150px] bg-slate-800/95 text-cyan-200 border-b-2 border-cyan-400">
-                    <div className="flex items-center justify-between gap-1.5">
-                      <span className="font-bold">Nro. Contrato Ref</span>
+                  <th className="p-2 min-w-[110px] bg-slate-800/95 text-cyan-200 border-b-2 border-cyan-400">
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="font-bold">Nro. Ref</span>
                       {records.length > 0 && (
                         <button
                           type="button"
                           onClick={() => handleCopyFieldFromRow1('nro_contrato_ref', 'Nro. Contrato Ref')}
-                          className="px-2 py-1 rounded bg-emerald-700 hover:bg-emerald-600 text-white text-[10px] font-black shadow flex items-center gap-1 transition"
+                          className="px-1.5 py-0.5 rounded bg-emerald-700 hover:bg-emerald-600 text-white text-[9px] font-black shadow flex items-center gap-0.5 transition"
                           title="Copiar Nro. Contrato Ref de Fila 1 a seleccionados"
                         >
-                          <ArrowDown className="w-3 h-3" />
+                          <ArrowDown className="w-2.5 h-2.5" />
                           <span>1°</span>
                         </button>
                       )}
@@ -1511,7 +1511,7 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
 
                   {/* Celda buffer para pantallas pequeñas y amplio recorrido sin corte */}
                   <th
-                    className="p-3 w-32 min-w-[128px] text-center border-b-2 font-mono text-[10px] bg-slate-900"
+                    className="p-2 w-20 min-w-[70px] text-center border-b-2 font-mono text-[9px] bg-slate-900"
                     style={{ borderColor: 'var(--border-subtle, #1e293b)', color: 'var(--text-tertiary, #94a3b8)' }}
                   >
                     ✔ FIN
@@ -1556,7 +1556,7 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
                         className={`divide-x divide-slate-700/80 transition ${rowBgClass}`}
                       >
                         {/* Selector checkbox (Sticky Izquierda) */}
-                        <td className={`p-3 text-center sticky left-0 z-10 ${stickyCellBg} shadow-[2px_0_6px_rgba(0,0,0,0.3)]`}>
+                        <td className={`p-1.5 text-center sticky left-0 z-10 ${stickyCellBg} shadow-[2px_0_6px_rgba(0,0,0,0.3)]`}>
                           <button
                             type="button"
                             onClick={() => toggleSelect(rec.id)}
@@ -1571,17 +1571,17 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
                         </td>
 
                         {/* 1. Nro. Documento (Sticky Izquierda) */}
-                        <td className={`p-3 font-mono font-extrabold text-emerald-300 text-xs tracking-wider sticky left-12 z-10 ${stickyCellBg} border-r border-slate-700/80 shadow-[4px_0_10px_rgba(0,0,0,0.35)]`}>
+                        <td className={`px-2 py-1.5 font-mono font-extrabold text-emerald-300 text-xs tracking-wider sticky left-10 z-10 ${stickyCellBg} border-r border-slate-700/80 shadow-[4px_0_10px_rgba(0,0,0,0.35)]`}>
                           {rec.doc_number || 'N/A'}
                         </td>
 
                         {/* 2. Apellidos y Nombres */}
-                        <td className="p-3 font-semibold text-slate-100 truncate max-w-[260px] text-xs" title={fullName}>
+                        <td className="px-2 py-1.5 font-semibold text-slate-100 truncate max-w-[200px] text-xs" title={fullName}>
                           {fullName}
                         </td>
 
                         {/* 3. Cod. Planilla (Amarillo) */}
-                        <td className="p-2.5 bg-teal-950/20">
+                        <td className="p-1.5 bg-teal-950/20">
                           <ContractOptionSelect
                             options={CODIGOS_PLANILLA}
                             value={rec.cod_planilla}
@@ -1592,74 +1592,74 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
                         </td>
 
                         {/* 4. Nro. Contrato */}
-                        <td className="p-2.5">
+                        <td className="p-1.5">
                           <input
                             type="text"
                             value={rec.nro_contrato || ''}
                             onChange={(e) => handleRowChange(rec.id, 'nro_contrato', e.target.value)}
                             placeholder="Nro..."
-                            className="w-full px-2.5 py-1.5 h-9 rounded-lg bg-[#0a1528] text-slate-100 border border-slate-700 focus:bg-[#0e1e38] focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 text-xs font-mono transition shadow-inner"
+                            className="w-full px-2 py-1 h-8 rounded-md bg-[#0a1528] text-slate-100 border border-slate-700 focus:bg-[#0e1e38] focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 text-xs font-mono transition shadow-inner"
                           />
                         </td>
 
                         {/* 5. Básico (Amarillo) */}
-                        <td className="p-2.5 bg-teal-950/20">
+                        <td className="p-1.5 bg-teal-950/20">
                           <input
                             type="number"
                             step="0.01"
                             value={rec.basico !== undefined ? rec.basico : 51.82}
                             onChange={(e) => handleRowChange(rec.id, 'basico', parseFloat(e.target.value) || 0)}
-                            className="w-full px-2.5 py-1.5 h-9 rounded-lg bg-teal-950/40 text-teal-200 border border-teal-600/70 focus:bg-teal-900/50 focus:border-teal-300 focus:ring-1 focus:ring-teal-400 text-xs font-mono font-extrabold transition shadow-inner"
+                            className="w-full px-2 py-1 h-8 rounded-md bg-teal-950/40 text-teal-200 border border-teal-600/70 focus:bg-teal-900/50 focus:border-teal-300 focus:ring-1 focus:ring-teal-400 text-xs font-mono font-extrabold transition shadow-inner"
                           />
                         </td>
 
                         {/* 6. Inicio Contrato (Amarillo) */}
-                        <td className="p-2.5 bg-teal-950/20">
+                        <td className="p-1.5 bg-teal-950/20">
                           <input
                             type="date"
                             value={rec.inicio_contrato || ''}
                             onChange={(e) => handleRowChange(rec.id, 'inicio_contrato', e.target.value)}
-                            className="w-full px-2.5 py-1.5 h-9 rounded-lg bg-teal-950/40 text-teal-100 border border-teal-600/70 focus:bg-teal-900/50 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 text-xs font-mono transition shadow-inner"
+                            className="w-full px-2 py-1 h-8 rounded-md bg-teal-950/40 text-teal-100 border border-teal-600/70 focus:bg-teal-900/50 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 text-xs font-mono transition shadow-inner"
                           />
                         </td>
 
                         {/* 7. Duración */}
-                        <td className="p-2.5">
+                        <td className="p-1.5">
                           <select
                             value={rec.duracion || '3'}
                             onChange={(e) => handleRowChange(rec.id, 'duracion', e.target.value)}
-                            className="w-full px-2.5 py-1.5 h-9 rounded-lg bg-[#0a1528] text-slate-100 border border-slate-700 focus:bg-[#0e1e38] focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 text-xs font-medium transition shadow-inner"
+                            className="w-full px-2 py-1 h-8 rounded-md bg-[#0a1528] text-slate-100 border border-slate-700 focus:bg-[#0e1e38] focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 text-xs font-medium transition shadow-inner"
                           >
-                            <option value="1">1 m (1 mes)</option>
-                            <option value="2">2 m (2 meses)</option>
-                            <option value="3">3 m (3 meses)</option>
-                            <option value="6">6 m (6 meses)</option>
-                            <option value="12">12 m (1 año)</option>
+                            <option value="1">1 m</option>
+                            <option value="2">2 m</option>
+                            <option value="3">3 m</option>
+                            <option value="6">6 m</option>
+                            <option value="12">12 m</option>
                           </select>
                         </td>
 
                         {/* 8. Fin Contrato (Amarillo) */}
-                        <td className="p-2.5 bg-teal-950/20">
+                        <td className="p-1.5 bg-teal-950/20">
                           <input
                             type="date"
                             value={rec.fin_contrato || ''}
                             onChange={(e) => handleRowChange(rec.id, 'fin_contrato', e.target.value)}
-                            className="w-full px-2.5 py-1.5 h-9 rounded-lg bg-teal-950/40 text-teal-100 border border-teal-600/70 focus:bg-teal-900/50 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 text-xs font-mono transition shadow-inner"
+                            className="w-full px-2 py-1 h-8 rounded-md bg-teal-950/40 text-teal-100 border border-teal-600/70 focus:bg-teal-900/50 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 text-xs font-mono transition shadow-inner"
                           />
                         </td>
 
                         {/* 9. F. Firma Contrato (Amarillo) */}
-                        <td className="p-2.5 bg-teal-950/20">
+                        <td className="p-1.5 bg-teal-950/20">
                           <input
                             type="date"
                             value={rec.fecha_firma_contrato || ''}
                             onChange={(e) => handleRowChange(rec.id, 'fecha_firma_contrato', e.target.value)}
-                            className="w-full px-2.5 py-1.5 h-9 rounded-lg bg-teal-950/40 text-teal-100 border border-teal-600/70 focus:bg-teal-900/50 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 text-xs font-mono transition shadow-inner"
+                            className="w-full px-2 py-1 h-8 rounded-md bg-teal-950/40 text-teal-100 border border-teal-600/70 focus:bg-teal-900/50 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 text-xs font-mono transition shadow-inner"
                           />
                         </td>
 
                         {/* 10. Tipo de Contrato (Amarillo - 22 Opciones) */}
-                        <td className="p-2.5 bg-teal-950/20">
+                        <td className="p-1.5 bg-teal-950/20">
                           <ContractOptionSelect
                             options={TIPOS_CONTRATO}
                             value={rec.tipo_contrato}
@@ -1670,18 +1670,18 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
                         </td>
 
                         {/* 11. Nro. Contrato Ref */}
-                        <td className="p-2.5">
+                        <td className="p-1.5">
                           <input
                             type="text"
                             value={rec.nro_contrato_ref || ''}
                             onChange={(e) => handleRowChange(rec.id, 'nro_contrato_ref', e.target.value)}
                             placeholder="Ref..."
-                            className="w-full px-2.5 py-1.5 h-9 rounded-lg bg-[#0a1528] text-slate-100 border border-slate-700 focus:bg-[#0e1e38] focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 text-xs font-mono transition shadow-inner"
+                            className="w-full px-2 py-1 h-8 rounded-md bg-[#0a1528] text-slate-100 border border-slate-700 focus:bg-[#0e1e38] focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 text-xs font-mono transition shadow-inner"
                           />
                         </td>
 
                         {/* Celda buffer para pantallas pequeñas y amplio recorrido sin corte */}
-                        <td className="p-3 w-32 min-w-[128px] text-center font-mono text-[11px] text-slate-400">
+                        <td className="p-1.5 w-20 min-w-[70px] text-center font-mono text-[9px] text-slate-400">
                           ✔ COMPLETO
                         </td>
                       </tr>
@@ -1737,35 +1737,35 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
 
           {/* DESPLAZADOR HORIZONTAL LARGO (FULL WIDTH) DE DATOS DE PERSONAL */}
           <div
-            className="px-4 py-3 border-b flex flex-col gap-2.5 shadow-md select-none"
+            className="px-3 py-2 border-b flex flex-col gap-1.5 shadow-md select-none"
             style={{ backgroundColor: 'var(--bg-surface-elevated, #0d192e)', borderColor: 'var(--border-subtle, #1e293b)' }}
           >
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="flex items-center gap-2.5">
-                <span className="p-1.5 rounded-lg bg-cyan-950/80 border border-cyan-500/50 text-cyan-300 shadow-xs">
-                  <ArrowLeftRight className="w-4 h-4 text-cyan-400 animate-pulse" />
+            <div className="flex flex-wrap items-center justify-between gap-1.5">
+              <div className="flex items-center gap-2">
+                <span className="p-1 rounded-md bg-cyan-950/80 border border-cyan-500/50 text-cyan-300 shadow-xs">
+                  <ArrowLeftRight className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
                 </span>
-                <div className="flex items-baseline gap-2">
+                <div className="flex items-baseline gap-1.5">
                   <span className="text-xs font-bold font-mono tracking-wide text-slate-200">
                     Desplazar Datos de Personal:
                   </span>
                   <span className="px-2 py-0.5 rounded-full bg-cyan-500/20 border border-cyan-400/50 text-cyan-300 font-mono font-black text-xs">
                     {Math.round(personalScrollPercent)}%
                   </span>
-                  <span className="hidden sm:inline text-[11px] text-cyan-400 font-mono font-medium">
+                  <span className="hidden sm:inline text-[10px] text-cyan-400 font-mono font-medium">
                     ({getPersonalSectionDescription(personalScrollPercent)})
                   </span>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 text-xs">
-                <span className="hidden md:inline font-mono text-[11px] text-slate-400 mr-1">
+              <div className="flex items-center gap-1.5 text-xs">
+                <span className="hidden md:inline font-mono text-[10px] text-slate-400 mr-1">
                   77 columnas oficiales • {records.length} trabajadores
                 </span>
                 <button
                   type="button"
                   onClick={() => handleJumpPersonalScroll(0)}
-                  className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 text-[11px] font-mono font-semibold transition shadow-xs"
+                  className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 text-[10px] font-mono font-semibold transition shadow-xs"
                   title="Ir al inicio (Columna 1: DNI / Nombres)"
                 >
                   ◀ Inicio
@@ -1773,7 +1773,7 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
                 <button
                   type="button"
                   onClick={() => handleJumpPersonalScroll(100)}
-                  className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 text-[11px] font-mono font-semibold transition shadow-xs"
+                  className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 text-[10px] font-mono font-semibold transition shadow-xs"
                   title="Ir al final (Columna 77)"
                 >
                   Fin ▶
@@ -1800,38 +1800,38 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
           <div
             ref={personalTableScrollRef}
             onScroll={handlePersonalTableScroll}
-            className="overflow-x-auto w-full max-w-full max-h-[calc(100vh-280px)] min-h-[400px] custom-table-scrollbar"
+            className="overflow-x-auto w-full max-w-full max-h-[calc(100vh-240px)] min-h-[360px] custom-table-scrollbar"
           >
-            <table className="min-w-[2200px] w-full border-collapse text-left text-xs">
+            <table className="min-w-[1720px] w-full border-collapse text-left text-xs">
               <thead className="sticky top-0 z-20 shadow-md">
-                <tr className="divide-x divide-slate-800 text-[11px] font-extrabold uppercase">
+                <tr className="divide-x divide-slate-700 text-[10px] font-extrabold uppercase">
                   {/* Selector checkbox (Sticky Izquierda) */}
-                  <th className="p-3 w-12 text-center bg-slate-950 text-slate-300 border-b-2 border-slate-700 sticky left-0 z-30 shadow-[2px_0_6px_rgba(0,0,0,0.3)]">
+                  <th className="p-2 w-10 text-center bg-slate-950 text-slate-300 border-b-2 border-slate-700 sticky left-0 z-30 shadow-[2px_0_6px_rgba(0,0,0,0.3)]">
                     #
                   </th>
 
                   {/* 1. Nro. Documento (Sticky Izquierda) */}
-                  <th className="p-3 min-w-[130px] bg-slate-950 text-cyan-200 border-b-2 border-cyan-400 sticky left-12 z-30 shadow-[4px_0_10px_rgba(0,0,0,0.35)]">
+                  <th className="p-2 min-w-[110px] bg-slate-950 text-cyan-200 border-b-2 border-cyan-400 sticky left-10 z-30 shadow-[4px_0_10px_rgba(0,0,0,0.35)]">
                     Nro. Documento
                   </th>
 
                   {/* 2. Apellidos y Nombres */}
-                  <th className="p-3 min-w-[240px] bg-[#101F3B] text-cyan-200 border-b-2 border-cyan-400">
+                  <th className="p-2 min-w-[200px] bg-[#101F3B] text-cyan-200 border-b-2 border-cyan-400">
                     Apellidos y Nombres
                   </th>
 
                   {/* 3. Cod. Cargo (Amarillo) */}
-                  <th className="p-2.5 min-w-[210px] bg-teal-950/80 text-teal-100 border-b-2 border-teal-400">
-                    <div className="flex items-center justify-between gap-1.5">
-                      <span className="font-bold">🔷 Cod. Cargo</span>
+                  <th className="p-2 min-w-[150px] bg-teal-950/80 text-teal-100 border-b-2 border-teal-400">
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="font-bold">🔷 Cargo</span>
                       {records.length > 0 && (
                         <button
                           type="button"
                           onClick={() => handleCopyFieldFromRow1('cod_cargo', 'Cod. Cargo')}
-                          className="px-2 py-1 rounded bg-teal-600 hover:bg-teal-500 text-white text-[10px] font-black shadow flex items-center gap-1 transition"
+                          className="px-1.5 py-0.5 rounded bg-teal-700 hover:bg-teal-600 text-white text-[9px] font-black shadow flex items-center gap-0.5 transition"
                           title="Copiar Cod. Cargo de Fila 1 a seleccionados"
                         >
-                          <ArrowDown className="w-3 h-3" />
+                          <ArrowDown className="w-2.5 h-2.5" />
                           <span>1°</span>
                         </button>
                       )}
@@ -1839,17 +1839,17 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
                   </th>
 
                   {/* 4. Cod. Planilla (Amarillo) */}
-                  <th className="p-2.5 min-w-[140px] bg-teal-950/80 text-teal-100 border-b-2 border-teal-400">
-                    <div className="flex items-center justify-between gap-1.5">
-                      <span className="font-bold">🔷 Cod. Planilla</span>
+                  <th className="p-2 min-w-[110px] bg-teal-950/80 text-teal-100 border-b-2 border-teal-400">
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="font-bold">🔷 Planilla</span>
                       {records.length > 0 && (
                         <button
                           type="button"
                           onClick={() => handleCopyFieldFromRow1('cod_planilla', 'Cod. Planilla')}
-                          className="px-2 py-1 rounded bg-teal-600 hover:bg-teal-500 text-white text-[10px] font-black shadow flex items-center gap-1 transition"
+                          className="px-1.5 py-0.5 rounded bg-teal-700 hover:bg-teal-600 text-white text-[9px] font-black shadow flex items-center gap-0.5 transition"
                           title="Copiar Cod. Planilla de Fila 1 a seleccionados"
                         >
-                          <ArrowDown className="w-3 h-3" />
+                          <ArrowDown className="w-2.5 h-2.5" />
                           <span>1°</span>
                         </button>
                       )}
@@ -1857,17 +1857,17 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
                   </th>
 
                   {/* 5. Cat. Ocupacional (Amarillo) */}
-                  <th className="p-2.5 min-w-[160px] bg-teal-950/80 text-teal-100 border-b-2 border-teal-400">
-                    <div className="flex items-center justify-between gap-1.5">
-                      <span className="font-bold">🔷 Cat. Ocupacional</span>
+                  <th className="p-2 min-w-[120px] bg-teal-950/80 text-teal-100 border-b-2 border-teal-400">
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="font-bold">🔷 Cat. Ocupac.</span>
                       {records.length > 0 && (
                         <button
                           type="button"
                           onClick={() => handleCopyFieldFromRow1('cat_ocupacional', 'Cat. Ocupacional')}
-                          className="px-2 py-1 rounded bg-teal-600 hover:bg-teal-500 text-white text-[10px] font-black shadow flex items-center gap-1 transition"
+                          className="px-1.5 py-0.5 rounded bg-teal-700 hover:bg-teal-600 text-white text-[9px] font-black shadow flex items-center gap-0.5 transition"
                           title="Copiar Cat. Ocupacional de Fila 1 a seleccionados"
                         >
-                          <ArrowDown className="w-3 h-3" />
+                          <ArrowDown className="w-2.5 h-2.5" />
                           <span>1°</span>
                         </button>
                       )}
@@ -1875,17 +1875,17 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
                   </th>
 
                   {/* 6. Cod. Tipo Trab. (Amarillo) */}
-                  <th className="p-2.5 min-w-[190px] bg-teal-950/80 text-teal-100 border-b-2 border-teal-400">
-                    <div className="flex items-center justify-between gap-1.5">
-                      <span className="font-bold">🔷 Tipo de Trabajador</span>
+                  <th className="p-2 min-w-[135px] bg-teal-950/80 text-teal-100 border-b-2 border-teal-400">
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="font-bold">🔷 Tipo Trab.</span>
                       {records.length > 0 && (
                         <button
                           type="button"
                           onClick={() => handleCopyFieldFromRow1('cod_tipo_trab', 'Tipo Trabajador')}
-                          className="px-2 py-1 rounded bg-teal-600 hover:bg-teal-500 text-white text-[10px] font-black shadow flex items-center gap-1 transition"
+                          className="px-1.5 py-0.5 rounded bg-teal-700 hover:bg-teal-600 text-white text-[9px] font-black shadow flex items-center gap-0.5 transition"
                           title="Copiar Tipo de Trabajador de Fila 1 a seleccionados"
                         >
-                          <ArrowDown className="w-3 h-3" />
+                          <ArrowDown className="w-2.5 h-2.5" />
                           <span>1°</span>
                         </button>
                       )}
@@ -1893,17 +1893,17 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
                   </th>
 
                   {/* 7. Period. Pago (Amarillo) */}
-                  <th className="p-2.5 min-w-[140px] bg-teal-950/80 text-teal-100 border-b-2 border-teal-400">
-                    <div className="flex items-center justify-between gap-1.5">
+                  <th className="p-2 min-w-[110px] bg-teal-950/80 text-teal-100 border-b-2 border-teal-400">
+                    <div className="flex items-center justify-between gap-1">
                       <span className="font-bold">🔷 Period. Pago</span>
                       {records.length > 0 && (
                         <button
                           type="button"
                           onClick={() => handleCopyFieldFromRow1('period_pago', 'Periodicidad Pago')}
-                          className="px-2 py-1 rounded bg-teal-600 hover:bg-teal-500 text-white text-[10px] font-black shadow flex items-center gap-1 transition"
+                          className="px-1.5 py-0.5 rounded bg-teal-700 hover:bg-teal-600 text-white text-[9px] font-black shadow flex items-center gap-0.5 transition"
                           title="Copiar Periodicidad Pago de Fila 1 a seleccionados"
                         >
-                          <ArrowDown className="w-3 h-3" />
+                          <ArrowDown className="w-2.5 h-2.5" />
                           <span>1°</span>
                         </button>
                       )}
@@ -1911,17 +1911,17 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
                   </th>
 
                   {/* 8. Reg. Laboral (Amarillo) */}
-                  <th className="p-2.5 min-w-[170px] bg-teal-950/80 text-teal-100 border-b-2 border-teal-400">
-                    <div className="flex items-center justify-between gap-1.5">
-                      <span className="font-bold">🔷 Régimen Laboral</span>
+                  <th className="p-2 min-w-[125px] bg-teal-950/80 text-teal-100 border-b-2 border-teal-400">
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="font-bold">🔷 Rég. Laboral</span>
                       {records.length > 0 && (
                         <button
                           type="button"
                           onClick={() => handleCopyFieldFromRow1('reg_laboral', 'Régimen Laboral')}
-                          className="px-2 py-1 rounded bg-teal-600 hover:bg-teal-500 text-white text-[10px] font-black shadow flex items-center gap-1 transition"
+                          className="px-1.5 py-0.5 rounded bg-teal-700 hover:bg-teal-600 text-white text-[9px] font-black shadow flex items-center gap-0.5 transition"
                           title="Copiar Régimen Laboral de Fila 1 a seleccionados"
                         >
-                          <ArrowDown className="w-3 h-3" />
+                          <ArrowDown className="w-2.5 h-2.5" />
                           <span>1°</span>
                         </button>
                       )}
@@ -1929,17 +1929,17 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
                   </th>
 
                   {/* 9. Básico (Amarillo) */}
-                  <th className="p-2.5 min-w-[130px] bg-teal-950/80 text-teal-100 border-b-2 border-teal-400">
-                    <div className="flex items-center justify-between gap-1.5">
+                  <th className="p-2 min-w-[100px] bg-teal-950/80 text-teal-100 border-b-2 border-teal-400">
+                    <div className="flex items-center justify-between gap-1">
                       <span className="font-bold">🔷 Básico</span>
                       {records.length > 0 && (
                         <button
                           type="button"
                           onClick={() => handleCopyFieldFromRow1('basico', 'Básico')}
-                          className="px-2 py-1 rounded bg-teal-600 hover:bg-teal-500 text-white text-[10px] font-black shadow flex items-center gap-1 transition"
+                          className="px-1.5 py-0.5 rounded bg-teal-700 hover:bg-teal-600 text-white text-[9px] font-black shadow flex items-center gap-0.5 transition"
                           title="Copiar Básico de Fila 1 a seleccionados"
                         >
-                          <ArrowDown className="w-3 h-3" />
+                          <ArrowDown className="w-2.5 h-2.5" />
                           <span>1°</span>
                         </button>
                       )}
@@ -1947,17 +1947,17 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
                   </th>
 
                   {/* 10. F. Ingreso (Amarillo) */}
-                  <th className="p-2.5 min-w-[140px] bg-teal-950/80 text-teal-100 border-b-2 border-teal-400">
-                    <div className="flex items-center justify-between gap-1.5">
+                  <th className="p-2 min-w-[115px] bg-teal-950/80 text-teal-100 border-b-2 border-teal-400">
+                    <div className="flex items-center justify-between gap-1">
                       <span className="font-bold">🔷 F. Ingreso</span>
                       {records.length > 0 && (
                         <button
                           type="button"
                           onClick={() => handleCopyFieldFromRow1('fec_ingreso', 'F. Ingreso')}
-                          className="px-2 py-1 rounded bg-teal-600 hover:bg-teal-500 text-white text-[10px] font-black shadow flex items-center gap-1 transition"
+                          className="px-1.5 py-0.5 rounded bg-teal-700 hover:bg-teal-600 text-white text-[9px] font-black shadow flex items-center gap-0.5 transition"
                           title="Copiar F. Ingreso de Fila 1 a seleccionados"
                         >
-                          <ArrowDown className="w-3 h-3" />
+                          <ArrowDown className="w-2.5 h-2.5" />
                           <span>1°</span>
                         </button>
                       )}
@@ -1965,17 +1965,17 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
                   </th>
 
                   {/* 11. Sistema Pensiones (AFP / ONP) (Amarillo) */}
-                  <th className="p-2.5 min-w-[160px] bg-teal-950/80 text-teal-100 border-b-2 border-teal-400">
-                    <div className="flex items-center justify-between gap-1.5">
+                  <th className="p-2 min-w-[130px] bg-teal-950/80 text-teal-100 border-b-2 border-teal-400">
+                    <div className="flex items-center justify-between gap-1">
                       <span className="font-bold">🔷 Pensión / AFP</span>
                       {records.length > 0 && (
                         <button
                           type="button"
                           onClick={() => handleCopyFieldFromRow1('idafp', 'AFP / ONP')}
-                          className="px-2 py-1 rounded bg-teal-600 hover:bg-teal-500 text-white text-[10px] font-black shadow flex items-center gap-1 transition"
+                          className="px-1.5 py-0.5 rounded bg-teal-700 hover:bg-teal-600 text-white text-[9px] font-black shadow flex items-center gap-0.5 transition"
                           title="Copiar AFP / ONP de Fila 1 a seleccionados"
                         >
-                          <ArrowDown className="w-3 h-3" />
+                          <ArrowDown className="w-2.5 h-2.5" />
                           <span>1°</span>
                         </button>
                       )}
@@ -1983,17 +1983,17 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
                   </th>
 
                   {/* 12. CUSPP (Amarillo) */}
-                  <th className="p-2.5 min-w-[130px] bg-teal-950/80 text-teal-100 border-b-2 border-teal-400">
-                    <div className="flex items-center justify-between gap-1.5">
+                  <th className="p-2 min-w-[100px] bg-teal-950/80 text-teal-100 border-b-2 border-teal-400">
+                    <div className="flex items-center justify-between gap-1">
                       <span className="font-bold">🔷 CUSPP</span>
                       {records.length > 0 && (
                         <button
                           type="button"
                           onClick={() => handleCopyFieldFromRow1('cuspp', 'CUSPP')}
-                          className="px-2 py-1 rounded bg-teal-600 hover:bg-teal-500 text-white text-[10px] font-black shadow flex items-center gap-1 transition"
+                          className="px-1.5 py-0.5 rounded bg-teal-700 hover:bg-teal-600 text-white text-[9px] font-black shadow flex items-center gap-0.5 transition"
                           title="Copiar CUSPP de Fila 1 a seleccionados"
                         >
-                          <ArrowDown className="w-3 h-3" />
+                          <ArrowDown className="w-2.5 h-2.5" />
                           <span>1°</span>
                         </button>
                       )}
@@ -2001,17 +2001,17 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
                   </th>
 
                   {/* 13. Tipo Comisión (Amarillo) */}
-                  <th className="p-2.5 min-w-[120px] bg-teal-950/80 text-teal-100 border-b-2 border-teal-400">
-                    <div className="flex items-center justify-between gap-1.5">
+                  <th className="p-2 min-w-[95px] bg-teal-950/80 text-teal-100 border-b-2 border-teal-400">
+                    <div className="flex items-center justify-between gap-1">
                       <span className="font-bold">🔷 Comisión</span>
                       {records.length > 0 && (
                         <button
                           type="button"
                           onClick={() => handleCopyFieldFromRow1('tipo_comision', 'Tipo Comisión')}
-                          className="px-2 py-1 rounded bg-teal-600 hover:bg-teal-500 text-white text-[10px] font-black shadow flex items-center gap-1 transition"
+                          className="px-1.5 py-0.5 rounded bg-teal-700 hover:bg-teal-600 text-white text-[9px] font-black shadow flex items-center gap-0.5 transition"
                           title="Copiar Tipo Comisión de Fila 1 a seleccionados"
                         >
-                          <ArrowDown className="w-3 h-3" />
+                          <ArrowDown className="w-2.5 h-2.5" />
                           <span>1°</span>
                         </button>
                       )}
@@ -2019,17 +2019,17 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
                   </th>
 
                   {/* 14. Sucursal (Amarillo) */}
-                  <th className="p-2.5 min-w-[170px] bg-teal-950/80 text-teal-100 border-b-2 border-teal-400">
-                    <div className="flex items-center justify-between gap-1.5">
+                  <th className="p-2 min-w-[125px] bg-teal-950/80 text-teal-100 border-b-2 border-teal-400">
+                    <div className="flex items-center justify-between gap-1">
                       <span className="font-bold">🔷 Sucursal</span>
                       {records.length > 0 && (
                         <button
                           type="button"
                           onClick={() => handleCopyFieldFromRow1('cod_sucursal', 'Sucursal')}
-                          className="px-2 py-1 rounded bg-teal-600 hover:bg-teal-500 text-white text-[10px] font-black shadow flex items-center gap-1 transition"
+                          className="px-1.5 py-0.5 rounded bg-teal-700 hover:bg-teal-600 text-white text-[9px] font-black shadow flex items-center gap-0.5 transition"
                           title="Copiar Sucursal de Fila 1 a seleccionados"
                         >
-                          <ArrowDown className="w-3 h-3" />
+                          <ArrowDown className="w-2.5 h-2.5" />
                           <span>1°</span>
                         </button>
                       )}
@@ -2037,17 +2037,17 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
                   </th>
 
                   {/* 15. Grupo Trabajo (Amarillo) */}
-                  <th className="p-2.5 min-w-[190px] bg-teal-950/80 text-teal-100 border-b-2 border-teal-400">
-                    <div className="flex items-center justify-between gap-1.5">
-                      <span className="font-bold">🔷 Grupo Trabajo</span>
+                  <th className="p-2 min-w-[135px] bg-teal-950/80 text-teal-100 border-b-2 border-teal-400">
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="font-bold">🔷 Grupo Trab.</span>
                       {records.length > 0 && (
                         <button
                           type="button"
                           onClick={() => handleCopyFieldFromRow1('grupo_trabajo', 'Grupo Trabajo')}
-                          className="px-2 py-1 rounded bg-teal-600 hover:bg-teal-500 text-white text-[10px] font-black shadow flex items-center gap-1 transition"
+                          className="px-1.5 py-0.5 rounded bg-teal-700 hover:bg-teal-600 text-white text-[9px] font-black shadow flex items-center gap-0.5 transition"
                           title="Copiar Grupo Trabajo de Fila 1 a seleccionados"
                         >
-                          <ArrowDown className="w-3 h-3" />
+                          <ArrowDown className="w-2.5 h-2.5" />
                           <span>1°</span>
                         </button>
                       )}
@@ -2055,17 +2055,17 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
                   </th>
 
                   {/* 16. Tipo Personal (Amarillo) */}
-                  <th className="p-2.5 min-w-[190px] bg-teal-950/80 text-teal-100 border-b-2 border-teal-400">
-                    <div className="flex items-center justify-between gap-1.5">
+                  <th className="p-2 min-w-[135px] bg-teal-950/80 text-teal-100 border-b-2 border-teal-400">
+                    <div className="flex items-center justify-between gap-1">
                       <span className="font-bold">🔷 Subplanilla</span>
                       {records.length > 0 && (
                         <button
                           type="button"
                           onClick={() => handleCopyFieldFromRow1('tipo_personal', 'Subplanilla')}
-                          className="px-2 py-1 rounded bg-teal-600 hover:bg-teal-500 text-white text-[10px] font-black shadow flex items-center gap-1 transition"
+                          className="px-1.5 py-0.5 rounded bg-teal-700 hover:bg-teal-600 text-white text-[9px] font-black shadow flex items-center gap-0.5 transition"
                           title="Copiar Subplanilla de Fila 1 a seleccionados"
                         >
-                          <ArrowDown className="w-3 h-3" />
+                          <ArrowDown className="w-2.5 h-2.5" />
                           <span>1°</span>
                         </button>
                       )}
@@ -2073,17 +2073,17 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
                   </th>
 
                   {/* 17. Niv. Educativo (Amarillo) */}
-                  <th className="p-2.5 min-w-[190px] bg-teal-950/80 text-teal-100 border-b-2 border-teal-400">
-                    <div className="flex items-center justify-between gap-1.5">
-                      <span className="font-bold">🔷 Nivel Educativo</span>
+                  <th className="p-2 min-w-[135px] bg-teal-950/80 text-teal-100 border-b-2 border-teal-400">
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="font-bold">🔷 Nivel Educ.</span>
                       {records.length > 0 && (
                         <button
                           type="button"
                           onClick={() => handleCopyFieldFromRow1('niv_educativo', 'Nivel Educativo')}
-                          className="px-2 py-1 rounded bg-teal-600 hover:bg-teal-500 text-white text-[10px] font-black shadow flex items-center gap-1 transition"
+                          className="px-1.5 py-0.5 rounded bg-teal-700 hover:bg-teal-600 text-white text-[9px] font-black shadow flex items-center gap-0.5 transition"
                           title="Copiar Nivel Educativo de Fila 1 a seleccionados"
                         >
-                          <ArrowDown className="w-3 h-3" />
+                          <ArrowDown className="w-2.5 h-2.5" />
                           <span>1°</span>
                         </button>
                       )}
@@ -2091,17 +2091,17 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
                   </th>
 
                   {/* 18. Estado Civil (Amarillo) */}
-                  <th className="p-2.5 min-w-[130px] bg-teal-950/80 text-teal-100 border-b-2 border-teal-400">
-                    <div className="flex items-center justify-between gap-1.5">
+                  <th className="p-2 min-w-[105px] bg-teal-950/80 text-teal-100 border-b-2 border-teal-400">
+                    <div className="flex items-center justify-between gap-1">
                       <span className="font-bold">🔷 Est. Civil</span>
                       {records.length > 0 && (
                         <button
                           type="button"
                           onClick={() => handleCopyFieldFromRow1('estado_civil', 'Estado Civil')}
-                          className="px-2 py-1 rounded bg-teal-600 hover:bg-teal-500 text-white text-[10px] font-black shadow flex items-center gap-1 transition"
+                          className="px-1.5 py-0.5 rounded bg-teal-700 hover:bg-teal-600 text-white text-[9px] font-black shadow flex items-center gap-0.5 transition"
                           title="Copiar Estado Civil de Fila 1 a seleccionados"
                         >
-                          <ArrowDown className="w-3 h-3" />
+                          <ArrowDown className="w-2.5 h-2.5" />
                           <span>1°</span>
                         </button>
                       )}
@@ -2109,17 +2109,17 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
                   </th>
 
                   {/* 19. Sexo (Amarillo) */}
-                  <th className="p-2.5 min-w-[100px] bg-teal-950/80 text-teal-100 border-b-2 border-teal-400">
-                    <div className="flex items-center justify-between gap-1.5">
+                  <th className="p-2 min-w-[80px] bg-teal-950/80 text-teal-100 border-b-2 border-teal-400">
+                    <div className="flex items-center justify-between gap-1">
                       <span className="font-bold">🔷 Sexo</span>
                       {records.length > 0 && (
                         <button
                           type="button"
                           onClick={() => handleCopyFieldFromRow1('sexo', 'Sexo')}
-                          className="px-2 py-1 rounded bg-teal-600 hover:bg-teal-500 text-white text-[10px] font-black shadow flex items-center gap-1 transition"
+                          className="px-1.5 py-0.5 rounded bg-teal-700 hover:bg-teal-600 text-white text-[9px] font-black shadow flex items-center gap-0.5 transition"
                           title="Copiar Sexo de Fila 1 a seleccionados"
                         >
-                          <ArrowDown className="w-3 h-3" />
+                          <ArrowDown className="w-2.5 h-2.5" />
                           <span>1°</span>
                         </button>
                       )}
@@ -2127,17 +2127,17 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
                   </th>
 
                   {/* 20. Nacionalidad (Amarillo) */}
-                  <th className="p-2.5 min-w-[130px] bg-teal-950/80 text-teal-100 border-b-2 border-teal-400">
-                    <div className="flex items-center justify-between gap-1.5">
+                  <th className="p-2 min-w-[95px] bg-teal-950/80 text-teal-100 border-b-2 border-teal-400">
+                    <div className="flex items-center justify-between gap-1">
                       <span className="font-bold">🔷 País</span>
                       {records.length > 0 && (
                         <button
                           type="button"
                           onClick={() => handleCopyFieldFromRow1('nationality', 'Nacionalidad')}
-                          className="px-2 py-1 rounded bg-teal-600 hover:bg-teal-500 text-white text-[10px] font-black shadow flex items-center gap-1 transition"
+                          className="px-1.5 py-0.5 rounded bg-teal-700 hover:bg-teal-600 text-white text-[9px] font-black shadow flex items-center gap-0.5 transition"
                           title="Copiar Nacionalidad de Fila 1 a seleccionados"
                         >
-                          <ArrowDown className="w-3 h-3" />
+                          <ArrowDown className="w-2.5 h-2.5" />
                           <span>1°</span>
                         </button>
                       )}
@@ -2146,8 +2146,8 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
 
                   {/* Celda buffer para pantallas pequeñas y amplio recorrido sin corte */}
                   <th
-                    className="p-3 w-32 min-w-[128px] text-center border-b-2 font-mono text-[10px]"
-                    style={{ backgroundColor: 'var(--table-header-bg)', borderColor: 'var(--border-subtle)', color: 'var(--text-tertiary)' }}
+                    className="p-2 w-20 min-w-[70px] text-center border-b-2 font-mono text-[9px] bg-slate-900"
+                    style={{ borderColor: 'var(--border-subtle, #1e293b)', color: 'var(--text-tertiary, #94a3b8)' }}
                   >
                     ✔ FIN
                   </th>
@@ -2191,7 +2191,7 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
                         className={`divide-x divide-slate-700/80 transition ${rowBgClass}`}
                       >
                         {/* Selector checkbox (Sticky Izquierda) */}
-                        <td className={`p-3 text-center sticky left-0 z-10 ${stickyCellBg} shadow-[2px_0_6px_rgba(0,0,0,0.3)]`}>
+                        <td className={`p-1.5 text-center sticky left-0 z-10 ${stickyCellBg} shadow-[2px_0_6px_rgba(0,0,0,0.3)]`}>
                           <button
                             type="button"
                             onClick={() => toggleSelect(rec.id)}
@@ -2206,17 +2206,17 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
                         </td>
 
                         {/* 1. Nro. Documento (Sticky Izquierda) */}
-                        <td className={`p-3 font-mono font-extrabold text-emerald-300 text-xs tracking-wider sticky left-12 z-10 ${stickyCellBg} border-r border-slate-700/80 shadow-[4px_0_10px_rgba(0,0,0,0.35)]`}>
+                        <td className={`px-2 py-1.5 font-mono font-extrabold text-emerald-300 text-xs tracking-wider sticky left-10 z-10 ${stickyCellBg} border-r border-slate-700/80 shadow-[4px_0_10px_rgba(0,0,0,0.35)]`}>
                           {rec.doc_number || 'N/A'}
                         </td>
 
                         {/* 2. Apellidos y Nombres */}
-                        <td className="p-3 font-semibold text-slate-100 truncate max-w-[240px] text-xs" title={fullName}>
+                        <td className="px-2 py-1.5 font-semibold text-slate-100 truncate max-w-[200px] text-xs" title={fullName}>
                           {fullName}
                         </td>
 
                         {/* 3. Cod. Cargo (Amarillo - 49 Cargos NISIRA) */}
-                        <td className="p-2.5 bg-teal-950/20">
+                        <td className="p-1.5 bg-teal-950/20">
                           <ContractOptionSelect
                             options={CODIGOS_CARGO}
                             value={rec.cod_cargo}
@@ -2227,7 +2227,7 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
                         </td>
 
                         {/* 4. Cod. Planilla (Amarillo) */}
-                        <td className="p-2.5 bg-teal-950/20">
+                        <td className="p-1.5 bg-teal-950/20">
                           <ContractOptionSelect
                             options={CODIGOS_PLANILLA}
                             value={rec.cod_planilla}
@@ -2238,7 +2238,7 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
                         </td>
 
                         {/* 5. Cat. Ocupacional (Amarillo) */}
-                        <td className="p-2.5 bg-teal-950/20">
+                        <td className="p-1.5 bg-teal-950/20">
                           <ContractOptionSelect
                             options={CATEGORIAS_OCUPACIONALES}
                             value={rec.cat_ocupacional}
@@ -2249,7 +2249,7 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
                         </td>
 
                         {/* 6. Tipo de Trabajador (Amarillo) */}
-                        <td className="p-2.5 bg-teal-950/20">
+                        <td className="p-1.5 bg-teal-950/20">
                           <ContractOptionSelect
                             options={CODIGOS_TIPO_TRAB}
                             value={rec.cod_tipo_trab}
@@ -2260,7 +2260,7 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
                         </td>
 
                         {/* 7. Period. Pago (Amarillo) */}
-                        <td className="p-2.5 bg-teal-950/20">
+                        <td className="p-1.5 bg-teal-950/20">
                           <ContractOptionSelect
                             options={PERIODICIDADES_PAGO}
                             value={rec.period_pago}
@@ -2271,7 +2271,7 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
                         </td>
 
                         {/* 8. Reg. Laboral (Amarillo) */}
-                        <td className="p-2.5 bg-teal-950/20">
+                        <td className="p-1.5 bg-teal-950/20">
                           <ContractOptionSelect
                             options={REGIMENES_LABORALES}
                             value={rec.reg_laboral}
@@ -2282,32 +2282,32 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
                         </td>
 
                         {/* 9. Básico (Amarillo) */}
-                        <td className="p-2.5 bg-teal-950/20">
+                        <td className="p-1.5 bg-teal-950/20">
                           <input
                             type="number"
                             step="0.01"
                             value={rec.basico !== undefined ? rec.basico : 51.82}
                             onChange={(e) => handleRowChange(rec.id, 'basico', parseFloat(e.target.value) || 0)}
-                            className="w-full px-2.5 py-1.5 h-9 rounded-lg bg-teal-950/40 text-teal-200 border border-teal-600/70 focus:bg-teal-900/50 focus:border-teal-300 focus:ring-1 focus:ring-teal-400 text-xs font-mono font-extrabold transition shadow-inner"
+                            className="w-full px-2 py-1 h-8 rounded-md bg-teal-950/40 text-teal-200 border border-teal-600/70 focus:bg-teal-900/50 focus:border-teal-300 focus:ring-1 focus:ring-teal-400 text-xs font-mono font-extrabold transition shadow-inner"
                           />
                         </td>
 
                         {/* 10. F. Ingreso (Amarillo) */}
-                        <td className="p-2.5 bg-teal-950/20">
+                        <td className="p-1.5 bg-teal-950/20">
                           <input
                             type="date"
                             value={rec.fec_ingreso || rec.inicio_contrato || ''}
                             onChange={(e) => handleRowChange(rec.id, 'fec_ingreso', e.target.value)}
-                            className="w-full px-2.5 py-1.5 h-9 rounded-lg bg-teal-950/40 text-teal-100 border border-teal-600/70 focus:bg-teal-900/50 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 text-xs font-mono transition shadow-inner"
+                            className="w-full px-2 py-1 h-8 rounded-md bg-teal-950/40 text-teal-100 border border-teal-600/70 focus:bg-teal-900/50 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 text-xs font-mono transition shadow-inner"
                           />
                         </td>
 
                         {/* 11. Pensión / AFP (Amarillo) */}
-                        <td className="p-2.5 bg-teal-950/20">
+                        <td className="p-1.5 bg-teal-950/20">
                           <select
                             value={rec.idafp || ''}
                             onChange={(e) => handleRowChange(rec.id, 'idafp', e.target.value)}
-                            className={`w-full px-2.5 py-1.5 h-9 rounded-lg bg-[#0a1528] border text-xs font-bold focus:bg-[#0e1e38] focus:border-cyan-400 truncate transition shadow-inner ${
+                            className={`w-full px-2 py-1 h-8 rounded-md bg-[#0a1528] border text-xs font-bold focus:bg-[#0e1e38] focus:border-cyan-400 truncate transition shadow-inner ${
                               !rec.idafp
                                 ? 'border-emerald-500/70 text-emerald-300'
                                 : 'border-teal-500/70 text-teal-200'
@@ -2323,26 +2323,26 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
                         </td>
 
                         {/* 12. CUSPP (Amarillo) */}
-                        <td className="p-2.5 bg-teal-950/20">
+                        <td className="p-1.5 bg-teal-950/20">
                           <input
                             type="text"
                             value={rec.cuspp || ''}
                             disabled={!rec.idafp}
                             onChange={(e) => handleRowChange(rec.id, 'cuspp', e.target.value.toUpperCase())}
                             placeholder={!rec.idafp ? 'ONP' : 'CUSPP...'}
-                            className={`w-full px-2.5 py-1.5 h-9 rounded-lg bg-[#0a1528] border text-xs font-mono text-slate-100 focus:bg-[#0e1e38] focus:border-cyan-400 transition shadow-inner ${
+                            className={`w-full px-2 py-1 h-8 rounded-md bg-[#0a1528] border text-xs font-mono text-slate-100 focus:bg-[#0e1e38] focus:border-cyan-400 transition shadow-inner ${
                               !rec.idafp ? 'border-slate-800 text-slate-500 cursor-not-allowed' : 'border-slate-700'
                             }`}
                           />
                         </td>
 
                         {/* 13. Tipo Comisión (Amarillo) */}
-                        <td className="p-2.5 bg-teal-950/20">
+                        <td className="p-1.5 bg-teal-950/20">
                           <select
                             value={rec.tipo_comision || '0'}
                             disabled={!rec.idafp}
                             onChange={(e) => handleRowChange(rec.id, 'tipo_comision', e.target.value)}
-                            className="w-full px-2.5 py-1.5 h-9 rounded-lg bg-[#0a1528] text-slate-100 border border-slate-700 focus:bg-[#0e1e38] focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 text-xs font-medium transition shadow-inner disabled:cursor-not-allowed disabled:text-slate-500"
+                            className="w-full px-2 py-1 h-8 rounded-md bg-[#0a1528] text-slate-100 border border-slate-700 focus:bg-[#0e1e38] focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 text-xs font-medium transition shadow-inner disabled:cursor-not-allowed disabled:text-slate-500"
                           >
                             <option value="0">FLUJO (0)</option>
                             <option value="1">MIXTA (1)</option>
@@ -2350,7 +2350,7 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
                         </td>
 
                         {/* 14. Sucursal (Amarillo) */}
-                        <td className="p-2.5 bg-teal-950/20">
+                        <td className="p-1.5 bg-teal-950/20">
                           <ContractOptionSelect
                             options={CODIGOS_SUCURSAL}
                             value={rec.cod_sucursal}
@@ -2361,7 +2361,7 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
                         </td>
 
                         {/* 15. Grupo Trabajo (Amarillo) */}
-                        <td className="p-2.5 bg-teal-950/20">
+                        <td className="p-1.5 bg-teal-950/20">
                           <ContractOptionSelect
                             options={GRUPOS_TRABAJO}
                             value={rec.grupo_trabajo}
@@ -2372,7 +2372,7 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
                         </td>
 
                         {/* 16. Subplanilla (Amarillo) */}
-                        <td className="p-2.5 bg-teal-950/20">
+                        <td className="p-1.5 bg-teal-950/20">
                           <ContractOptionSelect
                             options={TIPOS_PERSONAL_SUBPLANILLA}
                             value={rec.tipo_personal}
@@ -2383,7 +2383,7 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
                         </td>
 
                         {/* 17. Niv. Educativo (Amarillo) */}
-                        <td className="p-2.5 bg-teal-950/20">
+                        <td className="p-1.5 bg-teal-950/20">
                           <ContractOptionSelect
                             options={NIVELES_EDUCATIVOS}
                             value={rec.niv_educativo}
@@ -2394,11 +2394,11 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
                         </td>
 
                         {/* 18. Estado Civil (Amarillo) */}
-                        <td className="p-2.5 bg-teal-950/20">
+                        <td className="p-1.5 bg-teal-950/20">
                           <select
                             value={rec.estado_civil || 'SO'}
                             onChange={(e) => handleRowChange(rec.id, 'estado_civil', e.target.value)}
-                            className="w-full px-2.5 py-1.5 h-9 rounded-lg bg-[#0a1528] text-slate-100 border border-slate-700 focus:bg-[#0e1e38] focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 text-xs font-medium transition shadow-inner"
+                            className="w-full px-2 py-1 h-8 rounded-md bg-[#0a1528] text-slate-100 border border-slate-700 focus:bg-[#0e1e38] focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 text-xs font-medium transition shadow-inner"
                           >
                             {ESTADOS_CIVILES.map((ec) => (
                               <option key={ec.code} value={ec.code}>
@@ -2409,11 +2409,11 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
                         </td>
 
                         {/* 19. Sexo (Amarillo) */}
-                        <td className="p-2.5 bg-teal-950/20">
+                        <td className="p-1.5 bg-teal-950/20">
                           <select
                             value={rec.sexo || 'M'}
                             onChange={(e) => handleRowChange(rec.id, 'sexo', e.target.value)}
-                            className="w-full px-2.5 py-1.5 h-9 rounded-lg bg-[#0a1528] text-slate-100 border border-slate-700 focus:bg-[#0e1e38] focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 text-xs font-medium transition shadow-inner"
+                            className="w-full px-2 py-1 h-8 rounded-md bg-[#0a1528] text-slate-100 border border-slate-700 focus:bg-[#0e1e38] focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 text-xs font-medium transition shadow-inner"
                           >
                             <option value="M">M</option>
                             <option value="F">F</option>
@@ -2421,11 +2421,11 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
                         </td>
 
                         {/* 20. Nacionalidad (Amarillo) */}
-                        <td className="p-2.5 bg-teal-950/20">
+                        <td className="p-1.5 bg-teal-950/20">
                           <select
                             value={rec.nationality || 'PER'}
                             onChange={(e) => handleRowChange(rec.id, 'nationality', e.target.value)}
-                            className="w-full px-2.5 py-1.5 h-9 rounded-lg bg-[#0a1528] text-slate-100 border border-slate-700 focus:bg-[#0e1e38] focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 text-xs font-medium transition shadow-inner"
+                            className="w-full px-2 py-1 h-8 rounded-md bg-[#0a1528] text-slate-100 border border-slate-700 focus:bg-[#0e1e38] focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 text-xs font-medium transition shadow-inner"
                           >
                             {NACIONALIDADES.map((nac) => (
                               <option key={nac.code} value={nac.code}>
@@ -2436,7 +2436,7 @@ export default function ExcelGeneratorView({ onNavigateToScan, onNavigateToTempl
                         </td>
 
                         {/* Celda buffer para pantallas pequeñas y amplio recorrido sin corte */}
-                        <td className="p-3 w-32 min-w-[128px] text-center font-mono text-[10px]" style={{ color: 'var(--text-tertiary)' }}>
+                        <td className="p-1.5 w-20 min-w-[70px] text-center font-mono text-[9px] text-slate-400">
                           ✔ COMPLETO
                         </td>
                       </tr>

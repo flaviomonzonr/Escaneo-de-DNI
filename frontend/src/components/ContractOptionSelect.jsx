@@ -126,7 +126,7 @@ export default function ContractOptionSelect({
         aria-expanded={isOpen}
         onClick={() => !disabled && setIsOpen(!isOpen)}
         className={`w-full flex items-center justify-between text-left transition-all border rounded-lg ${
-          compact ? 'px-2.5 py-1.5 text-xs h-9' : 'px-3 py-2 text-sm h-10'
+          compact ? 'px-2 py-1 text-xs h-8' : 'px-3 py-2 text-sm h-10'
         } ${
           disabled 
             ? 'opacity-50 cursor-not-allowed bg-slate-800/50 text-slate-400 border-slate-700' 
